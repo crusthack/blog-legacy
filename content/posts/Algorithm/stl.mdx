@@ -1,13 +1,11 @@
 ---
-title: '알고리즘 기초'
+title: '자료구조'
 date: '2025-12-12'
-description: "기본적인 알고리즘과 STL 내부 구현 학습"
+description: "C++ STL 기반 자료구조(컨테이너) 설명입니다."
 ---
-# 개요
 
-# 자료구조
-
-## 배열
+# 배열(array, vector)
+- 
 ```c++
 // 정적 배열 선언 방법
 char array[20] = { 'h', 'e', 'l', 'l', 'o', ',', ' ', 'w', 'o', 'r', 'l', 'd', '!', '!'};
@@ -32,7 +30,7 @@ std::cout << array;     // 문자열 출력
 int* newArray = new int[array.size * 2];        // 새 배열 할당
 std::copy(array, array + array.size, newArray); // 기존 원소 복사
 delete[] array;     // 기존 배열 메모리 해제           
-```
+``
 ### vector 컨테이너 
 [\<vector\>](https://cppreference.com/w/cpp/container/vector.html)
 ```c++
@@ -43,19 +41,16 @@ vec.push_back(n)        // 원소 삽입. 뒤로 들어감 공간이 부족하�
 std::vector<int> vec1(n, a)     // 선언과 동시에 메모리 할당 + 원소 삽입. 
 ```
 
-## 문자열 std::string
+# 문자열 std::string
 
-## list 리스트
+# list 리스트
 
-## deque 환형 큐
+# deque 환형 큐
 
-## 해시 테이블
-### std::map
+# 해시 테이블
+## std::map
 
-## set
+# set
 
-## tree
-
-# 정렬
-
+# tree
 

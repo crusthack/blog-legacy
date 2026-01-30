@@ -3,7 +3,52 @@ title: 'Rust'
 date: '2026-01-01'
 ---
 
-# 0. 환경설정
+# 유용한 사이트
+- [rust 공식 페이지](https://rust-lang.org/)
+- [rust 공식 문서](https://doc.rust-lang.org/std/index.html)
+
+# 환경설정
+## 1. rust 관리 도구 rustup 설치
+- rustup은 rust 컴파일러 설치 도구 및 여러 툴체인을 관리할 수 있는 버전 관리자입니다. rust 개발을 위해 필요합니다. 
+- 아래 링크에 접속해 자신의 운영체제에 알맞은 설치 exe을 다운 받습니다. (e.g. DOWNLOAD RUSTUP-INIT.EXE(X64))   
+[rustup](https://rust-lang.org/learn/get-started/)
+
+**쉘 명령어를 통한 설치**
+`curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
+
+- 설치 exe를 실행하면 다음과 같은 콘솔이 뜹니다. 1을 입력해 표준 설정으로 설치합니다. 
+![콘솔a](1.JPG)
+![콘솔b](2.JPG)
+
+## 2. rust 프로젝트 생성
+- cargo라는 패키지 관리자를 통해 rust 프로젝트를 관리합니다.
+- `cargo new 'project_name'`라는 명령어를 통해 rust 프로젝트 생성을 할 수 있습니다. 
+
+- **프로젝트 구조**
+```terminal
+project
+├──src       
+|  └──main.rs   // 소스파일 
+|──Cargo.toml   // 프로젝트 설정 파일
+```
+- 맨 처음 프로젝트 생성시 자동으로 main.rs 파일이 생성되며 기본적인 hello, world 출력 예제가 있습니다. 
+```rs
+fn main() {
+    println!("Hello, world!");
+}
+```
+
+## 3. rust 프로젝트 빌드 
+- `cargo build` 를 통해 프로젝트를 빌드할 수 있습니다. target 폴더 안에 컴파일 결과물이 생성됩니다. 
+- `cargo run`을 통해 빌드 및 실행을 할 수 있습니다. 
+- 출력 예시
+```terminal
+cargo run
+   Compiling hello v0.1.0 (C:\Users\crusthack\Desktop\hello)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.30s
+     Running `target\debug\hello.exe`
+Hello, world!
+```
 
 # 1. 입출력
 
