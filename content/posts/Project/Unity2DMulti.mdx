@@ -5,7 +5,7 @@ date: '2026-01-30'
 
 # 개요
 ## 유니티 엔진을 이용한 멀티플레이 구현 프로젝트
-- 확장성 있는 네트워크 라이브러리를 만들어보고, 게임에 적용해 게임에서 네트워크 통신을 어떻게 수행하는지 학습하기 위한 프로젝트입니다.
+- 네트워크 라이브러리를 만들어보고, 게임에 적용해 게임에서 네트워크 통신을 어떻게 적용하는지 학습하기 위한 프로젝트입니다.
 - 게임 클라이언트 유니티 엔진을 통해 제작하였으며, 외부 에셋 없이 최소한으로만 구현하였습니다. 
 - 네트워크 라이브러리는 C#의 Net.Sockets 클래스를 이용해 만들었으며, 간편한 데이터 직렬화를 위해 Protobuf를 같이 사용했습니다. 
 - 멀티플레이 구현은 플레이어 한 명이 게임 방을 만들고서 다른 플레이어들이 참여하는 방식으로, 게임 서버는 패킷 중계 역할만을 주로 수행합니다. 
@@ -30,40 +30,8 @@ date: '2026-01-30'
 ### 4. 게임 동기화
 - 호스트 유저 기반으로 각 유저에게 상태를 전파하면서 게임 상태를 동기화. 
 
-### ~5. 데디케이티드 서버~
-- 서버측에서 따로 데디케이티드 서버를 열어 DB와 연동해 게임을 관리하고자 하였으나 포기. 다만 이를 염두해두고 프로젝트를 설계하였으며 추후 구현 가능. 
 
-# 1. 게임 클라이언트(싱글플레이) 제작
-## 게임 설명
-1. 단순하게 캐릭터를 상하좌우로 움직이며 자동 스폰되는 적들을 처치해 점수를 쌓는 게임
-2. 스킬시스템 존재. 패시브 스킬, 액티브 스킬 2개 스킬
-3. 플레이어 캐릭터는 죽지 않는 대신 적과 피격시 해당 적 소멸 및 점수 감소
-4. 싱글플레이는 로컬에 파일로 데이터를 저장합니다. (키보드 x키 누르고, 타이틀 이동시 저장) 
-
-## 캐릭터 선택창 
-
-![선택창사진](1.JPG)
-- 캐릭터는 원 스프라이트로 표현했습니다. 
-- A 캐릭터는 캐릭터 전면(이동방향(원이라서 앞뒤구분이 잘 안 됨))에 하얀색 블럭을 일시적으로 소환한 뒤 해당 블럭에 닿는 적들에게 데미지를 줍니다.
- 패시브 스킬은 일시적으로 적 처치시 얻는 점수가 2배 증가하며 자동으로 발동됩니다. 
-- B 캐릭터는 액티브 스킬로 일시적으로 이동속도가 증가하는 스킬이 있으며, 패시브 스킬로 주변 적에게 자동으로 검정색 블럭을 생성해 날립니다. 
-- 게임 상황은 x버튼 누르고 메인메뉴 이동 시 저장되며, 마지막에 어느 맵, 어느 위치에서 종료했는지(Map_A / Map_B 및 좌표 저장)와 점수를 저장합니다. 
-
-
-## 게임 플레이
-
-![게임플레이사진1](2.JPG)
-![게임플레이사진1](3.JPG)
-
-- 중앙의 원이 플레이어 캐릭터입니다. wasd를 이용해 상하좌우 이동을 합니다. 
-- 빨강색 세모가 적 캐릭터입니다. 맵에 자동으로 생성되고 내부적으로 풀링을 활용해 관리합니다. 
-- 갈색 테두리가 맵의 경계선이며 회색 타일은 장애물(바위)입니다.
-- 스킬 사용시 스킬이미지에 회색 쿨타임 바가 돌며, DOubleScoredlsk SpeedUp과 같은 버프형 스킬은 활성된 시간 동안에 위에 노란색 스크롤이 생깁니다. 
-- 하얀색 캡슐을 통해 맵을 오갈 수 있습니다.(위의 진한 녹색 맵이 맵B, 아래 사진의 연한 녹색 맵이 맵A입니다)
-- 조작키: wasd(이동), k / q(액티브 스킬 사용), x (게임 정지)
-
-
-# 2. 네트워크 라이브러리(C# Socket, Protobuf) 만들기
+# 1. 네트워크 라이브러리(C# Socket, Protobuf) 만들기
 - 단순히 이번 프로젝트만을 위한 라이브러리가 아닌, 이전 소켓프로그래밍 경험을 토대로 유연한 라이브러리를 제작하고자 하였습니다. 
 - 기본적인 메시지 클래스를 설계한 후, 실제 프로젝트에서는 Protobuf 메시지를 송수신 할 수 있도록 ProtobufMessage 클래스를 구현하였습니다.
 
@@ -349,8 +317,9 @@ message ChattingMessage{
 ## 2. NetworkController
 ### 설계 의도
 - 클라이언트측과 서버측에서 같은 클래스를 사용하면 편할 것 같아 각각의 용도로 동작할 수 있도록 구현하였습니다. 크게 효능?은 없는거 같긴 합니다.
-- 소켓통신을 통해 메시지\<T\>를 주고받습니다. 직접적인 데이터 송수신은 SocketContext\<T>에서 다루고, 이 클래스에서는 인터페이스 제공, 서버측에서의 접속 관리를 주로 처리합니다. 
-- 서버측에서는 세션번호를 통해 접속을 구분합니다. 0부터 시작해 1씩 증가합니다.
+- 서버 연결, 클라이언트 접속 수락 등과 같은 소켓 연결관리를 주로 수행하고, 직접적인 바이트 스트림 송수신은 SocketContext에서 처리합니다. 
+- SocketContext가 수신한 메시지를 모아두고 GetMessage를 통해 하나씩 끄내쑬 수 있도록 메서드를 제공합니다. 메시지는 ConcurrentQueue 동시성 문제가 일어나지 않도록 했습니다.
+- 서버측에서는 세션번호를 통해 접속을 구분합니다. 0부터 시작해 1씩 증가합니다. 
 ```c#
 using NetworkController.Message;
 using System.Collections.Concurrent;
@@ -584,8 +553,8 @@ namespace NetworkController
 ```
 #### 주요 메서드
 **클라이언트**
-- `void Connect(IPAddress ip, UInt16 port)`: 해당 주소로 접속을 합니다.
-- `void Disconnect()`: 연결된 접속을 해제합니다. 
+- `void Connect(IPAddress ip, UInt16 port)`: 해당 주소로 소켓 연결을 시도합니다.
+- `void Disconnect()`: 연결을 해제합니다. 
 - `void SendMessage(T message)`: 메시지를 송신합니다. 
 
 **서버**
@@ -596,23 +565,20 @@ namespace NetworkController
 - `event Action<SocketContext<T>>? OnDisconnect`: 접속이 끊겼을 때 호출하는 이벤트입니다. 클라이언트 측에서도 서버와의 접속이 끊겼을 때 대응하기 위해 사용할 수 있습니다.
 
 **일반**
-- `SocketContext<T> GetSocketContext()`: 연결된 소켓을 관리하기 위한 SocketContext를 하나 받습니다. 풀링을 사용합니다. 
 - `void SetReceiveBufferSize(int size)`: SocketContext에서 사용할 수신 버퍼 사이즈를 설정합니다. 기본값은 메시지 최대 크기의 *10입니다. 수신 버퍼 사이즈를 변경하면 내부적으로 SocketContext에서 사용하는 버퍼 크기도 변경해줘야 하는데 구현되지 않았습니다. 
 - `bool IsMessageAvailable()`: 수신 메시지 큐에 메시지가 존재하는지 확인합니다. 
 - `T GetMessage(out SocketContext<T> context, CancellationToken cancellationToken = default)`:  
 메시지큐에서 메시지 하나를 동기적으로 받습니다. 서버측에서 어떤 클라이언트로부터 수신된 메시지인지 구분하기 위해 context를 추가적으로 받습니다. 
 
-### 3. SocketContext
-- 연결된 소켓과의 송수신을 처리하기 위한 클래스입니다. 직접적으로 바이트 스트림을 처리하며 안정적인 송수신을 담당합니다. 
-```c#
-using NetworkController.Message;
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Net;
-using System.Net.Sockets;
-using System.Text;
 
+## 3. SocketContext
+- 연결된 소켓과의 송수신을 처리합니다. 
+- 수신 동작시 바이트스트림을 버퍼에 옮겨담으면서 파싱을 통해 메시지를 뽑아냅니다. 
+- 송신시 메시지가 순차적으로 송신될 수 있도록 흐름 제어를 합니다. 
+- 버퍼는 순환구조를 사용해 메모리 할당이나 복사 빈도를 낮추는 방향으로 구현을 시도하였습니다.
+
+
+```c#
 namespace NetworkController
 {
     public class SocketContext<T> where T : BaseMessage, IMessageParser<T>
@@ -849,19 +815,18 @@ namespace NetworkController
 - `public event Action<SocketContext<T>, T>? OnReceiveMessage`: 수신한 바이트스트림을 파싱성공하여 메시지를 완성하면 해당 이벤트를 호출합니다.
 - `public event Action<SocketContext<T>>? OnDisconnect`: 소켓 연결이 끊겼을 때 해당 이벤트를 호출합니다. 
 
-# 3. 네트워크 라이브러리를 활용한 채팅 서버
-- 네트워크 라이브러리가 잘 작동하는지 확인하기 위한 채팅 서버를 만들어봅니다. 
+# 2. 네트워크 라이브러리를 활용한 채팅 서버
+- 네트워크 라이브러리가 잘 작동하는지 확인하기 위한 간단한 채팅 프로그램을 만들어봅니다. 
 
 **주요 동작**
 - **하트비트**: 클라이언트가 1초마다 서버에 하트비트 메시지를 보냅니다. 서버는 접속된 클라이언트들을 확인해 근 5초간에 하트비트가 도착하지 않은 클라이언트와의 연결을 해제합니다. 
 - **로그인**: 이름을 입력해 로그인을 합니다. 서버에 동일한 이름으로 이미 로그인된 유저가 존재할 경우 거부됩니다. 
 - **채팅**: 로그인된 유저가 채팅 메시지를 보냈을 경우, 해당 채팅을 로그인된 유저들에게 전파합니다. 로그인 되지 않은 유저가 보냈을 경우 무시됩니다. 
-## 클라이언트 코드 
-```c#
-using NetworkController;
-using NetworkController.Message;
-using System.Net;
 
+
+## 클라이언트
+
+```c#
 namespace GameClientConsole
 {
     internal class Program
@@ -1072,17 +1037,6 @@ static void PrintCommand()
 
 ## Server 클래스
 ```c#
-using NetworkController.Message;
-using NetworkController;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
-using System.Collections.Concurrent;
-using GameServer.MessageProcessor;
-using GameServer.Service;
-using Protos;
-
 namespace GameServer
 {
     internal class Server
@@ -1274,12 +1228,6 @@ internal class ClientSession
 
 ## MessageProcessor(Handler) 클래스
 ```c#
-using NetworkController.Message;
-using Protos;
-using System;
-using System.Collections.Generic;
-using System.Text;
-
 namespace GameServer.MessageProcessor
 {
     internal class MessageProcessor
@@ -1467,23 +1415,47 @@ namespace GameServer.Service
     }
 }
 ```
-- 채팅 메시지를 보낸 사람이 로그인 된 사람이라면 해당 메시지를 전체 로그인된 유저들에게 전파합니다. 
+- 채팅 메시지를 보낸 사람이 로그인 된 사람이라면 해당 메시지를 전체 로그인된 유저들에게 전파합니다.
+
+# 3. 게임 클라이언트(싱글플레이) 제작
+## 게임 설명
+1. 단순하게 캐릭터를 상하좌우로 움직이며 자동 스폰되는 적들을 처치해 점수를 쌓는 게임
+2. 스킬시스템 존재. 패시브 스킬, 액티브 스킬 2개 스킬
+3. 플레이어 캐릭터는 죽지 않는 대신 적과 피격시 해당 적 소멸 및 점수 감소
+4. 싱글플레이는 로컬에 파일로 데이터를 저장합니다. (키보드 x키 누르고, 타이틀 이동시 저장) 
+
+## 캐릭터 선택창 
+
+![선택창사진](1.JPG)
+- 캐릭터는 원 스프라이트로 표현했습니다. 
+- A 캐릭터는 캐릭터 전면(이동방향(원이라서 앞뒤구분이 잘 안 됨))에 하얀색 블럭을 일시적으로 소환한 뒤 해당 블럭에 닿는 적들에게 데미지를 줍니다.
+ 패시브 스킬은 일시적으로 적 처치시 얻는 점수가 2배 증가하며 자동으로 발동됩니다. 
+- B 캐릭터는 액티브 스킬로 일시적으로 이동속도가 증가하는 스킬이 있으며, 패시브 스킬로 주변 적에게 자동으로 검정색 블럭을 생성해 날립니다. 
+- 게임 상황은 x버튼 누르고 메인메뉴 이동 시 저장되며, 마지막에 어느 맵, 어느 위치에서 종료했는지(Map_A / Map_B 및 좌표 저장)와 점수를 저장합니다. 
+
+
+## 게임 플레이
+
+![게임플레이사진1](2.JPG)
+![게임플레이사진1](3.JPG)
+
+- 중앙의 원이 플레이어 캐릭터입니다. wasd를 이용해 상하좌우 이동을 합니다. 
+- 빨강색 세모가 적 캐릭터입니다. 맵에 자동으로 생성되고 내부적으로 풀링을 활용해 관리합니다. 
+- 갈색 테두리가 맵의 경계선이며 회색 타일은 장애물(바위)입니다.
+- 스킬 사용시 스킬이미지에 회색 쿨타임 바가 돌며, DOubleScoredlsk SpeedUp과 같은 버프형 스킬은 활성된 시간 동안에 위에 노란색 스크롤이 생깁니다. 
+- 하얀색 캡슐을 통해 맵을 오갈 수 있습니다.(위의 진한 녹색 맵이 맵B, 아래 사진의 연한 녹색 맵이 맵A입니다)
+- 조작키: wasd(이동), k / q(액티브 스킬 사용), x (게임 정지)
 
 # 4. 게임 멀티플레이 구현
 - 기존 .Net 10으로 작성한 네트워크 라이브러리를 유니티에서 사용할 수 있기 위해 VisualStudio 내장 코파일럿을 통해 .Net standard 2.0으로 수정하였습니다.
+- 게임 서버는 위에서 만든 채팅서버를 그대로 사용해 service나 messageHandler만 추가하였습니다.
+
 ## 0. 네트워크 라이브러리 dll 유니티 프로젝트에 추가
 - c# 라이브러리 프로젝트 빌드 산출물 dll을 유니티 에디터 화면에 끌어다놓으면 자동으로 dll이 추가되어 유니티 프로젝트에서 사용할 수 있습니다. 
 - google.Protobuf dll과 제 네트워크 라이브러리 dll을 유니티 프로젝트에 추가하였습니다. 
 
 ## 1. NetworkManager 오브젝트
 ```c#
-using NetworkController;
-using NetworkController.Message;
-using Protos;
-using System;
-using System.Net;
-using UnityEngine;
-
 public class NetworkManager : MonoBehaviour
 {
     private NetworkController<ProtobufMessage> Netcon;
@@ -1613,11 +1585,11 @@ public class NetworkManager : MonoBehaviour
 }
 ```
 
-### 설명
-- 전역객체 게임매니저에 붙어 네트워크 통신을 관리하는 네트워크매니저 객체입니다. 
+### 설명 
+- 전역객체 GameManager에 붙어 네트워크 통신을 관리하는 네트워크매니저 객체입니다. 
 - 매 업데이트 마다 네트워크컨트롤러로부터 수신한 메시지를 확인한 뒤, OnMessageRecv를 구독한 이벤트들에 메시지를 전달합니다. 
 - 하트비트 주기(1초)마다 하트비트 메시지를 서버에 보냅니다. 
-- 다른 오브젝트들이 ProtobufMessage를 보낼 수 있도록 SendMessage 메서드가 있습니다. (일부는 SendChat와 같이 준비돼있음)
+- 다른 오브젝트들이 서버에 ProtobufMessage를 보낼 수 있도록 SendMessage 메서드가 있습니다. (일부는 SendChat와 같이 미리 준비돼있음)
 
 
 ## 2. 로그인 및 채팅기능 
@@ -1673,8 +1645,418 @@ message JoinRoom{
 
 ## 4. 게임 참가 및 동기화 
 
+### 시나리오
+
+#### 게임 참여
+- 게임 방을 만든 호스트 유저가 중심이 되어 게임 로직을 처리합니다. 호스트유저는 게임 서버 측에서 알고있는 세션번호를 읽고 유저를 구분합니다. 
+- 게임에 참가한 유저(클라이언트)가 호스트 유저에 SyncMessage를 보냅니다. 호스트유저는 이 SyncMessage와 해당 클라이언트의 세션번호를 통해 현재 자신의 게임에 해당 유저가 생성되어있지 않으면, 
+Players 딕셔너리(Disctionary\<int, Player>)에 추가합니다. (게임 참여 처리)
+- 호스트가 참여 처리가 된 클라이언트에 RPC 메시지를 보내서 해당 클라이언트가 참여 처리가 됐다고, SetPlayerID를 보냅니다. (세션번호와 같은 값으로 Set)
+- PayerID가 -1인 클라이언트는 게임 참여처리가 아직 안 된 클라이언트이고, RPC 메시지를 받아 PlayerID가 설정된 클라이언트는 자신이 게임참여가 처리가됐다고 판단합니다. 
+
+#### 게임중
+- 클라이언트 유저는 1초마다 자신의 게임 상태를 호스트 유저에게 보냅니다. 
+- 호스트는 해당 SyncMessage를 받은 뒤 처리를 하고, 해당 호스트도 1초마다 전체 플레이어의 상태를 모든 접속 유저들에게 전파합니다. 
+- 클라이언트 유저는 해당 메시지를 받아 게임을 동기화합니다. 
+- 클라이언트 유저가 move나 Attack(스킬사용)을 하면 해당 rpc 메시지를 서버로 보냅니다.
+- 호스트유저가 해당 rpc메시지를 받으면 처리를 한 뒤 모든 클라이언트들에게 rpc메시지를 전파합니다. 
+
+### GameMessage
+```c#
+syntax = "proto3";
+
+option csharp_namespace = "Protos";
+
+message GameMessage{
+	int32 session_iD = 1;
+	string user_name = 2;
+	bool do_broadcast = 3;
+	oneof Payload{
+		SyncMessage game_sync = 4;
+		RPC rpc = 5;
+	}
+};
+
+message SyncMessage{
+	int32 player_id = 1;
+	int32 prefab_id = 2;
+	int32 position_x = 3;
+	int32 position_y = 4;
+	int32 move_x = 5;
+	int32 move_y= 6;
+	string current_map = 7;
+	string user_name = 8;
+	int32 score = 9;
+};
+
+message RPC{
+	int32 player_id = 1;
+	string rpc_name = 2;
+	repeated string values = 3;
+};
+```
+### GameNetworkController, 클라이언트측 게임 동기화 코드
+```c#
+public class GameNetworkCon : MonoBehaviour
+{
+    public GameObject scoreboard;
+    public List<GameObject> scores;
+
+    int playerID = -1; // hostUser = 0, unauthorized = -1
+    ConcurrentDictionary<int, GameObject> Players = new();    // key = sessionid
+
+    public float SyncInterval = 1;
+    private float lastSyncTime = 0;
+
+    public SceneController sceneController;
+
+
+    void Awake()
+    {
+        GameManager.Instance.NetworkCon = this;
+        GameManager.Instance.NetworkManager.OnMessageRecv += HandleMessage;
+    }
+
+    private void OnDestroy()
+    {
+        GameManager.Instance.NetworkManager.OnMessageRecv -= HandleMessage;
+    }
+
+    void Start()
+    {
+        if (!GameManager.Instance.Session.IsMulti)
+            return;
+
+        scoreboard.SetActive(true);
+
+        Debug.Log(GameManager.Instance.Session.IsHost ? "This is host" : "This is guest");
+    }
+
+    void Update()
+    {
+        if (!GameManager.Instance.Session.IsMulti)
+        {
+            return;
+        }
+
+        UpdateScoreboard();
+        SendSyncMessage();
+        CheckVisibility();
+    }
+
+    void CheckVisibility()
+    {
+        var localPlayer = GameManager.Instance.GamePlayer?.GetComponent<Player>();
+        if (localPlayer == null) return;
+
+        foreach (var obj in Players.Values)
+        {
+            if (obj == null) continue;
+
+            var p = obj.GetComponent<Player>();
+            if (p == null) continue;
+
+            bool shouldActive = p.CurrentMap == localPlayer.CurrentMap;
+            if (obj.activeSelf != shouldActive)
+                obj.SetActive(shouldActive);
+        }
+    }
+
+    void UpdateScoreboard()
+    {
+        if (scores == null || scores.Count == 0)
+            return;
+
+        List<Player> players = new();
+
+        foreach (var obj in Players.Values)
+        {
+            if (obj == null) continue;
+            var p = obj.GetComponent<Player>();
+            if (p != null)
+                players.Add(p);
+        }
+
+        var localPlayer = GameManager.Instance.GamePlayer?.GetComponent<Player>();
+        if (localPlayer != null)
+            players.Add(localPlayer);
+
+        players.Sort((a, b) => b.Score.CompareTo(a.Score));
+
+        foreach (var s in scores)
+            if (s != null) s.SetActive(false);
+
+        for (int i = 0; i < players.Count && i < scores.Count; i++)
+        {
+            if (scores[i] == null) continue;
+
+            scores[i].transform.GetChild(0)
+                .GetComponent<TMP_Text>().text =
+                $"{players[i].UserName}: {players[i].Score}";
+
+            scores[i].SetActive(true);
+        }
+    }
+
+    void SendSyncMessage()
+    {
+        if (Time.time - lastSyncTime < SyncInterval)
+            return;
+
+        lastSyncTime = Time.time;
+
+        // 자신 게임의 상태를 송신
+        var s = GameManager.Instance.GamePlayer.GetComponent<Player>().GetSyncInfo();
+        s.PlayerId = playerID;
+        var g = new GameMessage
+        {
+            DoBroadcast = GameManager.Instance.Session.IsHost,
+            GameSync = s
+        };
+        var message = new ProtobufMessage(g, ProtobufMessage.OpCode.Game);
+        GameManager.Instance.NetworkManager.SendMessage(message);
+
+        // 호스트 유저라면 자기 컴퓨터에 있는 모든 유저들의 정보를 전파
+        if (GameManager.Instance.Session.IsHost)
+        {
+            foreach (var (i, p) in Players)
+            {
+                var info = p.GetComponent<Player>().GetSyncInfo();
+                info.PlayerId = i;
+
+                var gameMessage = new GameMessage
+                {
+                    DoBroadcast = true,
+                    GameSync = info
+                };
+
+                var msg = new ProtobufMessage(gameMessage, ProtobufMessage.OpCode.Game);
+                GameManager.Instance.NetworkManager.SendMessage(msg);
+                Debug.Log(gameMessage.ToString());
+            }
+        }
+    }
+
+    void HandleMessage(ProtobufMessage message)
+    {
+        switch ((ProtobufMessage.OpCode)message.Header.OpCode)
+        {
+            case ProtobufMessage.OpCode.Game:
+                HandleGamemessage(message.Payload as GameMessage);
+                break;
+        }
+    }
+
+    void HandleGamemessage(GameMessage message)
+    {
+        switch (message.PayloadCase)
+        {
+            case GameMessage.PayloadOneofCase.GameSync:
+                if (GameManager.Instance.Session.IsHost)
+                {
+                    HostPlayerSyncGame(message);
+                }
+                else
+                {
+                    SyncGame(message);
+                }
+                break;
+            case GameMessage.PayloadOneofCase.Rpc:
+                HandleRPC(message.Rpc);
+                break;
+        }
+    }
+
+    // 호스트 플레이어 전용 
+    void HostPlayerSyncGame(GameMessage msg)
+    {
+        var message = msg.GameSync;
+
+        if (Players.TryGetValue(msg.SessionID, out var p))
+        {
+            p.GetComponent<Player>().Sync(message);
+        }
+        else
+        {
+            var newPlayer = sceneController.SpawnPlayer(message);
+            newPlayer.GetComponent<Player>().UserName = message.UserName;
+
+            newPlayer.GetComponent<Player>().Sync(message);
+            Players.TryAdd(msg.SessionID, newPlayer);
+            Debug.Log("New player: " + message.UserName + "join to game");
+            InitClient(msg);
+        }
+    }
+
+    int InitClient(GameMessage msg)
+    {
+        var g = new GameMessage
+        {
+            SessionID = msg.SessionID,
+            DoBroadcast = false,
+            Rpc = new RPC
+            {
+                PlayerId = msg.SessionID,
+                RpcName = "SetPlayerID",
+            }
+        };
+
+        Debug.Log(msg.SessionID + " New Client try To Join   " + g.Rpc.PlayerId);
+        Debug.Log($"Send Set Playr ID RPC to {g.SessionID}");
+        var m = new ProtobufMessage(g, ProtobufMessage.OpCode.Game);
+        GameManager.Instance.NetworkManager.SendMessage(m);
+        return g.Rpc.PlayerId;
+    }
+
+    void SyncGame(GameMessage msg)
+    {
+        var message = msg.GameSync;
+
+        // 아직 호스트 유저로부터 번호 부여 안 받은 상태
+        if (playerID == -1)
+        {
+            return;
+        }
+
+        if(playerID == message.PlayerId)
+        {
+            return;
+        }
+
+        if (Players.TryGetValue(message.PlayerId, out var p))
+        {
+            p.GetComponent<Player>().Sync(message);
+        }
+        else
+        {
+            var newPlayer = sceneController.SpawnPlayer(message);
+            newPlayer.GetComponent<Player>().Sync(message);
+            newPlayer.GetComponent<Player>().UserName = message.UserName + "(" + message.PlayerId.ToString() + ")";
+            Players.TryAdd(message.PlayerId, newPlayer);
+            Debug.Log("New player: " + message.UserName + "join to game");
+        }
+    }
+
+    void HandleRPC(RPC message)
+    {
+        if (message.PlayerId == playerID)
+        {
+            return;
+        }
+
+        switch (message.RpcName)
+        {
+            case "SetPlayerID":
+                {
+                    playerID = message.PlayerId;
+                    GameManager.Instance.GamePlayer.GetComponent<Player>().UserName += $"({message.PlayerId})";
+                }
+                Debug.Log("Set Player ID: " + playerID);
+                break;
+            case "Move":
+                ProcessRPCMove(message);
+                break;
+            case "Attack":
+                ProcessRPCAttack(message);
+                break;
+        }
+    }
+
+    public void RPC_Move(InputValue value)
+    {
+        if (!GameManager.Instance.Session.IsMulti)
+        {
+            return;
+        }
+
+        var x = value.Get<Vector2>().x;
+        var y = value.Get<Vector2>().y;
+
+        var g = new GameMessage
+        {
+            Rpc = new RPC
+            {
+                PlayerId = playerID,
+                RpcName = "Move",
+                Values = { x.ToString(), y.ToString() }
+            }
+        };
+
+        if (GameManager.Instance.Session.IsHost)
+        {
+            g.DoBroadcast = true;
+        }
+
+        var m = new ProtobufMessage(g, ProtobufMessage.OpCode.Game);
+        GameManager.Instance.NetworkManager.SendMessage(m);
+    }
+
+    void ProcessRPCMove(RPC message)
+    {
+        if (!Players.TryGetValue(message.PlayerId, out var p))
+            return;
+
+        if (!float.TryParse(message.Values[0], NumberStyles.Float, CultureInfo.InvariantCulture, out var x))
+            return;
+
+        if (!float.TryParse(message.Values[1], NumberStyles.Float, CultureInfo.InvariantCulture, out var y))
+            return;
+
+        p.GetComponent<Player>().MovDir = new Vector2(x, y);
+
+        if (GameManager.Instance.Session.IsHost)
+        {
+            GameManager.Instance.NetworkManager.SendMessage(
+                new ProtobufMessage(new GameMessage
+                {
+                    DoBroadcast = true,
+                    Rpc = message
+                }, ProtobufMessage.OpCode.Game));
+        }
+    }
+
+    void ProcessRPCAttack(RPC message)
+    {
+        if (!Players.TryGetValue(message.PlayerId, out var p))
+            return;
+
+        p.GetComponent<Player>().Attack();
+
+        if (GameManager.Instance.Session.IsHost)
+        {
+            GameManager.Instance.NetworkManager.SendMessage(
+                new ProtobufMessage(new GameMessage
+                {
+                    DoBroadcast = true,
+                    Rpc = message
+                }, ProtobufMessage.OpCode.Game));
+        }
+    }
+
+    public void RPC_Attack()
+    {
+        if (!GameManager.Instance.Session.IsMulti)
+            return;
+
+        var g = new GameMessage
+        {
+            Rpc = new RPC
+            {
+                PlayerId = playerID,
+                RpcName = "Attack",
+            },
+            DoBroadcast = GameManager.Instance.Session.IsHost
+        };
+
+        GameManager.Instance.NetworkManager.SendMessage(
+            new ProtobufMessage(g, ProtobufMessage.OpCode.Game));
+    }
+}
+```
 
 # 시연 영상
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/B099c9TXzDw?si=aILBt1CEFfqwfjUx" title="YouTube video player" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen></iframe>
 
 # 정리 및 요약
 
@@ -1696,6 +2078,7 @@ message JoinRoom{
  유니티측에서 강제하는 구조같은게 없다고 생각하는데 그래서인지 되게 조잡하게 만들었다고 생각합니다. 정상 동작을 우선으로 구현하였습니다.
 - 단순 채팅을 넘어서 실제 멀티플레이를 구현하고자 하니까 간단한 게임인데도 불구하고 여러모로 송수신해야할 정보들도 많고 어떻게 설계해야할지 막막함이 있었습니다. gRPC나 RestAPI같은 고추상화된 통신을 사용한다면 좀 수월해지지 않을까 싶습니다. 
 - 멀티플레이 게임에서 왜 rpc를 활용하는지 알 것 같다는 느낌이 듭니다. (유저가 자신의 상태변경을 요청을 서버측에 함수 사용을 요청하는 것으로 처리하는 느낌?)
+- 게임 만드는 도중에 에디터에서와 빌드결과물의 동작이 다르게 돌아간다든가 네트워크 쪽이 뭔가 이상하게 문제가 생기는 경우가 있었습니다. 유니티 자체에 대한 이해도 부족인 것 같습니다. 
 
 ## 총정리
 - 약 한 달 동안 수행한 프로젝트입니다. C# 소켓프로그래밍을 통해 protobuf를 이용한 네트워크 라이브러리를 만들어봤으며, Unity 프로젝트에 적용해보았습니다. 
