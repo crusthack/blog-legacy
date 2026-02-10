@@ -4,4 +4,1125 @@ date: '2025-12-01'
 description: '언리얼 엔진 학습내용 정리 페이지입니다'
 ---
 
-# 언리얼 엔진 학습내용 정리 페이지입니다
+# 하나하나 시스템 파악 하면서 공부하는 것에 비효율을 많이 느낌. 일단 기본적인 여러 게임 제작 후 정리 예정
+
+# Input System
+## Enhanced Input System
+- Unreal Engine 5에 새로 도입된 입력 처리 방식입니다. 
+ - 기존 Legacy Input에서는 키 입력을 받으면 하나의 게임 전체 매핑에 따라 바인딩된 함수를 즉각적으로 호출하는 구조였습니다.
+  매핑이 단조로워지고 입력을 관리하기 힘들며 호출된 함수측에서 입력의 상태를 판단해야 하는 단점이 있었습니다.
+- 향상된 입력은 입력 처리 과정에서 중간 파이프라인을 추가해 여러개의 매핑 구조를 사용할 수 있게 하고, 인풋시스템 자체에서 입력 상태를 판단하여 일관성있는 함수 작성을 할 수 있게 도와줍니다.
+- 향상된 입력은 **Input Mapping Context**와 **Input Action** 2가지 요소를 사용해 입력을 처리합니다.
+
+### 기본 사용
+- wasd 매핑후 캐릭터 이동을 구현하는 예제입니다.
+#### Input Mapping Context 설정
+![IMC 기본](IMC_Default.JPG)
+- wasd 매핑을 추가해줍니다. MoveAction는 2D vector값을 사용하고 전진과 후진에 사용할 값을 벡터 Y값으로, 좌우이동에는 X값으로 사용할 것입니다.
+- 기본적으로 입력이 트리거될 때 인풋 값이 3D vector (x, y, z) => (1, 0, 0) 으로 들어옵니다.
+ 전진과 후진에 사용할 값을 Y값으로 수정하기 위해 Value Swizzle변환자를 추가하고서 Order를 YXZ로 설정합니다.
+  그럼 w 입력시에 (y, x, z) => (1, 0, 0)으로 매핑돼서 y값이 1이 됩니다. 
+- 후방 이동과 좌측 이동에는 음수값을 사용할 것입니다. 이를 위해 negate를 붙여줘 (1, 0, 0)으로 들어온 값을 (-1, 0, 0)이 되게 합니다.
+
+#### Input Action 설정
+![IA 기본](IA_Default.JPG)
+- value type만 Vector2D로 설정해줍니다.
+
+#### PlayerController에서 Input Mapping Context 바인딩
+```c++
+// MyPlayerController.h
+class UInputMappingContext;
+
+UCLASS()
+class INPUTANDUI_API AMyPlayerController : public APlayerController
+{
+	GENERATED_BODY()
+	
+	void SetupInputComponent() override;	
+
+protected:
+	UPROPERTY(EditAnywhere, Category = "Input")
+	TObjectPtr<UInputMappingContext> DefaultMappingContext;
+};
+
+// MyPlayerController.cpp
+void AMyPlayerController::SetupInputComponent()
+{
+	Super::SetupInputComponent();
+
+	if(UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem< UEnhancedInputLocalPlayerSubsystem >(GetLocalPlayer()))
+	{
+		Subsystem->AddMappingContext(DefaultMappingContext, 0);
+	}
+	SetControlRotation(FRotator(-30, 0, 0));
+}
+```
+- PlayerController에서 Mappin Context 멤버를 추가하고서, SetupInputComponent에서 subsystem에 해당 매핑컨텍스트를 추가합니다. 
+
+#### Character Actor에서 Input Action 사용
+```c++
+void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+{
+	Super::SetupPlayerInputComponent(PlayerInputComponent);
+
+	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
+	{
+		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AMyCharacter::Move);
+		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AMyCharacter::Look);
+
+	}
+}
+
+void AMyCharacter::Move(const FInputActionValue& Value)
+{
+	FVector2D MovementVector = Value.Get<FVector2D>();
+	AddMovementInput(GetActorForwardVector(), MovementVector.Y);
+	AddMovementInput(GetActorRightVector(), MovementVector.X);
+}
+```
+- SetupPlayerInputComponent에서 InputAction을 콜백 함수와 함께 바인딩합니다.
+- 콜백함수는 `const FInputActionValue&`타입의 매개변수를 받도록 정의되어 있습니다. 
+- 이 캐릭터는 MoveAction이 트리거되면 값을 받고서 값에 따라 이동을 하는 간단한 동작을 수행합니다.
+
+### Input Mapping Context
+- 입력 장치와 Input Action을 직접적으로 연결하는 클래스입니다.
+![IMC](IMC.JPG)
+
+#### DefaultKeyMappings
+- 기본 키 매핑 설정입니다. 키 입력에 따른 InputAction을 설정합니다. 
+
+#### MappingProfileOverrides
+- 프로파일에 따른 매핑 추가 옵션입니다.
+ 게임패드, 키보드와 같은 프로파일 명을 설정하고서 그에 따른 추가 매핑을 설정하고서 Input Subsystem을 통해 사용할 프로파일을 설정하면 해당 프로파일로 오버라이드 됩니다.
+
+#### InputModeFilterOptions - InputModeQueryOverride
+- Input Mode에 따른 필터 설정입니다. 
+
+#### RegistrationTrackingMode
+- input system에 추가할 때 레퍼런스 카운트 체크를 함. 
+- 여러개의 시스템들이 inputsystem에 매핑을 추가하고서, 나중에 추가한 시스템이 파괴될 때 매핑을 삭제한다면, 여러번 추가 - 한 번의 제거로 매핑 자체가 제거됨. 카운트 체크함으로써 안전한 제거 지원 기능.
+
+
+### Input Action
+- 입력의 상태를 정의하고 콜백함수를 연결하는 클래스입니다. 
+- Input Action의 트리거 이벤트는 트리거 조건들에 의해 **Triggered**, **Started**, **Ongoing**, **Completed**, **Canceled** 5가지 이벤트가 호출됩니다. 
+- `None`: 아무런 트리거 조건이 달성되지 않음.
+- `Started`: 트리거 조건을 평가하기 시작한 상태. 트리거 조건을 일부 만족함. (e.g. 2번 탭(터치) 하는 트리거가 있을 경우 첫 번째 탭 시)
+- `Ongoing`: 트리거 조건을 일부 만족한 상태. 매 프레임마다 Ongoing 이벤트가 호출됨.
+- `Triggered`: 트리거 조건이 모두 성립이 된 상태. 매 프레임마다 Triggered 이벤트가 호출됨.
+- `Completed`: 트리거 조건을 모두 만족한 상태로 입력이 종료됨. 
+- `Canceled`: 트리거 조건이 충족되지 않은 상태에서 입력이 종료됨.
+
+
+#### ValueType 
+- Input 값을 어떻게 처리할 것인지에 대해. bool, float, Vector 2D, vector 3D
+
+#### Trigger when Paused
+- 게임 정지 시에도 인풋 동작하는 옵션
+
+#### Reserve All Mappings
+
+#### Accumulation Behavior 
+- 여러개의 입력 장치로부터의 중복 입력을 정의. 각 값들 중 절댓값 최대인 값 혹은 합산 
+
+#### Consume Lower Priority Enhanced Input Mappings
+
+#### Consumes Action and Axis Mappings
+
+#### Player Mappable Key Settings
+
+### Trigger
+- IMC와 IA를 이루는 트리거 조건입니다. 트리거들의 종류와 상태에 따라 IMC, IA의 트리거 이벤트 또한 결정됩니다. 
+
+#### Trigger State
+- Trigger의 상태는 `None`, `Ongoing`, `Triggered` 세 단계로 분류됩니다. 
+- `None`: 입력 없음
+- `Ongoing`: 조건이 일부 충족됨
+- `Triggered`: 조건이 충족됨
+
+#### Trigger Type
+- Trigger의 종류는 `Explicit`, `Implicit`, `Blocker` 세 가지가 있습니다.
+- `Explicit`: 트리거들 중에 **Explicit**인 트리거 하나만 충족되어도 **Explicit** 타입 트리거가 해당 트리거의 상태를 따라감
+- `Implicit`: 해당 타입을 가진 모든 트리거들의 상태를 따라감 
+- `Blocker`: 해당 타입을 가진 트리거 하나만 발동되어도 이벤트 상태 전체가 None으로 블록 됨
+
+<br/>
+
+- 트리거가 아무것도 없는 경우: 입력이 들어오면 바로 IA의 상태가 Triggered로 전환됨. 
+- Explicit 트리거가 있는 경우: Explicit 타입 트리거들 중 최고 단계의 상태가 됨. 하나만 Triggered 이여도 IA가 Triggered로. 하나만 Ongoing 이고 나머지가 None이면 Ongoing
+- Implicit 트리거가 있는 경우: 모든 Implicit 트리거들의 최저 단계가 됨. and 연산과 비슷함.
+- Blocker 트리거가 있는 경우: 하나의 Blocker 트리거만 발동되면 IA의 상태가 None이 됨.
+
+#### IA의 상태 전이
+- 위의 Trigger Type 연산에 의해 Trigger를 총합한 IA의 Triggers는 3가지 상태를 가짐 `None`, `Ongoing`, `Triggered`
+- 이에 의해 IA는 트리거 이벤트는 다음과 같이 호출됨. (Ongoing과 Triggered는 매 프레임마다 호출)
+None -> Started -> Ongoing -> Triggered -> Completed (Triggers가 바로 Triggered가 되면 Ongoing은 생략)  
+None -> Started -> Ongoing -> Canceled
+
+#### 기본 Trigger
+- 모든 Trigger들은 UInputTrigger을 상속받음. UInputTrigger는 기본적으로 Explicit 타입을 가짐.
+![Triggers](Triggers.JPG)
+
+| Trigger Name         | Trigger Type | 트리거 동작 설명                                                                                       |
+| -------------------- | ------------ | ----------------------------------------------------------------------------------------------- |
+| **Down**             | Explicit     | 입력 값이 ActuationThreshold를 **넘는 동안 계속 Triggered** 상태. 트리거가 하나도 없을 때의 **기본 동작**                   |
+| **Pressed**          | Explicit     | 입력 값이 Threshold를 **처음 넘는 순간 한 번만 Triggered**. 유지해도 추가 Trigger 없음                                |
+| **Released**         | Explicit     | 입력이 Threshold 이상으로 유지되다가 **Threshold 아래로 떨어지는 순간 Triggered**                                    |
+| **Hold**             | Explicit     | 입력이 Threshold 이상으로 **HoldTimeThreshold 시간 이상 유지되면 Triggered**<br/>옵션에 따라 1회 또는 매 프레임 Trigger 가능 |
+| **Hold And Release** | Explicit     | Threshold 이상으로 **지정 시간 이상 유지 후, 놓았을 때 Triggered**                                               |
+| **Tap**              | Explicit     | Threshold 이상으로 눌렀다가 **TapReleaseTimeThreshold 시간 안에 놓으면 Triggered**                             |
+| **Repeated Tap**     | Explicit     | 지정 시간 내 **여러 번 탭**했을 때 Triggered (예: 더블 탭)                                                      |
+| **Pulse**            | Explicit     | 입력이 유지되는 동안 **Interval 주기마다 Triggered**                                                         |
+| **Chorded Action**   | **Implicit** | 다른 Input Action이 **Triggered 상태일 때만** 이 Action이 Trigger 가능                                      |
+| **Chord Blocker**    | **Blocker**  | Chord 조건이 만족되면 **다른 입력을 차단** (자동 생성, 수동 추가 금지)                                                  |
+| **Combo (Beta)**     | **Implicit** | 여러 Input Action을 **순서대로 완료**했을 때 Triggered                                                      |
+
+
+### Modifier
+- 입력 값을 수정합니다. (e.g. 키보드 입력시 (x, y, z) 벡터 값이 (1, 0, 0)으로 입력되는데 swizzle을 통해 XYZ 순서를 YXZ로 바꾸면서 Y값이 1이 되게 할 수 있습니다.)
+
+### Debug 옵션
+- 에디터 창에서 showdebug enhancedinput을 입력하면, 현재 향상된 입력의 상태가 표시됩니다. 
+
+### FKey
+
+
+
+### InputTriggers.h
+```c++
+{
+    // Copyright Epic Games, Inc. All Rights Reserved.
+
+    #pragma once
+
+    #include "InputActionValue.h"
+
+    #include "InputTriggers.generated.h"
+
+    #define UE_API ENHANCEDINPUT_API
+
+    class UEnhancedPlayerInput;
+    class UInputAction;
+
+    /**
+    * Trigger states are a light weight interpretation of the provided input values used in trigger UpdateState responses.
+    */
+    UENUM()
+    enum class ETriggerState : uint8
+    {
+        // No inputs
+        None,
+
+        // Triggering is being monitored, but not yet been confirmed (e.g. a time based trigger that requires the trigger state to be maintained over several frames)
+        Ongoing,
+
+        // The trigger state has been met
+        Triggered,
+    };
+
+    /**
+    * Trigger events are the Action's interpretation of all Trigger State transitions that occurred for the action in the last tick
+    */
+    UENUM(BlueprintType, meta = (Bitflags, UseEnumValuesAsMaskValuesInEditor = "true"))
+    enum class ETriggerEvent : uint8
+    {
+        // No significant trigger state changes occurred and there are no active device inputs
+        None		= (0x0)		UMETA(Hidden),
+        // Triggering occurred after one or more processing ticks
+        Triggered	= (1 << 0),	// ETriggerState (None -> Triggered, Ongoing -> Triggered, Triggered -> Triggered)
+        
+        // An event has occurred that has begun Trigger evaluation. Note: Triggered may also occur this frame, but this event will always be fired first.
+        Started		= (1 << 1),	// ETriggerState (None -> Ongoing, None -> Triggered)
+
+        // Triggering is still being processed. For example, an action with a "Press and Hold" trigger
+        // will be "Ongoing" while the user is holding down the key but the time threshold has not been met yet. 
+        Ongoing		= (1 << 2),	// ETriggerState (Ongoing -> Ongoing)
+
+        // Triggering has been canceled. For example,  the user has let go of a key before the "Press and Hold" time threshold.
+        // The action has started to be evaluated, but never completed. 
+        Canceled	= (1 << 3),	// ETriggerState (Ongoing -> None)
+
+        // The trigger state has transitioned from Triggered to None this frame, i.e. Triggering has finished.
+        // Note: Using this event restricts you to one set of triggers for Started/Completed events. You may prefer two actions, each with its own trigger rules.
+        // Completed will not fire if any trigger reports Ongoing on the same frame, but both should fire. e.g. Tick 2 of Hold (= Ongoing) + Pressed (= None) combo will raise Ongoing event only.
+        Completed	= (1 << 4),	// ETriggerState (Triggered -> None)
+    };
+    ENUM_CLASS_FLAGS(ETriggerEvent)
+
+    namespace UE::Input
+    {
+        // Returns an FString that represents the given ETriggerEvent
+        ENHANCEDINPUT_API FString LexToString(const ETriggerEvent TriggerEvent);
+    };
+
+    /**
+    * Trigger type determine how the trigger contributes to an action's overall trigger event the behavior of the trigger
+    */
+    UENUM()
+    enum class ETriggerType : uint8
+    {
+        // Input may trigger if any explicit trigger is triggered.
+        Explicit,
+
+        // Input may trigger only if all implicit triggers are triggered.
+        Implicit,
+
+        // Inverted trigger that will block all other triggers when IsBlocking returns true
+        Blocker
+    };
+
+    /**
+    * Represents what ETriggerEvent types can be triggered off of a give UInputTrigger.
+    * Used to determine if a warning should be placed on a exec pin that would never get called
+    * on a K2Node_EnhancedInputAction node
+    */
+    UENUM()
+    enum class ETriggerEventsSupported : uint8
+    {
+        // This trigger supports no trigger events. 
+        None				= (0x0),
+        
+        // This trigger supports just the Triggered event type. This include ETriggerEvent::Triggered
+        Instant				= (1 << 0),
+
+        // This trigger cannot be canceled, once it is started it cannot be stopped from being triggered
+        // This includes the ETriggerEvents of Started, Ongoing, and Triggered 
+        Uninterruptible		= (1 << 1),
+
+        // This represents a trigger than can be held down and have a duration, and be canceled. This includes
+        // the ETriggerEvents of Started, Ongoing, Canceled, and Triggered. 
+        Ongoing				= (1 << 2),
+
+        // This trigger supports all trigger events
+        All					= (Instant | Uninterruptible | Ongoing), 
+    };
+    ENUM_CLASS_FLAGS(ETriggerEventsSupported)
+
+    /**
+    Base class for building triggers.
+    Transitions to Triggered state once the input meets or exceeds the actuation threshold.
+    */
+    UCLASS(MinimalAPI, Abstract, Blueprintable, EditInlineNew, CollapseCategories, Config = Input, defaultconfig, configdonotcheckdefaults)
+    class UInputTrigger : public UObject
+    {
+        GENERATED_BODY()
+
+
+    protected:
+
+        // Default implementations of overridable functionality.
+        // C++ trigger implementations should override these directly.
+        virtual ETriggerType GetTriggerType_Implementation() const { return ETriggerType::Explicit; }
+
+        // Triggers on actuation.
+        UE_API virtual ETriggerState UpdateState_Implementation(const UEnhancedPlayerInput* PlayerInput, FInputActionValue ModifiedValue, float DeltaTime);
+
+    public:
+        // Point at which this trigger fires
+        UPROPERTY(EditAnywhere, Config, BlueprintReadWrite, Category = "Trigger Settings")
+        float ActuationThreshold = 0.5f;
+
+        /* Decides whether this trigger ticks every frame or not.
+        * This WILL affect performance and should only be used in specific custom triggers.
+        */
+        UPROPERTY(Config, BlueprintReadOnly, Category = "Trigger Settings")
+        bool bShouldAlwaysTick = false;
+
+        /*
+        * Is the value passed in sufficiently large to be of interest to the trigger.
+        * This is a helper function that implements the most obvious (>=) interpretation of the actuation threshold.
+        */
+        UFUNCTION(BlueprintCallable, Category="Trigger")
+        bool IsActuated(const FInputActionValue& ForValue) const { return ForValue.GetMagnitudeSq() >= ActuationThreshold * ActuationThreshold; }
+
+        // Value passed to UpdateState on the previous tick. This will be updated automatically after the trigger is updated.
+        UPROPERTY(BlueprintReadOnly, Category = "Trigger Settings")
+        FInputActionValue LastValue;	// TODO: Potential issues with this being of bool type on first tick.
+
+        /*
+        Changes the way this trigger affects an action with multiple triggers:
+            All implicit triggers must be triggering to trigger the action.
+            If there are any explicit triggers at least one must be triggering to trigger the action.
+        */
+        UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Trigger")
+        UE_API ETriggerType GetTriggerType() const;
+
+        /*
+        This function checks if the requisite conditions have been met for the trigger to fire.
+        Returns Trigger State None		 - No trigger conditions have been met. Trigger is inactive.
+                Trigger State Ongoing	 - Some trigger conditions have been met. Trigger is processing but not yet active.
+                Trigger State Triggered - All trigger conditions have been met to fire. Trigger is active.
+        */
+        UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Trigger")
+        UE_API ETriggerState UpdateState(const UEnhancedPlayerInput* PlayerInput, FInputActionValue ModifiedValue, float DeltaTime);
+
+        /** Determines what kind of trigger events can happen from the behavior of this trigger. */
+        virtual ETriggerEventsSupported GetSupportedTriggerEvents() const { return ETriggerEventsSupported::Instant; }
+
+        /**
+        * Returns true if the the ETriggerEvent is can be triggered based off of the ETriggerEventsSupported.
+        */
+        static UE_API bool IsSupportedTriggerEvent(const ETriggerEventsSupported SupportedEvents, const ETriggerEvent Event);
+
+        /** Returns true when all other triggers should be blocked, i.e. chords block when not triggered. */
+        virtual bool IsBlocking(const ETriggerState State) const { return false; }
+            
+        // Provide debug output for use with ShowDebug EnhancedInput. Return an empty string to disable display.
+        virtual FString GetDebugState() const { return FString(); }
+    };
+
+
+    /**
+    Base class for building triggers that have firing conditions governed by elapsed time.
+    This class transitions state to Ongoing once input is actuated, and will track Ongoing input time until input is released.
+    Inheriting classes should provide the logic for Triggered transitions.
+    */
+    UCLASS(MinimalApi, Abstract, Config = Input)	// TODO: Parent CLASS_Config flag is passed down to all UInputTrigger descendants, but ClassConfigName is only inherited by immediate children causing UHT to complain about a missing config file for any triggers based on this.
+    class UInputTriggerTimedBase : public UInputTrigger
+    {
+        GENERATED_BODY()
+
+    protected:
+
+        // How long have we been actuating this trigger?
+        UPROPERTY(BlueprintReadWrite, Category = "Trigger Settings")
+        float HeldDuration = 0.0f;			 // TODO: Annoying given the action mapping is already tracking this.
+
+        // Transitions to Ongoing on actuation. Never triggers.
+        UE_API virtual ETriggerState UpdateState_Implementation(const UEnhancedPlayerInput* PlayerInput, FInputActionValue ModifiedValue, float DeltaTime) override;
+
+        // Calculates the new held duration given the current player input and delta time
+        UE_API float CalculateHeldDuration(const UEnhancedPlayerInput* const PlayerInput, const float DeltaTime) const;
+
+    public:
+
+        virtual ETriggerEventsSupported GetSupportedTriggerEvents() const override { return ETriggerEventsSupported::Ongoing; }
+        
+        /**
+        * Should global time dilation be applied to the held duration?
+        * Default is set to false.
+        * 
+        * If this is set to true, then the owning Player Controller's actor time dilation
+        * will be used when calculating the HeldDuration.
+        * 
+        * @see UInputTriggerTimedBase::CalculateHeldDuration
+        * @see AWorldSettings::GetEffectiveTimeDilation
+        */
+        UPROPERTY(EditAnywhere, Config, BlueprintReadWrite, Category = "Trigger Settings")
+        bool bAffectedByTimeDilation = false;
+
+        virtual FString GetDebugState() const override { return HeldDuration ? FString::Printf(TEXT("Held:%.2f"), HeldDuration) : FString(); }
+    };
+
+
+
+    // Default native triggers
+
+
+    // Default behavior for no triggers is Down
+
+    /** UInputTriggerDown
+        Trigger fires when the input exceeds the actuation threshold.
+        Note: When no triggers are bound Down (with an actuation threshold of > 0) is the default behavior.
+        */
+    UCLASS(NotBlueprintable, MinimalAPI, meta = (DisplayName = "Down"))
+    class UInputTriggerDown final : public UInputTrigger
+    {
+        GENERATED_BODY()
+
+    public:
+        virtual ETriggerEventsSupported GetSupportedTriggerEvents() const override { return ETriggerEventsSupported::Instant; }
+
+    protected:
+
+        virtual ETriggerState UpdateState_Implementation(const UEnhancedPlayerInput* PlayerInput, FInputActionValue ModifiedValue, float DeltaTime) override;
+    };
+
+    /** UInputTriggerPressed
+        Trigger fires once only when input exceeds the actuation threshold.
+        Holding the input will not cause further triggers.
+        */
+    UCLASS(NotBlueprintable, MinimalAPI, meta=(DisplayName="Pressed"))
+    class UInputTriggerPressed final : public UInputTrigger
+    {
+        GENERATED_BODY()
+
+    public:
+        virtual ETriggerEventsSupported GetSupportedTriggerEvents() const override { return ETriggerEventsSupported::Instant; }
+
+    protected:
+
+        virtual ETriggerState UpdateState_Implementation(const UEnhancedPlayerInput* PlayerInput, FInputActionValue ModifiedValue, float DeltaTime) override;
+        virtual FString GetDebugState() const { return IsActuated(LastValue) ? FString(TEXT("Pressed:Held")) : FString(); }
+    };
+
+
+    /** UInputTriggerReleased
+        Trigger returns Ongoing whilst input exceeds the actuation threshold.
+        Trigger fires once only when input drops back below actuation threshold.
+        */
+    UCLASS(NotBlueprintable, MinimalAPI, meta = (DisplayName = "Released"))
+    class UInputTriggerReleased final : public UInputTrigger
+    {
+        GENERATED_BODY()
+
+    public:
+        virtual ETriggerEventsSupported GetSupportedTriggerEvents() const override { return ETriggerEventsSupported::Instant; }
+
+    protected:
+
+        virtual ETriggerState UpdateState_Implementation(const UEnhancedPlayerInput* PlayerInput, FInputActionValue ModifiedValue, float DeltaTime) override;
+        virtual FString GetDebugState() const { return IsActuated(LastValue) ? FString(TEXT("Released:Held")) : FString(); }
+    };
+
+
+
+    /** UInputTriggerHold
+        Trigger fires once input has remained actuated for HoldTimeThreshold seconds.
+        Trigger may optionally fire once, or repeatedly fire.
+    */
+    UCLASS(NotBlueprintable, MinimalAPI, meta = (DisplayName = "Hold"))
+    class UInputTriggerHold final : public UInputTriggerTimedBase
+    {
+        GENERATED_BODY()
+
+        bool bTriggered = false;
+
+    protected:
+
+        virtual ETriggerState UpdateState_Implementation(const UEnhancedPlayerInput* PlayerInput, FInputActionValue ModifiedValue, float DeltaTime) override;
+
+    public:
+        virtual ETriggerEventsSupported GetSupportedTriggerEvents() const override { return ETriggerEventsSupported::Ongoing; }
+        
+        // How long does the input have to be held to cause trigger?
+        UPROPERTY(EditAnywhere, Config, BlueprintReadWrite, Category = "Trigger Settings", meta = (ClampMin = "0"))
+        float HoldTimeThreshold = 1.0f;
+
+        // Should this trigger fire only once, or fire every frame once the hold time threshold is met?
+        UPROPERTY(EditAnywhere, Config, BlueprintReadWrite, Category = "Trigger Settings")
+        bool bIsOneShot = false;
+
+        virtual FString GetDebugState() const override { return HeldDuration ? FString::Printf(TEXT("Hold:%.2f/%.2f"), HeldDuration, HoldTimeThreshold) : FString(); }
+    };
+
+    /** UInputTriggerHoldAndRelease
+        Trigger fires when input is released after having been actuated for at least HoldTimeThreshold seconds.
+    */
+    UCLASS(NotBlueprintable, MinimalAPI, meta = (DisplayName = "Hold And Release"))
+    class UInputTriggerHoldAndRelease final : public UInputTriggerTimedBase
+    {
+        GENERATED_BODY()
+
+    protected:
+
+        virtual ETriggerState UpdateState_Implementation(const UEnhancedPlayerInput* PlayerInput, FInputActionValue ModifiedValue, float DeltaTime) override;
+
+    public:
+        // How long does the input have to be held to cause trigger?
+        UPROPERTY(EditAnywhere, Config, BlueprintReadWrite, Category = "Trigger Settings", meta = (ClampMin = "0"))
+        float HoldTimeThreshold = 0.5f;
+    };
+
+    /** UInputTriggerTap
+        Input must be actuated then released within TapReleaseTimeThreshold seconds to trigger.
+    */
+    UCLASS(NotBlueprintable, MinimalAPI, meta = (DisplayName = "Tap"))
+    class UInputTriggerTap final : public UInputTriggerTimedBase
+    {
+        GENERATED_BODY()
+
+    protected:
+
+        virtual ETriggerState UpdateState_Implementation(const UEnhancedPlayerInput* PlayerInput, FInputActionValue ModifiedValue, float DeltaTime) override;
+
+    public:
+        virtual ETriggerEventsSupported GetSupportedTriggerEvents() const override { return ETriggerEventsSupported::Instant; }
+        
+        // Release within this time-frame to trigger a tap
+        UPROPERTY(EditAnywhere, Config, BlueprintReadWrite, Category = "Trigger Settings", meta = (ClampMin = "0"))
+        float TapReleaseTimeThreshold = 0.2f;
+    };
+
+    /**
+    * Fires the "Triggered" event upon a repeated taps of a key.
+    * 
+    * Note: You can use this trigger to easily make a "Double Tap" effect.
+    */
+    UCLASS(NotBlueprintable, MinimalAPI, meta = (DisplayName = "Repeated Tap"))
+    class UInputTriggerRepeatedTap : public UInputTriggerTimedBase
+    {
+        GENERATED_BODY()
+
+    protected:
+        virtual ETriggerState UpdateState_Implementation(const UEnhancedPlayerInput* PlayerInput, FInputActionValue ModifiedValue, float DeltaTime) override;
+        virtual FString GetDebugState() const override;
+        
+        /**
+        * The max amount of time which can pass in between single taps that can pass and still be considered
+        * a repeat tap. For example:
+        *
+        * -> Single Key Tap (the first tap)
+        * --
+        * -- ... Some time passes
+        * --
+        * -> Another single key tap (the second tap)
+        * 
+        * -- if (time passed <= RepeatDelay) then trigger repeat tap
+        */
+        UPROPERTY(EditAnywhere, Config, BlueprintReadWrite, Category="Trigger Settings", meta = (ClampMin = "0"))
+        double RepeatDelay = 0.5;
+
+        /**
+        * This is the time at which we need to be <= on the next detection of a
+        * tap in order to be considered a double tap.
+        *
+        * This is set to (FPlatform::Seconds() + RepeatDelay) whenever we detect a tap
+        */
+        UPROPERTY()
+        double RepeatTime = 0.0;
+
+        /**
+        * The number of taps in a row it takes for this to be considered triggered.
+        *
+        * Note: To create a "Double tap" trigger, this value should be 2.
+        */
+        UPROPERTY(EditAnywhere, Config, BlueprintReadWrite, Category="Trigger Settings", meta = (ClampMin = "1"))
+        int32 NumberOfTapsWhichTriggerRepeat = 2;
+
+        // Release within this time-frame to trigger a tap
+        UPROPERTY(EditAnywhere, Config, BlueprintReadWrite, Category = "Trigger Settings", meta = (ClampMin = "0"))
+        float TapReleaseTimeThreshold = 0.2f;
+
+        /**
+        * Tracks the number of individual taps that have occured since the last time we met
+        */
+        UPROPERTY()
+        int32 NumberOfTapsSinceLastTrigger = 0;
+    };
+
+    /** UInputTriggerPulse
+        Trigger that fires at an Interval, in seconds, while input is actuated. 
+        Note:	Completed only fires when the repeat limit is reached or when input is released immediately after being triggered.
+                Otherwise, Canceled is fired when input is released.
+        */
+    UCLASS(NotBlueprintable, MinimalAPI, meta = (DisplayName = "Pulse"))
+    class UInputTriggerPulse final : public UInputTriggerTimedBase
+    {
+        GENERATED_BODY()
+
+    private:
+
+        int32 TriggerCount = 0;
+
+    protected:
+
+        virtual ETriggerState UpdateState_Implementation(const UEnhancedPlayerInput* PlayerInput, FInputActionValue ModifiedValue, float DeltaTime) override;
+
+    public:
+        // Whether to trigger when the input first exceeds the actuation threshold or wait for the first interval?
+        UPROPERTY(EditAnywhere, Config, BlueprintReadWrite, Category = "Trigger Settings")
+        bool bTriggerOnStart = true;
+
+        // How long between each trigger fire while input is held, in seconds?
+        UPROPERTY(EditAnywhere, Config, BlueprintReadWrite, Category = "Trigger Settings", meta = (ClampMin = "0"))
+        float Interval = 1.0f;
+
+        // How many times can the trigger fire while input is held? (0 = no limit)
+        UPROPERTY(EditAnywhere, Config, BlueprintReadWrite, Category = "Trigger Settings", meta = (ClampMin = "0"))
+        int32 TriggerLimit = 0;
+
+        virtual FString GetDebugState() const override { return HeldDuration ? FString::Printf(TEXT("Triggers:%d/%d, Interval:%.2f/%.2f"), TriggerCount, TriggerLimit, (HeldDuration/(Interval*(TriggerCount+1))), Interval) : FString(); }
+    };
+
+
+    // Chorded actions
+
+    /**
+    * UInputTriggerChordAction
+    * Applies a chord action that must be triggering for this trigger's action to trigger
+    */
+    UCLASS(MinimalAPI, NotBlueprintable, meta = (DisplayName = "Chorded Action", NotInputConfigurable = "true"))
+    class UInputTriggerChordAction : public UInputTrigger
+    {
+        GENERATED_BODY()
+    public:
+    #if WITH_EDITOR
+        UE_API virtual EDataValidationResult IsDataValid(class FDataValidationContext& Context) const override;
+    #endif
+
+    protected:
+        // Implicit, so action cannot fire unless this is firing.
+        virtual ETriggerType GetTriggerType_Implementation() const override { return ETriggerType::Implicit; }
+
+        UE_API virtual ETriggerState UpdateState_Implementation(const UEnhancedPlayerInput* PlayerInput, FInputActionValue ModifiedValue, float DeltaTime) override;
+        virtual bool IsBlocking(const ETriggerState State) const override { return State != ETriggerState::Triggered; }
+
+    public:
+
+        // The action that must be triggering for this trigger's action to trigger
+        UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Trigger Settings", meta = (DisplayThumbnail = "false"))
+        TObjectPtr<const UInputAction> ChordAction = nullptr;
+    };
+
+    /** UInputTriggerChordBlocker
+        Automatically instantiated  to block mappings that are masked by a UInputTriggerChordAction chord from firing whilst the chording key is active.
+        NOTE: Do not attempt to add these manually.
+    */
+    UCLASS(NotBlueprintable, MinimalAPI, HideDropdown)
+    class UInputTriggerChordBlocker final : public UInputTriggerChordAction
+    {
+        GENERATED_BODY()
+    protected:
+        virtual ETriggerType GetTriggerType_Implementation() const override { return ETriggerType::Blocker; }
+        virtual bool IsBlocking(const ETriggerState State) const override { return State == ETriggerState::Triggered; }
+    };
+
+    USTRUCT(BlueprintType)
+    struct FInputComboStepData
+    {
+        GENERATED_BODY()
+
+        // The action that must be completed (according to Combo Step Completion States) to progress the combo
+        UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Trigger Settings", meta = (DisplayThumbnail = "false"))
+        TObjectPtr<const UInputAction> ComboStepAction = nullptr;
+
+        // Trigger events that will complete this step - what events from this action should progress the combo
+        UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trigger Settings", config, meta = (Bitmask, BitmaskEnum="/Script/EnhancedInput.ETriggerEvent"))
+        uint8 ComboStepCompletionStates = static_cast<uint8>(ETriggerEvent::Triggered);
+        
+        /**
+        * Time to press the key before combo is cancelled - starts once the previous step in the combo is completed
+        * Note: This can be safely ignored for the first action in the combo
+        */
+        UPROPERTY(EditAnywhere, Config, BlueprintReadWrite, Category = "Trigger Settings")
+        float TimeToPressKey = 0.5f;
+    };
+
+    USTRUCT(BlueprintType)
+    struct FInputCancelAction
+    {
+        GENERATED_BODY()
+
+        // The action that must be completed (according to Cancellation States) to cancel the combo
+        UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Trigger Settings", meta = (DisplayThumbnail = "false"))
+        TObjectPtr<const UInputAction> CancelAction = nullptr;
+
+        // Trigger events for this action that will cancel the combo - what events from this action should cancel the combo
+        UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trigger Settings", config, meta = (Bitmask, BitmaskEnum="/Script/EnhancedInput.ETriggerEvent"))
+        uint8 CancellationStates = static_cast<uint8>(ETriggerEvent::Triggered);
+    };
+
+    /**
+    * UInputTriggerCombo
+    * All actions in the combo array must be completed (based on combo completion event specified - triggered, completed, etc.) to trigger the action this trigger is on.
+    * Actions must also be completed in the order specified by the combo actions array (starting at index 0).
+    * Note: This will only trigger for one frame before resetting the combo trigger's progress 
+    */
+    UCLASS(MinimalAPI, NotBlueprintable, meta = (DisplayName = "Combo (Beta)", NotInputConfigurable = "true"))
+    class UInputTriggerCombo : public UInputTrigger
+    {
+        GENERATED_BODY()
+
+        UE_API UInputTriggerCombo();
+
+    protected:
+        // Implicit, so action cannot fire unless this is firing.
+        virtual ETriggerType GetTriggerType_Implementation() const override { return ETriggerType::Implicit; }
+
+        UE_API virtual ETriggerState UpdateState_Implementation(const UEnhancedPlayerInput* PlayerInput, FInputActionValue ModifiedValue, float DeltaTime) override;
+
+        // Keeps track of what action we're currently at in the combo
+        UPROPERTY(BlueprintReadOnly, Category = "Trigger Settings")
+        int32 CurrentComboStepIndex = 0;
+        
+        // Time elapsed between last combo InputAction trigger and current time
+        UPROPERTY(BlueprintReadOnly, Category = "Trigger Settings")
+        float CurrentTimeBetweenComboSteps = 0.0f;
+
+    public:
+
+    #if WITH_EDITOR
+        UE_API virtual EDataValidationResult IsDataValid(class FDataValidationContext& Context) const override;
+    #endif
+        
+        /**
+        * List of input actions that need to be completed (according to Combo Step Completion States) to trigger this action.
+        * Input actions must be triggered in order (starting at index 0) to count towards the triggering of the combo.
+        */
+        UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trigger Settings", meta = (DisplayThumbnail = "false", TitleProperty = "ComboStepAction"))
+        TArray<FInputComboStepData> ComboActions;
+
+        // Actions that will cancel the combo if they are completed (according to Cancellation States)
+        UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trigger Settings", meta = (DisplayThumbnail = "false", DisplayName = "Cancel Actions"))
+        TArray<FInputCancelAction> InputCancelActions;
+
+        /** Determines what kind of trigger events can happen from the behavior of this trigger. */
+        virtual ETriggerEventsSupported GetSupportedTriggerEvents() const override { return ETriggerEventsSupported::All; }
+    };
+
+    #undef UE_API
+}
+```
+
+## SlateApplication
+- SlateApplication은 언리얼 게임의 입력을 전체적으로 관리하는 최상위 클래스입니다. 
+- OS로부터 받아온 사용자 입력은 FKeyEvent(키보드, 패드 입력), FPointerEvent(마우스, 터치 입력)으로 분류돼 여기에서 UI들에 라우팅을 통해 전달합니다. 
+- SlateApplication이 UI를 계층적으로 입력을 전달하고, 게임 컨트롤러에게의 입력 전달 또한 SViewport라는 위젯을 통해 UGameViewportClient -> PlayerController로 입력을 전달합니다.
+
+### FKeyEvent
+- KeyEvent는 키보드나 게임 패드 입력 같은 물리적 버튼 입력을 처리합니다. 
+- KeyEvent는 현재 SlateApplication이 Focus하고 있는 대상을 기점으로 터널링(최상위 계층부터 포커스된 객체까지)과 버블링(포커스된 객체부터 최상위 계층)을 통해 입력을 전달합니다.
+- 터널링 과정에서는 UI가 Preview 이벤트를 수행하고, 버블링 과정에서는 UI가 정식 일반 이벤트를 수행합니다. 
+- 만약에, 라우팅 과정에서 특정 위젯(UI)가 입력을 소비하고서 FReply::Handled()를 반환한다면 이후 전달을 그만두고 입력 처리를 마무리합니다. 
+- 즉, focus를 UI에 둔다면 해당 UI가 입력을 처리하고, viewport에 둔다면 PlayerController가 입력을 처리합니다. 
+- 만약에 특정 UI가 입력을 소비했음에도 다른 UI들이 받아서 처리하게하려면, `FReply::UnHandled()`를 반환하도록 하면 됩니다. 
+
+#### Focus 변경하는 주요 메서드
+- `bool SetUserFocus(int32 UserIndex, const TSharedPtr<SWidget>& Widget, EFocusCause Cause)`: 특정 UI에 focus 두기
+- `bool FSlateApplication::SetKeyboardFocus(const TSharedPtr< SWidget >& OptionalWidgetToFocus, EFocusCause ReasonFocusIsChanging)`: 특정 UI에 키보드 focus 두기  
+ 내부적으로 SetUserFocus를 사용해 키보드 포커스를 해당 위젯에 둡니다.
+- `void FSlateApplication::SetAllUserFocusToGameViewport(EFocusCause ReasonFocusIsChanging)`: viewport에 focus 둬서 PlayerController이 입력 받도록 하기
+
+#### FSlateApplication::ProcessKeyDownEvent
+```c++
+// UnrealEngine\Engine\Source\Runtime\Slate\Private\Framework\Application\SlateApplication.cpp
+
+bool FSlateApplication::ProcessKeyDownEvent( const FKeyEvent& InKeyEvent )
+{
+	SCOPE_CYCLE_COUNTER(STAT_ProcessKeyDown);
+
+	TScopeCounter<int32> BeginInput(ProcessingInput);
+
+	TSharedRef<FSlateUser> SlateUser = GetOrCreateUser(InKeyEvent);
+
+	// Analog cursor gets first chance at the input
+	if (InputPreProcessors.HandleKeyDownEvent(*this, InKeyEvent))
+	{
+		return true;
+	}
+
+	FReply Reply = FReply::Unhandled();
+	SetLastUserInteractionTime(this->GetCurrentTime());
+	
+	if (SlateUser->IsDragDropping() && InKeyEvent.GetKey() == EKeys::Escape)
+	{
+		// Pressing ESC while drag and dropping terminates the drag drop.
+		SlateUser->CancelDragDrop();
+		Reply = FReply::Handled();
+	}
+	else
+	{
+		LastUserInteractionTimeForThrottling = LastUserInteractionTime;
+
+		// Bubble the keyboard event
+		TSharedRef<FWidgetPath> EventPathRef = SlateUser->GetFocusPath();
+		const FWidgetPath& EventPath = EventPathRef.Get();
+
+		// Switch worlds for widgets in the current path
+		FScopedSwitchWorldHack SwitchWorld(EventPath);
+
+		// Tunnel the keyboard event
+		Reply = FEventRouter::RouteAlongFocusPath(this, FEventRouter::FTunnelPolicy(EventPath), InKeyEvent, [] (const FArrangedWidget& CurrentWidget, const FKeyEvent& Event)
+		{
+			if (CurrentWidget.Widget->IsEnabled())
+			{
+				const FReply TempReply = CurrentWidget.Widget->OnPreviewKeyDown(CurrentWidget.Geometry, Event);
+
+				return TempReply;
+			}
+			return FReply::Unhandled();
+		}, ESlateDebuggingInputEvent::PreviewKeyDown);
+
+		// Send out key down events.
+		if ( !Reply.IsEventHandled() )
+		{
+			Reply = FEventRouter::RouteAlongFocusPath(this, FEventRouter::FBubblePolicy(EventPath), InKeyEvent, [] (const FArrangedWidget& SomeWidgetGettingEvent, const FKeyEvent& Event)
+			{
+				if (SomeWidgetGettingEvent.Widget->IsEnabled())
+				{
+					const FReply TempReply = SomeWidgetGettingEvent.Widget->OnKeyDown(SomeWidgetGettingEvent.Geometry, Event);
+
+					return TempReply;
+				}
+
+				return FReply::Unhandled();
+			}, ESlateDebuggingInputEvent::KeyDown);
+		}
+
+		// If the key event was not processed by any widget...
+		if ( !Reply.IsEventHandled() && UnhandledKeyDownEventHandler.IsBound() )
+		{
+			Reply = UnhandledKeyDownEventHandler.Execute(InKeyEvent);
+		}
+	}
+
+	return Reply.IsEventHandled();
+}
+```
+
+
+### FPointerEvent
+- PointerEvent는 마우스 입력이나 화면 터치와 같은 특정 포인트 입력을 처리합니다.
+- 포인터 이벤트는 화면에 입력을 준 특정 포인트를 기점으로 Hit Test를 진행하여 해당 지점에 있는 UI 계층을 capture한 뒤 해당 UI 경로에 라우팅을 수행합니다. 
+- 이 또한 앞선 위젯을 뚫고서 뒤의 위젯에 이벤트를 전달하고 싶으면 `FReply::UnHandled()`를 반환하도록 하면 됩니다.
+
+### ECommonInputMode
+- PlayerController가 사용하는 입력 제어용 유틸리티 클래스입니다. 
+- `FInputModeUIOnly`, `FInputModeGameAndUI`, `FInputModeGameOnly`
+- SlateApplication과 viewport사이에서 입력 설정을 어떻게 수정할지 도와주는 역할을 합니다. 
+
+#### FInputModeGameOnly
+```c++
+void FInputModeGameOnly::ApplyInputMode(FReply& SlateOperations, class UGameViewportClient& GameViewportClient) const
+{
+	TSharedPtr<SViewport> ViewportWidget = GameViewportClient.GetGameViewportWidget();
+	if (ViewportWidget.IsValid())
+	{
+		TSharedRef<SViewport> ViewportWidgetRef = ViewportWidget.ToSharedRef();
+		SlateOperations.UseHighPrecisionMouseMovement(ViewportWidgetRef);
+		SlateOperations.SetUserFocus(ViewportWidgetRef);
+		SlateOperations.LockMouseToWidget(ViewportWidgetRef);
+		GameViewportClient.SetMouseLockMode(EMouseLockMode::LockOnCapture);
+		GameViewportClient.SetIgnoreInput(false);
+		GameViewportClient.SetMouseCaptureMode(bConsumeCaptureMouseDown ? EMouseCaptureMode::CapturePermanently : EMouseCaptureMode::CapturePermanently_IncludingInitialMouseDown);
+	}
+}
+```
+
+#### FInputModeUIOnly
+```c++
+void FInputModeUIOnly::ApplyInputMode(FReply& SlateOperations, class UGameViewportClient& GameViewportClient) const
+{
+	TSharedPtr<SViewport> ViewportWidget = GameViewportClient.GetGameViewportWidget();
+	if (ViewportWidget.IsValid())
+	{
+		const bool bLockMouseToViewport = MouseLockMode == EMouseLockMode::LockAlways
+												 || (MouseLockMode == EMouseLockMode::LockInFullscreen && GameViewportClient.IsExclusiveFullscreenViewport());
+		SetFocusAndLocking(SlateOperations, WidgetToFocus, bLockMouseToViewport, ViewportWidget.ToSharedRef());
+
+		SlateOperations.ReleaseMouseCapture();
+
+		GameViewportClient.SetMouseLockMode(MouseLockMode);
+		GameViewportClient.SetIgnoreInput(true);
+		GameViewportClient.SetMouseCaptureMode(EMouseCaptureMode::NoCapture);
+	}
+}
+```
+
+#### FInputModeGameAndUI
+```c++
+void FInputModeGameAndUI::ApplyInputMode(FReply& SlateOperations, class UGameViewportClient& GameViewportClient) const
+{
+	TSharedPtr<SViewport> ViewportWidget = GameViewportClient.GetGameViewportWidget();
+	if (ViewportWidget.IsValid())
+	{
+		const bool bLockMouseToViewport = MouseLockMode == EMouseLockMode::LockAlways
+			|| (MouseLockMode == EMouseLockMode::LockInFullscreen && GameViewportClient.IsExclusiveFullscreenViewport());
+		SetFocusAndLocking(SlateOperations, WidgetToFocus, bLockMouseToViewport, ViewportWidget.ToSharedRef());
+
+		SlateOperations.ReleaseMouseCapture();
+
+		GameViewportClient.SetMouseLockMode(MouseLockMode);
+		GameViewportClient.SetIgnoreInput(false);
+		GameViewportClient.SetHideCursorDuringCapture(bHideCursorDuringCapture);
+		GameViewportClient.SetMouseCaptureMode(EMouseCaptureMode::CaptureDuringMouseDown);
+	}
+}
+```
+
+### EMouseCaptureMode
+- `NoCapture`, `CapturePermanently`, `CapturePermanently_IncludingInitialMouseDown`, `CaptureDuringMouseDown`, `CaptureDuringRightMouseDown`
+
+### EMouseLockMode
+- `DoNotLock`, `LockOnCapture`, `LockAlways`, `LockInFullscreen`
+
+# User Interface 
+- 언리얼 엔진에서 UI를 제작하는 방법을 정리합니다. 
+- 언리얼에는 **Slate**, **UMG**, **Common UI** 3가지 시스템이 존재합니다. 모든 UI 시스템은 **Slate(SWidget)**를 기반으로 동작합니다. 
+
+## Slate 
+- 언리얼 UI 프레임워크의 근간이 되는 시스템입니다. SWidget을 기반으로 화면에 여러 Slate Widget들을 표시합니다. 언리얼 에디터 또한 Slate Widget을 통해 제작되었습니다. 
+- 에디터 없이 코드 레벨에서 위젯을 다룹니다.  
+- Source\Runtime\(Slate|SlateCore) 참고
+코드 예시
+```c++
+
+
+
+#include "MySlate.h"
+#include "Input/MyController.h"
+
+#include "SlateOptMacros.h"
+
+BEGIN_SLATE_FUNCTION_BUILD_OPTIMIZATION
+void SMySlate::Construct(const FArguments& InArgs)
+{
+	ChildSlot
+		[
+			SNew(SOverlay)
+				// Menu UI
+				+ SOverlay::Slot()
+				.HAlign(HAlign_Right)
+				.VAlign(VAlign_Bottom)
+				.Padding(FMargin(10.f))
+				[
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot()
+					[
+						SNew(SBox)
+							.WidthOverride(200.f)
+							.HeightOverride(100.f)
+						[
+							SAssignNew(PlayerInfoButton,SButton)
+								.HAlign(HAlign_Center)
+								.VAlign(VAlign_Center)
+								.OnClicked(this, &SMySlate::OnMyButtonClicked)
+								.IsFocusable(false)
+							[
+								SNew(STextBlock)
+									.Text(FText::FromString(TEXT("Player Info")))
+									.Font(FSlateFontInfo(FPaths::EngineContentDir() / TEXT("Slate/Fonts/Roboto-Regular.ttf"), 24))
+									.Justification(ETextJustify::Center)
+							]
+						]
+					]
+					+ SHorizontalBox::Slot()
+					[
+						SNew(SBox)
+							.WidthOverride(200.f)
+							.HeightOverride(100.f)
+						[
+							SAssignNew(SettingButton ,SButton)
+								.HAlign(HAlign_Center)
+								.VAlign(VAlign_Center)
+								.OnClicked(this, &SMySlate::SettingButtonClicked)
+								.IsFocusable(false)
+								[
+									SNew(STextBlock)
+										.Text(FText::FromString(TEXT("Setting")))
+										.Font(FSlateFontInfo(FPaths::EngineContentDir() / TEXT("Slate/Fonts/Roboto-Regular.ttf"), 24))
+										.Justification(ETextJustify::Center)
+								]
+						]
+					]
+				]
+			// Chatting UI
+			+ SOverlay::Slot()
+				.HAlign(HAlign_Left)
+				.VAlign(VAlign_Bottom)
+				.Padding(20.f, 0.f)
+			[
+				SNew(SBox)
+					.WidthOverride(500.f)
+					.HeightOverride(500.f)
+				[
+					SNew(SVerticalBox)
+
+					+ SVerticalBox::Slot()
+						.FillHeight(0.9f)
+					[
+						SNew(SHorizontalBox)
+
+						+ SHorizontalBox::Slot()
+							.HAlign(HAlign_Left)
+							.AutoWidth()
+						[
+							SAssignNew(ChattingScroll, SScrollBar)
+								.Orientation(EOrientation::Orient_Vertical)
+								.Thickness(FVector2D(10.f, 0.f)) 
+								.AlwaysShowScrollbar(true)
+						]
+
+						+ SHorizontalBox::Slot()
+							.FillWidth(1.f)
+						[
+							SNew(SBorder)
+								.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.5f))
+							[
+								SAssignNew(ChattingBox, SScrollBox)
+									.ExternalScrollbar(ChattingScroll)
+									.ScrollBarAlwaysVisible(true)
+								+ SScrollBox::Slot()
+								[
+									SNew(STextBlock)
+										.Text(FText::FromString(TEXT("hello, world!!")))
+										.Font(FSlateFontInfo(FPaths::EngineContentDir() / TEXT("Slate/Fonts/Roboto-Regular.ttf"), 24))
+								]
+							]
+						]
+					]
+
+					+ SVerticalBox::Slot()
+						.FillHeight(0.1f)
+						.Padding(0, 5)
+					[
+						SAssignNew(ChatInput, SEditableTextBox)
+							.HintText(FText::FromString(TEXT("Type message...")))
+							.Font(FSlateFontInfo(FPaths::EngineContentDir() / TEXT("Slate/Fonts/Roboto-Regular.ttf"), 24))
+							.OnTextCommitted(this, &SMySlate::ChatCommitted)
+							.ClearKeyboardFocusOnCommit(false)
+					]
+				]
+			]
+		];
+}
+FReply SMySlate::OnMyButtonClicked()
+{
+	UE_LOG(LogTemp, Error, TEXT("hello, world!!"));
+
+	return FReply::Handled();
+}
+FReply SMySlate::SettingButtonClicked()
+{
+	UE_LOG(LogTemp, Error, TEXT("bye, world!!"));
+
+	return FReply::Handled();
+}
+
+FReply SMySlate::OnKeyDown(const FGeometry& MeGeometry, const FKeyEvent& InKeyEvent)
+{
+	FKey PressedKey = InKeyEvent.GetKey();
+	UE_LOG(LogTemp, Warning, TEXT("Key Down: %s"), *PressedKey.ToString());
+	return FReply::Unhandled();
+}
+
+void SMySlate::SetController(TWeakObjectPtr<AMyController> Controller)
+{
+	OwnerController = Controller;
+}
+
+void SMySlate::OpenChatting()
+{
+	if (ChatInput.IsValid())
+	{
+		FSlateApplication::Get().SetKeyboardFocus(ChatInput, EFocusCause::SetDirectly);
+	}
+
+}
+
+void SMySlate::ChatCommitted(const FText& Text, ETextCommit::Type CommitType)
+{
+	if (CommitType == ETextCommit::OnEnter)
+	{
+		if (OwnerController.IsValid())
+		{
+			OwnerController->SendChat(Text);
+		}
+		UE_LOG(LogTemp, Warning, TEXT("Chat Text Committed: %s"), *Text.ToString());
+		ChatInput->SetText(FText::GetEmpty());
+	}
+	FSlateApplication::Get().SetAllUserFocusToGameViewport(EFocusCause::SetDirectly);
+}
+END_SLATE_FUNCTION_BUILD_OPTIMIZATION
+```
+- 이하 생략
+
+## Unreal Motion Graphics UI Designer(UMG)
+- 
+
+## Common UI
+
+# Actor 
+
+# Movement & Collision
