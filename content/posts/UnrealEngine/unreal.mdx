@@ -7,12 +7,187 @@ description: '언리얼 엔진 학습내용 정리 페이지입니다'
 # 하나하나 시스템 파악 하면서 공부하는 것에 비효율을 많이 느낌. 일단 기본적인 여러 게임 제작 후 정리 예정
 
 # Input System
+
+## SlateApplication
+- SlateApplication은 언리얼 게임의 입력을 전체적으로 관리하는 최상위 클래스입니다. 
+- OS로부터 받아온 사용자 입력은 FKeyEvent(키보드, 패드 입력), FPointerEvent(마우스, 터치 입력)으로 분류돼 여기에서 UI들에 라우팅을 통해 전달합니다. 
+- SlateApplication이 UI를 계층적으로 입력을 전달하고, 게임 컨트롤러에게의 입력 전달 또한 SViewport라는 위젯을 통해 UGameViewportClient -> PlayerController로 입력을 전달합니다.
+
+### FKeyEvent
+- KeyEvent는 키보드나 게임 패드 입력 같은 물리적 버튼 입력을 처리합니다. 
+- KeyEvent는 현재 SlateApplication이 Focus하고 있는 대상을 기점으로 터널링(최상위 계층부터 포커스된 객체까지)과 버블링(포커스된 객체부터 최상위 계층)을 통해 입력을 전달합니다.
+- 터널링 과정에서는 UI가 Preview 이벤트를 수행하고, 버블링 과정에서는 UI가 정식 일반 이벤트를 수행합니다. 
+- 만약에, 라우팅 과정에서 특정 위젯(UI)가 입력을 소비하고서 FReply::Handled()를 반환한다면 이후 전달을 그만두고 입력 처리를 마무리합니다. 
+- 즉, focus를 UI에 둔다면 해당 UI가 입력을 처리하고, viewport에 둔다면 PlayerController가 입력을 처리합니다. 
+- 만약에 특정 UI가 입력을 소비했음에도 다른 UI들이 받아서 처리하게하려면, `FReply::UnHandled()`를 반환하도록 하면 됩니다. 
+
+#### Focus 변경하는 주요 메서드
+- `bool SetUserFocus(int32 UserIndex, const TSharedPtr<SWidget>& Widget, EFocusCause Cause)`: 특정 UI에 focus 두기
+- `bool FSlateApplication::SetKeyboardFocus(const TSharedPtr< SWidget >& OptionalWidgetToFocus, EFocusCause ReasonFocusIsChanging)`: 특정 UI에 키보드 focus 두기  
+ 내부적으로 SetUserFocus를 사용해 키보드 포커스를 해당 위젯에 둡니다.
+- `void FSlateApplication::SetAllUserFocusToGameViewport(EFocusCause ReasonFocusIsChanging)`: viewport에 focus 둬서 PlayerController이 입력 받도록 하기
+
+#### FSlateApplication::ProcessKeyDownEvent
+```c++
+// UnrealEngine\Engine\Source\Runtime\Slate\Private\Framework\Application\SlateApplication.cpp
+
+bool FSlateApplication::ProcessKeyDownEvent( const FKeyEvent& InKeyEvent )
+{
+	SCOPE_CYCLE_COUNTER(STAT_ProcessKeyDown);
+
+	TScopeCounter<int32> BeginInput(ProcessingInput);
+
+	TSharedRef<FSlateUser> SlateUser = GetOrCreateUser(InKeyEvent);
+
+	// Analog cursor gets first chance at the input
+	if (InputPreProcessors.HandleKeyDownEvent(*this, InKeyEvent))
+	{
+		return true;
+	}
+
+	FReply Reply = FReply::Unhandled();
+	SetLastUserInteractionTime(this->GetCurrentTime());
+	
+	if (SlateUser->IsDragDropping() && InKeyEvent.GetKey() == EKeys::Escape)
+	{
+		// Pressing ESC while drag and dropping terminates the drag drop.
+		SlateUser->CancelDragDrop();
+		Reply = FReply::Handled();
+	}
+	else
+	{
+		LastUserInteractionTimeForThrottling = LastUserInteractionTime;
+
+		// Bubble the keyboard event
+		TSharedRef<FWidgetPath> EventPathRef = SlateUser->GetFocusPath();
+		const FWidgetPath& EventPath = EventPathRef.Get();
+
+		// Switch worlds for widgets in the current path
+		FScopedSwitchWorldHack SwitchWorld(EventPath);
+
+		// Tunnel the keyboard event
+		Reply = FEventRouter::RouteAlongFocusPath(this, FEventRouter::FTunnelPolicy(EventPath), InKeyEvent, [] (const FArrangedWidget& CurrentWidget, const FKeyEvent& Event)
+		{
+			if (CurrentWidget.Widget->IsEnabled())
+			{
+				const FReply TempReply = CurrentWidget.Widget->OnPreviewKeyDown(CurrentWidget.Geometry, Event);
+
+				return TempReply;
+			}
+			return FReply::Unhandled();
+		}, ESlateDebuggingInputEvent::PreviewKeyDown);
+
+		// Send out key down events.
+		if ( !Reply.IsEventHandled() )
+		{
+			Reply = FEventRouter::RouteAlongFocusPath(this, FEventRouter::FBubblePolicy(EventPath), InKeyEvent, [] (const FArrangedWidget& SomeWidgetGettingEvent, const FKeyEvent& Event)
+			{
+				if (SomeWidgetGettingEvent.Widget->IsEnabled())
+				{
+					const FReply TempReply = SomeWidgetGettingEvent.Widget->OnKeyDown(SomeWidgetGettingEvent.Geometry, Event);
+
+					return TempReply;
+				}
+
+				return FReply::Unhandled();
+			}, ESlateDebuggingInputEvent::KeyDown);
+		}
+
+		// If the key event was not processed by any widget...
+		if ( !Reply.IsEventHandled() && UnhandledKeyDownEventHandler.IsBound() )
+		{
+			Reply = UnhandledKeyDownEventHandler.Execute(InKeyEvent);
+		}
+	}
+
+	return Reply.IsEventHandled();
+}
+```
+
+
+### FPointerEvent
+- PointerEvent는 마우스 입력이나 화면 터치와 같은 특정 포인트 입력을 처리합니다.
+- 포인터 이벤트는 화면에 입력을 준 특정 포인트를 기점으로 Hit Test를 진행하여 해당 지점에 있는 UI 계층을 capture한 뒤 해당 UI 경로에 라우팅을 수행합니다. 
+- 이 또한 앞선 위젯을 뚫고서 뒤의 위젯에 이벤트를 전달하고 싶으면 `FReply::UnHandled()`를 반환하도록 하면 됩니다.
+
+### ECommonInputMode
+- PlayerController가 사용하는 입력 제어용 유틸리티 클래스입니다. 
+- `FInputModeUIOnly`, `FInputModeGameAndUI`, `FInputModeGameOnly`
+- SlateApplication과 viewport사이에서 입력 설정을 어떻게 수정할지 도와주는 역할을 합니다. 
+
+#### FInputModeGameOnly
+```c++
+void FInputModeGameOnly::ApplyInputMode(FReply& SlateOperations, class UGameViewportClient& GameViewportClient) const
+{
+	TSharedPtr<SViewport> ViewportWidget = GameViewportClient.GetGameViewportWidget();
+	if (ViewportWidget.IsValid())
+	{
+		TSharedRef<SViewport> ViewportWidgetRef = ViewportWidget.ToSharedRef();
+		SlateOperations.UseHighPrecisionMouseMovement(ViewportWidgetRef);
+		SlateOperations.SetUserFocus(ViewportWidgetRef);
+		SlateOperations.LockMouseToWidget(ViewportWidgetRef);
+		GameViewportClient.SetMouseLockMode(EMouseLockMode::LockOnCapture);
+		GameViewportClient.SetIgnoreInput(false);
+		GameViewportClient.SetMouseCaptureMode(bConsumeCaptureMouseDown ? EMouseCaptureMode::CapturePermanently : EMouseCaptureMode::CapturePermanently_IncludingInitialMouseDown);
+	}
+}
+```
+
+#### FInputModeUIOnly
+```c++
+void FInputModeUIOnly::ApplyInputMode(FReply& SlateOperations, class UGameViewportClient& GameViewportClient) const
+{
+	TSharedPtr<SViewport> ViewportWidget = GameViewportClient.GetGameViewportWidget();
+	if (ViewportWidget.IsValid())
+	{
+		const bool bLockMouseToViewport = MouseLockMode == EMouseLockMode::LockAlways
+												 || (MouseLockMode == EMouseLockMode::LockInFullscreen && GameViewportClient.IsExclusiveFullscreenViewport());
+		SetFocusAndLocking(SlateOperations, WidgetToFocus, bLockMouseToViewport, ViewportWidget.ToSharedRef());
+
+		SlateOperations.ReleaseMouseCapture();
+
+		GameViewportClient.SetMouseLockMode(MouseLockMode);
+		GameViewportClient.SetIgnoreInput(true);
+		GameViewportClient.SetMouseCaptureMode(EMouseCaptureMode::NoCapture);
+	}
+}
+```
+
+#### FInputModeGameAndUI
+```c++
+void FInputModeGameAndUI::ApplyInputMode(FReply& SlateOperations, class UGameViewportClient& GameViewportClient) const
+{
+	TSharedPtr<SViewport> ViewportWidget = GameViewportClient.GetGameViewportWidget();
+	if (ViewportWidget.IsValid())
+	{
+		const bool bLockMouseToViewport = MouseLockMode == EMouseLockMode::LockAlways
+			|| (MouseLockMode == EMouseLockMode::LockInFullscreen && GameViewportClient.IsExclusiveFullscreenViewport());
+		SetFocusAndLocking(SlateOperations, WidgetToFocus, bLockMouseToViewport, ViewportWidget.ToSharedRef());
+
+		SlateOperations.ReleaseMouseCapture();
+
+		GameViewportClient.SetMouseLockMode(MouseLockMode);
+		GameViewportClient.SetIgnoreInput(false);
+		GameViewportClient.SetHideCursorDuringCapture(bHideCursorDuringCapture);
+		GameViewportClient.SetMouseCaptureMode(EMouseCaptureMode::CaptureDuringMouseDown);
+	}
+}
+```
+
+### EMouseCaptureMode
+- `NoCapture`, `CapturePermanently`, `CapturePermanently_IncludingInitialMouseDown`, `CaptureDuringMouseDown`, `CaptureDuringRightMouseDown`
+
+### EMouseLockMode
+- `DoNotLock`, `LockOnCapture`, `LockAlways`, `LockInFullscreen`
+
+
 ## Enhanced Input System
 - Unreal Engine 5에 새로 도입된 입력 처리 방식입니다. 
  - 기존 Legacy Input에서는 키 입력을 받으면 하나의 게임 전체 매핑에 따라 바인딩된 함수를 즉각적으로 호출하는 구조였습니다.
   매핑이 단조로워지고 입력을 관리하기 힘들며 호출된 함수측에서 입력의 상태를 판단해야 하는 단점이 있었습니다.
 - 향상된 입력은 입력 처리 과정에서 중간 파이프라인을 추가해 여러개의 매핑 구조를 사용할 수 있게 하고, 인풋시스템 자체에서 입력 상태를 판단하여 일관성있는 함수 작성을 할 수 있게 도와줍니다.
 - 향상된 입력은 **Input Mapping Context**와 **Input Action** 2가지 요소를 사용해 입력을 처리합니다.
+- **PlayerController가 possess한 pawn이 Input System을 먹습니다**
 
 ### 기본 사용
 - wasd 매핑후 캐릭터 이동을 구현하는 예제입니다.
@@ -764,178 +939,6 @@ None -> Started -> Ongoing -> Canceled
     #undef UE_API
 }
 ```
-
-## SlateApplication
-- SlateApplication은 언리얼 게임의 입력을 전체적으로 관리하는 최상위 클래스입니다. 
-- OS로부터 받아온 사용자 입력은 FKeyEvent(키보드, 패드 입력), FPointerEvent(마우스, 터치 입력)으로 분류돼 여기에서 UI들에 라우팅을 통해 전달합니다. 
-- SlateApplication이 UI를 계층적으로 입력을 전달하고, 게임 컨트롤러에게의 입력 전달 또한 SViewport라는 위젯을 통해 UGameViewportClient -> PlayerController로 입력을 전달합니다.
-
-### FKeyEvent
-- KeyEvent는 키보드나 게임 패드 입력 같은 물리적 버튼 입력을 처리합니다. 
-- KeyEvent는 현재 SlateApplication이 Focus하고 있는 대상을 기점으로 터널링(최상위 계층부터 포커스된 객체까지)과 버블링(포커스된 객체부터 최상위 계층)을 통해 입력을 전달합니다.
-- 터널링 과정에서는 UI가 Preview 이벤트를 수행하고, 버블링 과정에서는 UI가 정식 일반 이벤트를 수행합니다. 
-- 만약에, 라우팅 과정에서 특정 위젯(UI)가 입력을 소비하고서 FReply::Handled()를 반환한다면 이후 전달을 그만두고 입력 처리를 마무리합니다. 
-- 즉, focus를 UI에 둔다면 해당 UI가 입력을 처리하고, viewport에 둔다면 PlayerController가 입력을 처리합니다. 
-- 만약에 특정 UI가 입력을 소비했음에도 다른 UI들이 받아서 처리하게하려면, `FReply::UnHandled()`를 반환하도록 하면 됩니다. 
-
-#### Focus 변경하는 주요 메서드
-- `bool SetUserFocus(int32 UserIndex, const TSharedPtr<SWidget>& Widget, EFocusCause Cause)`: 특정 UI에 focus 두기
-- `bool FSlateApplication::SetKeyboardFocus(const TSharedPtr< SWidget >& OptionalWidgetToFocus, EFocusCause ReasonFocusIsChanging)`: 특정 UI에 키보드 focus 두기  
- 내부적으로 SetUserFocus를 사용해 키보드 포커스를 해당 위젯에 둡니다.
-- `void FSlateApplication::SetAllUserFocusToGameViewport(EFocusCause ReasonFocusIsChanging)`: viewport에 focus 둬서 PlayerController이 입력 받도록 하기
-
-#### FSlateApplication::ProcessKeyDownEvent
-```c++
-// UnrealEngine\Engine\Source\Runtime\Slate\Private\Framework\Application\SlateApplication.cpp
-
-bool FSlateApplication::ProcessKeyDownEvent( const FKeyEvent& InKeyEvent )
-{
-	SCOPE_CYCLE_COUNTER(STAT_ProcessKeyDown);
-
-	TScopeCounter<int32> BeginInput(ProcessingInput);
-
-	TSharedRef<FSlateUser> SlateUser = GetOrCreateUser(InKeyEvent);
-
-	// Analog cursor gets first chance at the input
-	if (InputPreProcessors.HandleKeyDownEvent(*this, InKeyEvent))
-	{
-		return true;
-	}
-
-	FReply Reply = FReply::Unhandled();
-	SetLastUserInteractionTime(this->GetCurrentTime());
-	
-	if (SlateUser->IsDragDropping() && InKeyEvent.GetKey() == EKeys::Escape)
-	{
-		// Pressing ESC while drag and dropping terminates the drag drop.
-		SlateUser->CancelDragDrop();
-		Reply = FReply::Handled();
-	}
-	else
-	{
-		LastUserInteractionTimeForThrottling = LastUserInteractionTime;
-
-		// Bubble the keyboard event
-		TSharedRef<FWidgetPath> EventPathRef = SlateUser->GetFocusPath();
-		const FWidgetPath& EventPath = EventPathRef.Get();
-
-		// Switch worlds for widgets in the current path
-		FScopedSwitchWorldHack SwitchWorld(EventPath);
-
-		// Tunnel the keyboard event
-		Reply = FEventRouter::RouteAlongFocusPath(this, FEventRouter::FTunnelPolicy(EventPath), InKeyEvent, [] (const FArrangedWidget& CurrentWidget, const FKeyEvent& Event)
-		{
-			if (CurrentWidget.Widget->IsEnabled())
-			{
-				const FReply TempReply = CurrentWidget.Widget->OnPreviewKeyDown(CurrentWidget.Geometry, Event);
-
-				return TempReply;
-			}
-			return FReply::Unhandled();
-		}, ESlateDebuggingInputEvent::PreviewKeyDown);
-
-		// Send out key down events.
-		if ( !Reply.IsEventHandled() )
-		{
-			Reply = FEventRouter::RouteAlongFocusPath(this, FEventRouter::FBubblePolicy(EventPath), InKeyEvent, [] (const FArrangedWidget& SomeWidgetGettingEvent, const FKeyEvent& Event)
-			{
-				if (SomeWidgetGettingEvent.Widget->IsEnabled())
-				{
-					const FReply TempReply = SomeWidgetGettingEvent.Widget->OnKeyDown(SomeWidgetGettingEvent.Geometry, Event);
-
-					return TempReply;
-				}
-
-				return FReply::Unhandled();
-			}, ESlateDebuggingInputEvent::KeyDown);
-		}
-
-		// If the key event was not processed by any widget...
-		if ( !Reply.IsEventHandled() && UnhandledKeyDownEventHandler.IsBound() )
-		{
-			Reply = UnhandledKeyDownEventHandler.Execute(InKeyEvent);
-		}
-	}
-
-	return Reply.IsEventHandled();
-}
-```
-
-
-### FPointerEvent
-- PointerEvent는 마우스 입력이나 화면 터치와 같은 특정 포인트 입력을 처리합니다.
-- 포인터 이벤트는 화면에 입력을 준 특정 포인트를 기점으로 Hit Test를 진행하여 해당 지점에 있는 UI 계층을 capture한 뒤 해당 UI 경로에 라우팅을 수행합니다. 
-- 이 또한 앞선 위젯을 뚫고서 뒤의 위젯에 이벤트를 전달하고 싶으면 `FReply::UnHandled()`를 반환하도록 하면 됩니다.
-
-### ECommonInputMode
-- PlayerController가 사용하는 입력 제어용 유틸리티 클래스입니다. 
-- `FInputModeUIOnly`, `FInputModeGameAndUI`, `FInputModeGameOnly`
-- SlateApplication과 viewport사이에서 입력 설정을 어떻게 수정할지 도와주는 역할을 합니다. 
-
-#### FInputModeGameOnly
-```c++
-void FInputModeGameOnly::ApplyInputMode(FReply& SlateOperations, class UGameViewportClient& GameViewportClient) const
-{
-	TSharedPtr<SViewport> ViewportWidget = GameViewportClient.GetGameViewportWidget();
-	if (ViewportWidget.IsValid())
-	{
-		TSharedRef<SViewport> ViewportWidgetRef = ViewportWidget.ToSharedRef();
-		SlateOperations.UseHighPrecisionMouseMovement(ViewportWidgetRef);
-		SlateOperations.SetUserFocus(ViewportWidgetRef);
-		SlateOperations.LockMouseToWidget(ViewportWidgetRef);
-		GameViewportClient.SetMouseLockMode(EMouseLockMode::LockOnCapture);
-		GameViewportClient.SetIgnoreInput(false);
-		GameViewportClient.SetMouseCaptureMode(bConsumeCaptureMouseDown ? EMouseCaptureMode::CapturePermanently : EMouseCaptureMode::CapturePermanently_IncludingInitialMouseDown);
-	}
-}
-```
-
-#### FInputModeUIOnly
-```c++
-void FInputModeUIOnly::ApplyInputMode(FReply& SlateOperations, class UGameViewportClient& GameViewportClient) const
-{
-	TSharedPtr<SViewport> ViewportWidget = GameViewportClient.GetGameViewportWidget();
-	if (ViewportWidget.IsValid())
-	{
-		const bool bLockMouseToViewport = MouseLockMode == EMouseLockMode::LockAlways
-												 || (MouseLockMode == EMouseLockMode::LockInFullscreen && GameViewportClient.IsExclusiveFullscreenViewport());
-		SetFocusAndLocking(SlateOperations, WidgetToFocus, bLockMouseToViewport, ViewportWidget.ToSharedRef());
-
-		SlateOperations.ReleaseMouseCapture();
-
-		GameViewportClient.SetMouseLockMode(MouseLockMode);
-		GameViewportClient.SetIgnoreInput(true);
-		GameViewportClient.SetMouseCaptureMode(EMouseCaptureMode::NoCapture);
-	}
-}
-```
-
-#### FInputModeGameAndUI
-```c++
-void FInputModeGameAndUI::ApplyInputMode(FReply& SlateOperations, class UGameViewportClient& GameViewportClient) const
-{
-	TSharedPtr<SViewport> ViewportWidget = GameViewportClient.GetGameViewportWidget();
-	if (ViewportWidget.IsValid())
-	{
-		const bool bLockMouseToViewport = MouseLockMode == EMouseLockMode::LockAlways
-			|| (MouseLockMode == EMouseLockMode::LockInFullscreen && GameViewportClient.IsExclusiveFullscreenViewport());
-		SetFocusAndLocking(SlateOperations, WidgetToFocus, bLockMouseToViewport, ViewportWidget.ToSharedRef());
-
-		SlateOperations.ReleaseMouseCapture();
-
-		GameViewportClient.SetMouseLockMode(MouseLockMode);
-		GameViewportClient.SetIgnoreInput(false);
-		GameViewportClient.SetHideCursorDuringCapture(bHideCursorDuringCapture);
-		GameViewportClient.SetMouseCaptureMode(EMouseCaptureMode::CaptureDuringMouseDown);
-	}
-}
-```
-
-### EMouseCaptureMode
-- `NoCapture`, `CapturePermanently`, `CapturePermanently_IncludingInitialMouseDown`, `CaptureDuringMouseDown`, `CaptureDuringRightMouseDown`
-
-### EMouseLockMode
-- `DoNotLock`, `LockOnCapture`, `LockAlways`, `LockInFullscreen`
 
 # User Interface 
 - 언리얼 엔진에서 UI를 제작하는 방법을 정리합니다. 
