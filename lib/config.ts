@@ -17,6 +17,10 @@ export const specialCategories: SpecialCategoryConfig[] = [
     category: "Journal",
     label: "일지",
   },
+  {
+    category: "Secret",
+    label: "",
+  }
 ];  
  
 // 유용한 사이트

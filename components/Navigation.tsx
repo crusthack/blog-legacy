@@ -112,7 +112,7 @@ export default function Navi({ posts }: NaviProps) {
           </div>
 
           {/* 스페셜 카테고리 (config 기반) */}
-          {specialCategories.map(sc => {
+          {specialCategories.filter(sc=>sc.label).map(sc => {
             const items = postsBySpecial.get(sc.category) ?? [];
 
             return (

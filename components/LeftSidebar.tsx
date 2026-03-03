@@ -7,7 +7,7 @@ export default function LeftSidebar() {
   const recentPosts = allPosts.slice(0, 3);
   const categories: string[] = Array.from(
     new Set(allPosts.map((post) => post.category).filter((cat): cat is string => Boolean(cat)))
-  ).sort();
+  ).filter((c): c is string => c !== "Secret") .sort();
   const counts = allPosts.reduce<Record<string, number>>((acc, p) => {
     const cat = p.category ?? "";
     acc[cat] = (acc[cat] ?? 0) + 1;
