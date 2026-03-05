@@ -11,6 +11,8 @@ import remarkMath from 'remark-math';
 import CodeBlock from '@/components/CodeBlock';
 import { MdxImage } from '@/components/MdxImage';
 import { isLocalDev, repoName } from '@/lib/config';
+import rehypeCodeTitles from 'rehype-code-titles';
+
  
 const prettyOptions = {
     theme: "github-dark",
@@ -68,7 +70,7 @@ export default function BlogPost({ post }: BlogPostProps) {
                             options={{
                                 mdxOptions: {
                                     remarkPlugins: [remarkGfm, remarkToc, remarkMath],
-                                    rehypePlugins: [[rehypePrettyCode, prettyOptions], rehypeSlug, rehypeKatex],
+                                    rehypePlugins: [rehypeCodeTitles, [rehypePrettyCode, prettyOptions], rehypeSlug, rehypeKatex],
                                 },
                             }}
                         />
