@@ -5,7 +5,37 @@ title: 'Unity Project'
 # 개요
 
 - 웹에서 로그인, 유니티 클라이언트에서 로그인. 친구기능. 길드 기능. 채팅 기능. 미니게임(가위뱌위보)
-- asp.net, gRPC, MySQl, Azure, next.js
-- 웹 로그인 - 프론트는 Next.js, 웹 서버는 asp.ent 사용. 회원 정보는 MySQL에 저장
+- 웹 로그인 - 프론트는 Next.js, 웹 서버는 asp.ent 사용. 회원 정보는 SQLite 저장
 - 게임 화면에서 로그인 - 웹 서버로 요청 - 로그인 성공시 정보를 받아서 게임 서버(asp.net)에 연결
-- azure에 올릴 서버 - 웹서버, MySQL DB서버, 게임 서버 
+
+# 1. 웹 API 서버 제작 asp.net core api server
+
+## ASP.Net 프로젝트 생성
+![asp.net 프로젝트 생성](1.JPG)
+- ASP.NET Core 빈 프로젝트를 생성합니다.
+
+### Swagger 패키지 설치
+- Web API의 동작을 확인하기 위해 Swagger를 설치합니다. 
+Swashbuckle.AspNetCore NuGet 패키지를 설치하여 API 문서를 자동으로 생성하고 테스트할 수 있도록 합니다.  
+
+`dotnet add package Swashbuckle.AspNetCore`  
+- Nuget 패키지 매니저에서도 설치 가능
+
+### API 컨트롤러 추가
+
+
+### main.cs 설정
+
+## SQLite 연결 및 회원가입 API 구현, JWT
+
+## next.js 웹사이트 제작
+
+## 웹 로그인 동작 확인
+
+## JWT
+
+## CORS
+
+## CA 인증서
+
+# 2. 유니티 클라이언트 제작 및 웹 API, gRPC 통신 확인

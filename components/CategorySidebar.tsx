@@ -4,12 +4,17 @@ import { getPostsByCategory } from "@/lib/posts";
  
 export default function CategorySidebar({ currentCategory }: { currentCategory: string }) {
   const posts = getPostsByCategory(currentCategory);
+  const sortedPosts = [...posts].sort((a, b) => {
+    if (a.slug === 'index') return -1;
+    if (b.slug === 'index') return 1;
+    return a.title.localeCompare(b.title); 
+  });
  
   return (
     <aside className="sticky top-20 space-y-2 mt-2">
       <h2 className="font-bold text-xl mb-3 capitalize">{currentCategory}</h2>  
       <ul className="space-y-1">
-        {posts.map(post => (
+        {sortedPosts.map(post => (
           <li key={post.slug}>
             <Link
               href={`/${encodeURIComponent(currentCategory)}/${encodeURIComponent(post.slug)}`}
