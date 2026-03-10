@@ -248,7 +248,7 @@ export function getPostData(category: string, slug: string): Post | null {
 ### c. 임시 mdx파일 작성
 - 루트디렉토리에 content 폴더를 작성하고서 `/content/posts/temp/temp.mdx` 파일을 작성합니다. 
 - (vs code에서 새파일 - content/posts/temp/temp.mdx 입력하면 알아서 디렉토리까지 만들어줌)
-```mdx
+`````mdx
 ---
 title: 'temp'
 date: '2025-12-23'
@@ -258,9 +258,11 @@ description: '임시 포스트입니다'
 \# 임시 페이지입니다 
 \## h2 태그
 - ㅇㅅㅇ
-```c
+```
 printf("hello, world!!");
 ```
+`````
+
 
 ## 1-6. 페이지 렌더링 /app/[category]/[slug]/page.tsx
 ***동적 세그먼트를 활용하여 카테고리/제목 기반 라우팅 구조를 사용합니다**
