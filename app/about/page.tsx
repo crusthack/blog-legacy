@@ -29,7 +29,7 @@ export default async function AboutPage() {
  
             {/* 가운데 컨텐츠 */}
             <div className="w-full mx-auto">
-                <BlogPost post={postData}/>
+                <BlogPost post={postData} showSlideButton={false}/>
             </div>
  
             {/* 오른쪽 사이드 컨텐츠 */}

@@ -55,7 +55,7 @@ export default async function Post({ params }: { params: Promise<{ category: str
  
             {/* 중앙 콘텐츠 */}
             <div className="w-full mx-auto Markdown-body">
-                <BlogPost post={postData} />
+                <BlogPost post={postData} showSlideButton={true} />
             </div>
  
             <div className="flex justify-start">

@@ -34,7 +34,7 @@ export const MdxImage = ({ category, slug, ...props }: MdxImageProps) => {
     const resolvedSrc = resolveImagePath(category, slug, src as string);
  
     return (
-        <span className="relative block w-full aspect-[3/2]">
+        <span className="relative block w-full aspect-[16/9] max-h-[65vh] my-4">
             <Image
                 unoptimized
                 src={resolvedSrc}
