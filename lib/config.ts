@@ -30,4 +30,6 @@ export interface UsefulLink {
 }
 export const usefulLinks: UsefulLink[] = [
   { name: "Next.js 학습자료", url: "https://sangkon.com/practice-ts/" },
+  { name: "C# 학습자료", url: "https://sangkon.com/practice-csharp/"}
+  // r, pb, ts, jvm, mcp, csharp
 ];

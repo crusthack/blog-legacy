@@ -10,7 +10,10 @@ title: 'Unity Project'
 
 # 1. 웹 API 서버 제작 asp.net core api server
 
-## ASP.Net 프로젝트 생성
+## ASP.Net 프로젝트 초기 설정
+- API 웹 서버를 만들기 위한 프로젝트 초기 설정을 수행합니다. 
+
+### 프로젝트 생성
 ![asp.net 프로젝트 생성](1.JPG)
 - ASP.NET Core 빈 프로젝트를 생성합니다.
 
@@ -22,9 +25,72 @@ Swashbuckle.AspNetCore NuGet 패키지를 설치하여 API 문서를 자동으�
 - Nuget 패키지 매니저에서도 설치 가능
 
 ### API 컨트롤러 추가
+- 특정 주소로 들어온 웹 요청을 처리하는 API 컨트롤러를 추가합니다.
+```c#
+// Controllers/HomeController.cs
+    [Route("api/[controller]")]
+    [ApiController]
+    public class HomeController : ControllerBase
+    {
+        public class TestRequest
+        {
+            public required string testMessage { get; set; }
+            public required int testNumber { get; set; }
+        }
 
+        [HttpGet("/")]
+        public string Index()
+        {
+            return "hello, world!!";
+        }
 
-### main.cs 설정
+        [HttpPost("test")]
+        public string Test(TestRequest request)
+        {
+            return $"test message: {request.testMessage}. testNum: {request.testNumber}";
+        }
+    }
+```
+
+### Program.cs 설정
+```c#
+// Program.cs
+namespace aspdotnet
+{
+    public class Program
+    {
+        public static void Main(string[] args)
+        {
+            var builder = WebApplication.CreateBuilder(args);
+            // 컨트롤러 서비스 등록
+            builder.Services.AddControllers();
+            // Swagger 서비스 등록
+            builder.Services.AddEndpointsApiExplorer();
+            builder.Services.AddSwaggerGen();
+
+            var app = builder.Build();
+
+            // 개발 환경에서 Swagger UI 활성화
+            if (app.Environment.IsDevelopment())
+            {
+                app.UseSwagger();
+                app.UseSwaggerUI();
+            }   
+            // HTTPS 리디렉션 활성화
+            app.UseHttpsRedirection();
+            // 컨트롤러 라우팅 활성화
+            app.MapControllers();
+
+            app.Run();
+        }
+    }
+}
+```
+
+### API 테스트 
+- /swagger 주소로 접근하면 서버에 연결된 API 목록이 보이고, 각 API를 클릭하면 요청을 보낼 수 있는 인터페이스가 나타납니다. 
+이 페이지에서 여러 API의 작동을 확인할 수 있습니다.
+![Swagger UI](2.JPG)
 
 ## SQLite 연결 및 회원가입 API 구현, JWT
 
@@ -32,10 +98,11 @@ Swashbuckle.AspNetCore NuGet 패키지를 설치하여 API 문서를 자동으�
 
 ## 웹 로그인 동작 확인
 
-## JWT
+## 개념 정리
+### JWT
 
-## CORS
+### CORS
 
-## CA 인증서
+### CA 인증서
 
 # 2. 유니티 클라이언트 제작 및 웹 API, gRPC 통신 확인
