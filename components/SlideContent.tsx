@@ -3,6 +3,7 @@
 
 import { useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 interface SlideContentProps {
   slides: {
@@ -64,7 +65,6 @@ export default function SlideContent({ slides, category, slug, title, toc }: Sli
     );
     if (idx !== -1) {
       setCurrentIdx(idx);
-      setIsTocOpen(false);
     }
   };
 
@@ -156,9 +156,9 @@ export default function SlideContent({ slides, category, slug, title, toc }: Sli
               <ul className="space-y-2">
                 {hierarchicalToc.map((h1, i) => (
                   <li key={i} className="flex flex-col">
-                    <div className="flex items-center group">
+                    <div className="flex items-stretch group">
                       <button onClick={() => toggleSection(h1.text)} className="p-1 hover:bg-gray-100 rounded transition-colors">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={`transition-transform duration-200 ${openSections[h1.text] ? 'rotate-90' : ''}`}><path d="m9 18 6-6-6-6"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={`transition-transform duration-200 ${openSections[h1.text] ? 'rotate-90' : '' }`}><path d="m9 18 6-6-6-6"/></svg>
                       </button>
                       <button onClick={() => jumpToSlide(h1.text)} className={`flex-1 text-left px-2 py-2 rounded-md text-sm font-bold transition-colors ${currentFocusHeader === h1.text ? 'bg-blue-50 text-blue-600' : 'text-gray-800 hover:bg-gray-100'}`}>{h1.text}</button>
                     </div>
@@ -186,9 +186,11 @@ export default function SlideContent({ slides, category, slug, title, toc }: Sli
           <button onClick={() => setIsTocOpen(prev => !prev)} className="flex items-center justify-center w-10 h-10 bg-white hover:bg-gray-100 border border-gray-300 rounded-md transition-colors cursor-pointer text-gray-700" title="목차 (t)">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
           </button>
-          <div className="text-sm font-mono font-medium text-gray-500">
-            {currentTime}
-          </div>
+            <Link href="/" className="flex w-full text-xl items-center font-bold transition cursor-default">
+              <div className="text-sm font-mono font-medium text-gray-500">
+                {currentTime}
+              </div>
+            </Link>
         </div>
 
         {/* 중앙: 현재 포커스 헤더 */}

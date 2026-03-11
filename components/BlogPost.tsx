@@ -39,7 +39,7 @@ export default function BlogPost({ post, showSlideButton = false }: BlogPostProp
     return (
         <article className="w-full bg-gray-100 p-4 rounded-md min-h-screen relative">
  
-            {/* PPT 보기 버튼 - 우측 상단 */}
+            {/* 슬라이드로 보기 버튼 - 우측 상단 */}
             {showSlideButton && (
                 <div className="absolute top-4 right-4 z-10">
                     <Link 
@@ -49,7 +49,7 @@ export default function BlogPost({ post, showSlideButton = false }: BlogPostProp
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-70">
                             <rect width="18" height="14" x="3" y="3" rx="2"/><path d="M7 21h10"/><path d="M12 17v4"/>
                         </svg>
-                        PPT 보기
+                        슬라이드로 보기
                     </Link>
                 </div>
             )}
@@ -75,7 +75,7 @@ export default function BlogPost({ post, showSlideButton = false }: BlogPostProp
                             source={post.content}
                             components={{
                                 pre: (props) => <CodeBlock {...props} />,
-                                img: (props) => <MdxImage category={post.category} slug={post.slug} {...props} />,
+                                img: (props) => <MdxImage category={post.category} slug={post.slug} {...props}/>,
                                 ul: (props) => <ul className="list-disc space-y-2 ml-6 my-4" {...props} />,
                                 ol: (props) => <ol className="list-decimal space-y-2 ml-6 my-4" {...props} />,
                                 a: (props) => {

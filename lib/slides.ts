@@ -16,7 +16,7 @@ const WEIGHT_TABLE = 8;          // 테이블 전체 가중치
 const WEIGHT_LIST_ITEM = 1.0;    
 const WEIGHT_NORMAL_TEXT = 1.0;  
 const WEIGHT_HEADER = 1.0;       
-const WEIGHT_IMAGE = 10;         
+const WEIGHT_IMAGE = 8;         
 
 export function splitContentIntoSlides(content: string): Slide[] {
   const lines = content.split('\n');
@@ -97,7 +97,7 @@ export function splitContentIntoSlides(content: string): Slide[] {
     atoms.push({ lines: [line], weight: lineWeight, h1: currentH1, h2: currentH2, h3: currentH3, isForce: false });
   }
 
-  // 2. Atom들을 섹션(헤더/이미지 기준)으로 묶기
+  // 2. Atom들을 섹션(헤더)으로 묶기
   interface Section {
     atoms: Atom[];
     totalWeight: number;
@@ -108,7 +108,7 @@ export function splitContentIntoSlides(content: string): Slide[] {
   let currentSectionWeight = 0;
 
   for (const atom of atoms) {
-    const isNewSectionStart = atom.lines[0].trim().startsWith('#') || atom.weight === WEIGHT_IMAGE;
+    const isNewSectionStart = atom.lines[0].trim().startsWith('#');
     if (isNewSectionStart && currentSectionAtoms.length > 0) {
       sections.push({ atoms: currentSectionAtoms, totalWeight: currentSectionWeight, isForce: currentSectionAtoms[0].isForce });
       currentSectionAtoms = [];
