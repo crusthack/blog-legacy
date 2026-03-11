@@ -94,10 +94,10 @@ export default function SlideContent({ slides, category, slug, title, toc }: Sli
         setCurrentIdx(0);
       } else if (e.key === 'End') {
         setCurrentIdx(slides.length - 1);
-      } else if (e.key === 'j') {
+      } else if (e.key === 'k') {
         const nextIdx = slides.findIndex((s, i) => i > currentIdx && s.content.trim().startsWith('# '));
         if (nextIdx !== -1) setCurrentIdx(nextIdx);
-      } else if (e.key === 'k') {
+      } else if (e.key === 'j') {
         let prevIdx = -1;
         for (let i = currentIdx - 1; i >= 0; i--) {
           if (slides[i].content.trim().startsWith('# ')) {
@@ -192,9 +192,12 @@ export default function SlideContent({ slides, category, slug, title, toc }: Sli
         </div>
 
         {/* 중앙: 현재 포커스 헤더 */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none px-64">
-          <h2 className="text-sm font-bold text-gray-700 truncate max-w-full italic">{currentFocusHeader}</h2>
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none px-80">
+          <h1 className="text-m font-bold text-gray-700 text-center w-full italic">
+            {currentFocusHeader}
+          </h1>
         </div>
+
 
         {/* 오른쪽: 인덱스 및 제어 버튼 */}
         <div className="flex items-center gap-2 z-10">

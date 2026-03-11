@@ -71,7 +71,7 @@ const CodeBlock = ({
             <pre 
                 ref={preRef} 
                 {...props} 
-                className={`${className} !text-[0.8rem] leading-snug max-h-[45vh] overflow-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent [&_code]:!text-[0.8rem] p-3`}
+                className={`${className} !text-[0.8rem] leading-snug max-h-[55vh] overflow-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent [&_code]:!text-[0.8rem] p-3`}
             >
                 {children}
             </pre>
