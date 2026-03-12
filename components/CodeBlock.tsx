@@ -52,7 +52,7 @@ const CodeBlock = ({
     };
  
     return (
-        <div className="relative">
+        <div className="relative group">
             <button
                 onClick={handleCopy}
                 aria-label="Copy code"
@@ -62,6 +62,7 @@ const CodeBlock = ({
                     rounded-md bg-black/60
                     px-2 py-1 text-xs text-white
                     hover:bg-black/80 transition
+                    print:hidden
                 "
             >
                 <span className="flex items-center">{isCopied ? <IconCheck /> : <IconCopy />}</span>
@@ -71,12 +72,10 @@ const CodeBlock = ({
             <pre 
                 ref={preRef} 
                 {...props} 
-                className={`${className} !text-[0.8rem] leading-snug max-h-[55vh] overflow-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent [&_code]:!text-[0.8rem] p-3`}
+                className={`${className} !text-[0.8rem] leading-snug max-h-[55vh] print:max-h-none overflow-auto print:overflow-visible print:whitespace-pre-wrap print:break-words scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent [&_code]:!text-[0.8rem] p-3`}
             >
                 {children}
             </pre>
-
-
         </div>
     );
 };

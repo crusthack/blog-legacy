@@ -98,7 +98,7 @@ export default function Navi({ posts }: NaviProps) {
 
             {openMenu["docs"] && (
               <div className="absolute left-0 min-w-[12rem] bg-white shadow-lg rounded-md border p-2 z-50">
-                {categories.map(cat => (
+                {categories.sort((a,b)=> b < a ? 1 : -1).map(cat => (
                   <Link
                     key={cat}
                     href={`/${encodeURIComponent(cat)}`}

@@ -15,6 +15,7 @@ import { MdxImage } from '@/components/MdxImage';
 import rehypeCodeTitles from 'rehype-code-titles';
 import { getTocFromMarkdown } from '@/lib/parseToc';
 import { Metadata } from 'next';
+import { isLocalDev, repoName } from '@/lib/config';
 
 const prettyOptions = {
     theme: "github-dark",
@@ -38,7 +39,7 @@ export async function generateMetadata({
     const post = getPostData(category, slug);
     
     return {
-        title: post ? `${post.title} (Slide)` : 'Slide',
+        title: post ? post.title : 'Slide',
         description: post?.description,
     };
 }
@@ -54,6 +55,9 @@ export default async function SlidePage({ params }: { params: Promise<{ category
     const toc = getTocFromMarkdown(postData.content);
     const bodySlides = splitContentIntoSlides(postData.content);
     
+    const baseurl = isLocalDev ? '' : `https://crusthack.github.io/${repoName}`;
+    const postUrl = `${baseurl}/${category}/${slug}/slide`;
+
     const titleSlide = {
         content: '',
         h1: postData.title,
@@ -63,7 +67,7 @@ export default async function SlidePage({ params }: { params: Promise<{ category
         nextTitle: bodySlides.length > 0 ? (bodySlides[0].h1 || bodySlides[0].h2 || bodySlides[0].h3) : '',
         totalWeight: 0,
         renderedContent: (
-            <div className="flex flex-col items-center justify-center text-center space-y-8 py-20">
+            <div className="flex flex-col items-center justify-center text-center space-y-8 py-20 relative min-h-[60vh]">
                 <div className="space-y-4">
                     <h1 className="text-6xl md:text-7xl lg:text-8xl font-black text-gray-900 leading-tight tracking-tighter">
                         {postData.title}
@@ -79,6 +83,17 @@ export default async function SlidePage({ params }: { params: Promise<{ category
                         {postData.date}
                     </div>
                 )}
+                {/* 왼쪽 하단 포스트 URL 추가 */}
+                <div className="absolute bottom-0 left-0 text-left">
+                    <a 
+                        href={postUrl} 
+                        className="text-3xl font-mono text-blue-500 hover:text-blue-700 underline decoration-1 underline-offset-4 transition-colors"
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                    >
+                        {postUrl}
+                    </a>
+                </div>
             </div>
         )
     };

@@ -36,9 +36,13 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <Navi posts={postsData} />
+        <div className="print:hidden">
+          <Navi posts={postsData} />
+        </div>
         {children}
-        <Footer />
+        <div className="print:hidden">
+          <Footer />
+        </div>
       </body>
     </html>
   );

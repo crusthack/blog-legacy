@@ -110,6 +110,8 @@ export default function SlideContent({ slides, category, slug, title, toc }: Sli
         toggleFullscreen();
       } else if (e.key === 't') {
         setIsTocOpen(prev => !prev);
+      } else if (e.key === 'p') {
+        window.print();
       } else if (e.key === 'Escape') {
         if (isTocOpen) {
           setIsTocOpen(false);
@@ -138,7 +140,8 @@ export default function SlideContent({ slides, category, slug, title, toc }: Sli
   }, []);
 
   return (
-    <div className="fixed inset-0 bg-white z-50 flex flex-col overflow-hidden text-gray-900">
+    <>
+    <div className="fixed inset-0 bg-white z-50 flex flex-col overflow-hidden text-gray-900 print:hidden">
       
       {/* TOC 사이드바 */}
       {isTocOpen && (
@@ -205,6 +208,10 @@ export default function SlideContent({ slides, category, slug, title, toc }: Sli
         <div className="flex items-center gap-2 z-10">
           <div className="text-sm font-medium text-gray-500 mr-2">{currentIdx + 1} / {slides.length}</div>
           
+          <button onClick={() => window.print()} className="flex items-center justify-center w-10 h-10 bg-white hover:bg-gray-100 border border-gray-300 rounded-md transition-colors cursor-pointer text-gray-700" title="PDF 저장 / 프린트 (p)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
+          </button>
+
           <button onClick={toggleFullscreen} className="flex items-center justify-center w-10 h-10 bg-white hover:bg-gray-100 border border-gray-300 rounded-md transition-colors cursor-pointer text-gray-700" title={isFullscreen ? '창 모드 (f)' : '전체 화면 (f)'}>
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               {isFullscreen ? <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/> : <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>}
@@ -245,5 +252,26 @@ export default function SlideContent({ slides, category, slug, title, toc }: Sli
         </div>
       </div>
     </div>
+
+    {/* 프린트용 전체 슬라이드 뷰 */}
+    <div className="absolute top-0 left-0 w-full bg-white z-[9999] opacity-0 pointer-events-none h-0 overflow-hidden print:h-auto print:opacity-100 print:pointer-events-auto print:relative print:block">
+      {slides.map((slide, idx, filteredArray) => (
+          <div 
+            key={idx} 
+            className="print-slide"
+            style={{ 
+              pageBreakAfter: idx === filteredArray.length - 1 ? 'auto' : 'always',
+              breakAfter: idx === filteredArray.length - 1 ? 'auto' : 'page',
+            }}
+          >
+            <div className="markdown-body !bg-transparent w-full">
+              <div className="text-3xl leading-relaxed w-full">
+                {slide.renderedContent}
+              </div>
+            </div>
+          </div>
+      ))}
+    </div>
+    </>
   );
 }
