@@ -4,7 +4,7 @@ import { getAllPostData } from "@/lib/posts";
  
 export default function LeftSidebar() {
   const allPosts = getAllPostData();
-  const recentPosts = allPosts.slice(0, 3);
+  const recentPosts = allPosts.filter(p => p.category !== "Secret").slice(0, 3);
   const categories: string[] = Array.from(
     new Set(allPosts.map((post) => post.category).filter((cat): cat is string => Boolean(cat)))
   ).filter((c): c is string => c !== "Secret") .sort();
