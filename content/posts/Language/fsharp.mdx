@@ -1,0 +1,159 @@
+---
+title: f# 간단한 학습
+date: '2026-03-12'
+description: '학교 과제에서 사용하기 위한 간략한 학습'
+---
+
+# 개요
+- 학교 수업(언어론)에서 처음 사용하는 함수형 언어를 경험해보라기에, 관심에만 두고 있던 F#을 건드려보기로 함.
+- [MSDN](https://learn.microsoft.com/en-us/dotnet/fsharp/)과 gemini를 통한 코드 예시를 기반으로 학습하였음. 
+- F# 요소를 하나하나 서술하기엔 장대하고, 간단히 사용만 할 수 있게 학습한 뒤 기존 C와 비슷한 형태의 명령형 언어와의 차이점을 느낀대로 정리함.
+
+# 개발 환경
+- Visual Studio에서 프로젝트 생성하고 코드 작성 해봤는데, 인텔리센스는 동작 하는거 같은데 자동완성이 안 뜸
+- vs code에서 Ionide for F# 확장프로그램 설치 
+## F# 프로젝트 생성
+- `dotnet new console -lang "F#"` (.Net 패키지 설치 돼 있어야 됨)
+
+## 빌드 후 실행
+- `dotnet run`  
+
+## fsx 스크립트 즉시 실행
+- fsx 파일에서 코드 작성 후 원하는 코드 선택 후 `alt+enter`를 통해 실행 가능
+
+## 사용 예시
+```terminal
+> # 2 @"c:\Users\crusthack\Documents\f#\Program.fsx"
+- printfn "Hello from F#"
+- printf "What is your name? "
+- System.Console.ReadLine()
+- |> printf "%s";;
+Hello from F#
+What is your name? crusthack
+crusthackval it: unit = ()
+```
+
+# 변수의 선언
+- `let a = 10` F#에서는 let 키워드를 통해 변수를 선언함. 
+- 함수형이란 철학 때문에 F#은 기본적으로 불변형으로 선언됨. 
+- 기본적으로 불변형이기 때문에, 변수(Variable)가 아니라 식별자(Indentifier)이라고 하고,  
+엄연히 말하자면 **변수의 선언**이 아니라 **식별자에 값을 바인딩**한다고 함.
+- 가변 객체는 `let mutable a = 10`  
+`a <- 20` 이런 식으로 `<-` 할당문을 사용함.
+- 불변 객체에 `=` 사용하면 c-like에서의 `==` 처럼 비교연산자로 동작 
+
+## 코드
+```f#
+let a = 10      // a에 10을 바인딩
+a = 20          // a랑 20이 같은지 연산하는 비교연산, 할당문 아님
+printfn "%d" a  // -> 10
+```
+
+# 함수 
+- F#에서 함수는 값으로 처리되며, 하나의 파라미터 값만 받아 하나의 출력을 해주는 구조
+- 함수 선언 예 `let add x y = x + y` -> `(x, y) => x+y`  
+함수 호출 예 `add 10 20` => `30` 
+- void 타입, 입력이나 출력 값이 없을 때는 `()` 라는 `unit` 값을 사용
+
+## Function Currying
+- 컴파일시에 내부적으로 `(x) => (y) => (y+x)` 의 구조로 함수가 나눠짐. 이를 **Currying**이라고 함.
+- 커링의 장점: 함수를 쪼개서 호출 가능  
+e.g. `let addTen = add 10` `addTen 20 => 30`  
+
+## Pipelines
+- `\>` 연산자를 사용해 출력된 값을 뒤에 오는 함수로 넘기는게 가능함.  
+즉, 함수 호출을  `함수명 파라미터` 순서가 아니라 `파라미터 \> 함수명`이 됨. 
+- 이를 응용하면 `fn1 |> fn2 |> fn3 \> fn4 ...` 이런 식으로 이전 함수 출력값을 편하게 순차적으로 다음 함수에 넘길 수 있음.
+
+### 파이프라인 활용 예제 코드
+```f#
+// 기존 명령형 
+a = fn1();
+b = fn2(a);
+// 혹은
+fn10(fn9(fn8(fn7(...fn2(fn1(a))))))
+
+// f#
+fn1()
+|> fn2 
+|> fn3
+|> fn4
+...
+```
+
+# 사용자 정의 타입
+- class, union, record, strucure 4개 종류의 사용자 정의 타입 존재
+
+
+## 클래스
+### 문법
+```f#
+// Class definition:
+type [access-modifier] type-name [type-params] [access-modifier] ( parameter-list ) [ as identifier ] =
+[ class ]
+[ inherit base-type-name(base-constructor-args) ]
+[ let-bindings ]
+[ do-bindings ]
+member-list
+...
+[ end ]
+// Mutually recursive class definitions:
+type [access-modifier] type-name1 ...
+and [access-modifier] type-name2 ...
+...
+``` 
+### 특징
+- 타입 선언부에 생성자를 같이 구현.  
+생성자 추가시엔 내부적으로 new 키워드를 통해 추가 가능, 하지만 내부적으론 기본 생성자를 사용해야함.
+- 생성자에선 클래스 자신을 지칭하는 키워드가 없음. `as self`를 통해 자신을 지칭할 수 있게 함.
+- 객체 내부 `private` 멤버는 `let`을 통해 선언, 외부에서 접근 가능한 `public` 멤버는 `member` 키워드와 `_` 혹은 `this`와 같은 키워드를 같이 사용해 선언
+
+### 클래스 코드 예시
+```f#
+type Person(weight: int, height:int) as self = 
+    let mutable _weight = weight    // 가변성 부여
+    let _height = height    
+    do 
+        printfn "weight: %d height: %d" _weight _height
+        self.fn ()      
+
+    new() = 
+        Person(0, 0)    // 추가 생성자
+        then 
+            printfn "additional constructor called"
+
+    member _.weight             // get set 설정 
+        with get() = _weight
+        and set(i: int) = _weight <- i
+    member _.height = height 
+
+    member this.fn () = printfn "hello"
+        
+let p = Person(10, 20)
+p.weight <- 20
+printfn "p's weight %d" p.weight
+// p.height <- 30 컴파일 에러
+```
+
+## enum
+```f#
+// Declaration of an enumeration.
+type Color =
+    | Red = 0
+    | Green = 1
+    | Blue = 2
+// Use of an enumeration.
+let col1: Color = Color.Red
+```
+
+## union
+```f#
+type Shape =
+    | Rectangle of width : float * length : float
+    | Circle of radius : float
+    | Prism of width : float * float * height : float
+
+let rect = Rectangle(length = 1.3, width = 10.0)
+let circ = Circle (1.0)
+let prism = Prism(5., 2.0, height = 3.0)
+```

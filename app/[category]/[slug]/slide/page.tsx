@@ -56,7 +56,7 @@ export default async function SlidePage({ params }: { params: Promise<{ category
     const bodySlides = splitContentIntoSlides(postData.content);
     
     const baseurl = isLocalDev ? '' : `https://crusthack.github.io/${repoName}`;
-    const postUrl = `${baseurl}/${category}/${slug}/slide`;
+    const postUrl = `${baseurl}/${category}/${slug}`;
 
     const titleSlide = {
         content: '',
@@ -91,7 +91,7 @@ export default async function SlidePage({ params }: { params: Promise<{ category
                         target="_blank" 
                         rel="noopener noreferrer"
                     >
-                        {postUrl}
+                        블로그 포스트: {postUrl}
                     </a>
                 </div>
             </div>
