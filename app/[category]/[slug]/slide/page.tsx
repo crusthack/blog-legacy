@@ -106,7 +106,7 @@ export default async function SlidePage({ params }: { params: Promise<{ category
                     source={slide.content}
                     components={{
                         h1: (props) => <h1 className="text-7xl md:text-6xl text-[#204090] mb-8 tracking-tighter border-b-4 border-blue-500 pb-4 inline-block" {...props} />,
-                        pre: (props) => <CodeBlock {...props} />,
+                        pre: (props) => <CodeBlock {...props} isSlide={true} totalWeight={slide.totalWeight} />,
                         img: (props) => <MdxImage category={category} slug={slug} {...props} />,
                         ul: (props) => <ul className="list-disc space-y-4 ml-8 my-6 text-xl md:text-2xl" {...props} />,
                         ol: (props) => <ol className="list-decimal space-y-4 ml-8 my-6 text-xl md:text-2xl" {...props} />,

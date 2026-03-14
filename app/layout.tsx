@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import 'github-markdown-css/github-markdown-light.css'
+import 'katex/dist/katex.min.css';
 import Navi from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { getAllPostData } from "@/lib/posts";

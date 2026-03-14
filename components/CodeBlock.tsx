@@ -34,11 +34,18 @@ const IconCheck = () => (
     </svg>
 );
  
+interface CodeBlockProps extends DetailedHTMLProps<HTMLAttributes<HTMLPreElement>, HTMLPreElement> {
+    isSlide?: boolean;
+    totalWeight?: number;
+}
+
 const CodeBlock = ({
     className = "",
     children,
+    isSlide = false,
+    totalWeight = 0,
     ...props
-}: DetailedHTMLProps<HTMLAttributes<HTMLPreElement>, HTMLPreElement>) => {
+}: CodeBlockProps) => {
     const [isCopied, setIsCopied] = useState(false);
     const preRef = useRef<HTMLPreElement>(null);
  
@@ -50,6 +57,13 @@ const CodeBlock = ({
         setIsCopied(true);
         setTimeout(() => setIsCopied(false), 1200);
     };
+
+    // 슬라이드 가중치(코드 외 내용량)에 따른 동적 높이 계산
+    // 가중치가 0일 때(코드만 있을 때) 82vh
+    // 가중치가 16일 때(내용이 꽉 찼을 때) 30vh
+    const dynamicMaxHeight = isSlide 
+        ? `${Math.max(30, 82 - (totalWeight * 3.25))}vh`
+        : 'none';
  
     return (
         <div className="relative group">
@@ -72,7 +86,11 @@ const CodeBlock = ({
             <pre 
                 ref={preRef} 
                 {...props} 
-                className={`${className} !text-[0.8rem] leading-snug max-h-[55vh] print:max-h-none overflow-auto print:overflow-visible print:whitespace-pre-wrap print:break-words scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent [&_code]:!text-[0.8rem] p-3`}
+                style={{ 
+                    ...props.style, 
+                    ...(isSlide ? { maxHeight: dynamicMaxHeight } : {}) 
+                }}
+                className={`${className} !text-[0.8rem] leading-snug ${isSlide ? 'overflow-auto' : ''} print:max-h-none print:overflow-visible print:whitespace-pre-wrap print:break-words scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent [&_code]:!text-[0.8rem] p-3`}
             >
                 {children}
             </pre>

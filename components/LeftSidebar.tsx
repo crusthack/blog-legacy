@@ -15,7 +15,7 @@ export default function LeftSidebar() {
   }, {});
  
   return (
-    <aside className="sticky top-20 space-y-2 mt-2">
+    <aside className="sticky top-20 space-y-2 mt-2 max-w-[150px] ml-auto w-full">
       <section>
         <h2 className="font-bold text-xl mb-3">최근 글 보기</h2>
         <ul className="space-y-1">
@@ -23,7 +23,8 @@ export default function LeftSidebar() {
             <li key={`${post.category}-${post.slug}`}>
               <Link
                 href={`/${encodeURIComponent(post.category!)}/${encodeURIComponent(post.slug)}`}
-                className="block hover:text-blue-600"
+                className="block hover:text-blue-600 truncate"
+                title={post.title ?? post.slug}
               >
                 {post.title ?? post.slug}
               </Link>
@@ -31,7 +32,7 @@ export default function LeftSidebar() {
           ))}
         </ul>
       </section>
- 
+
       <section>
         <h2 className="font-bold text-xl mt-5 mb-3">카테고리 목록</h2>
         <ul className="space-y-1">
@@ -39,7 +40,7 @@ export default function LeftSidebar() {
             <li key={cat}>
               <Link
                 href={`/${encodeURIComponent(cat)}`}
-                className="flex items-center justify-between hover:text-blue-600"
+                className="flex items-center justify-between hover:text-blue-600 whitespace-normal break-words"
               >
                 <span>{cat} ({counts[cat] ?? 0})</span>
               </Link>

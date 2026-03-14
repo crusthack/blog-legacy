@@ -3,7 +3,6 @@
 
 import { useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 
 interface SlideContentProps {
   slides: {
@@ -182,23 +181,23 @@ export default function SlideContent({ slides, category, slug, title, toc }: Sli
         </>
       )}
 
-      {/* 상단바 */}
-      <div className="relative flex justify-between items-center p-4 bg-gray-50 border-b border-gray-200 h-14 shrink-0">
+      {/* 상단바 - 높이 축소 (h-14 -> h-12), 패딩 축소 */}
+      <div className="relative flex justify-between items-center p-2 px-4 bg-gray-50 border-b border-gray-200 h-12 shrink-0">
         {/* 왼쪽: TOC 버튼 및 현재 시각 */}
         <div className="z-10 flex items-center gap-4 w-60">
-          <button onClick={() => setIsTocOpen(prev => !prev)} className="flex items-center justify-center w-10 h-10 bg-white hover:bg-gray-100 border border-gray-300 rounded-md transition-colors cursor-pointer text-gray-700" title="목차 (t)">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          <button onClick={() => setIsTocOpen(prev => !prev)} className="flex items-center justify-center w-9 h-9 bg-white hover:bg-gray-100 border border-gray-300 rounded-md transition-colors cursor-pointer text-gray-700" title="목차 (t)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
           </button>
-            <Link href="/" className="flex w-full text-xl items-center font-bold transition cursor-default">
+            <div className="flex w-full text-xl items-center font-bold transition cursor-default">
               <div className="text-sm font-mono font-medium text-gray-500">
                 {currentTime}
               </div>
-            </Link>
+            </div>
         </div>
 
         {/* 중앙: 현재 포커스 헤더 */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none px-80">
-          <h1 className="text-m font-bold text-gray-700 text-center w-full italic">
+          <h1 className="text-sm font-bold text-gray-700 text-center w-full italic">
             {currentFocusHeader}
           </h1>
         </div>
@@ -206,47 +205,48 @@ export default function SlideContent({ slides, category, slug, title, toc }: Sli
 
         {/* 오른쪽: 인덱스 및 제어 버튼 */}
         <div className="flex items-center gap-2 z-10">
-          <div className="text-sm font-medium text-gray-500 mr-2">{currentIdx + 1} / {slides.length}</div>
+          <div className="text-xs font-medium text-gray-500 mr-2">{currentIdx + 1} / {slides.length}</div>
           
-          <button onClick={() => window.print()} className="flex items-center justify-center w-10 h-10 bg-white hover:bg-gray-100 border border-gray-300 rounded-md transition-colors cursor-pointer text-gray-700" title="PDF 저장 / 프린트 (p)">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
+          <button onClick={() => window.print()} className="flex items-center justify-center w-9 h-9 bg-white hover:bg-gray-100 border border-gray-300 rounded-md transition-colors cursor-pointer text-gray-700" title="PDF 저장 / 프린트 (p)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
           </button>
 
-          <button onClick={toggleFullscreen} className="flex items-center justify-center w-10 h-10 bg-white hover:bg-gray-100 border border-gray-300 rounded-md transition-colors cursor-pointer text-gray-700" title={isFullscreen ? '창 모드 (f)' : '전체 화면 (f)'}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <button onClick={toggleFullscreen} className="flex items-center justify-center w-9 h-9 bg-white hover:bg-gray-100 border border-gray-300 rounded-md transition-colors cursor-pointer text-gray-700" title={isFullscreen ? '창 모드 (f)' : '전체 화면 (f)'}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               {isFullscreen ? <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/> : <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>}
             </svg>
           </button>
 
-          <button onClick={() => router.push(`/${category}/${slug}`)} className="flex items-center justify-center w-10 h-10 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-md transition-colors cursor-pointer text-gray-700" title="포스트로 돌아가기 (ESC)">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <button onClick={() => router.push(`/${category}/${slug}`)} className="flex items-center justify-center w-9 h-9 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-md transition-colors cursor-pointer text-gray-700" title="포스트로 돌아가기 (ESC)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
             </svg>
           </button>
         </div>
       </div>
 
+      {/* 중앙 컨텐츠 */}
       <div className="flex-1 overflow-y-auto flex flex-col items-center">
-        <div className="w-full max-w-[85vw] flex-1 flex flex-col justify-center markdown-body !bg-transparent py-8">
+        <div className="w-full max-w-[90vw] flex-1 flex flex-col justify-center markdown-body !bg-transparent py-4">
            <div className="text-lg md:text-xl lg:text-2xl leading-relaxed w-full">
             {currentSlide.renderedContent}
            </div>
         </div>
       </div>
 
-      <div className="p-4 bg-gray-50 border-t border-gray-200 grid grid-cols-3 items-center shrink-0 min-h-[70px]">
-        <div className="text-left flex flex-col gap-0.5">
-          <div className="text-[10px] text-gray-400 font-bold truncate uppercase tracking-wider">{title}</div>
-          <div className="text-sm font-bold text-gray-600 truncate">{currentSlide.h1 || ''}</div>
+      <div className="p-2 px-4 bg-gray-50 border-t border-gray-200 grid grid-cols-3 items-center shrink-0 min-h-[50px]">
+        <div className="text-left flex flex-col gap-0">
+          <div className="text-[9px] text-gray-400 font-bold truncate uppercase tracking-wider">{title}</div>
+          <div className="text-xs font-bold text-gray-600 truncate">{currentSlide.h1 || ''}</div>
         </div>
         <div className="text-center px-4">
-          <div className="text-sm font-bold text-gray-700 truncate">{currentSlide.h2 || ''}</div>
+          <div className="text-xs font-bold text-gray-700 truncate">{currentSlide.h2 || ''}</div>
         </div>
-        <div className="text-right">
+        <div className="text-right flex flex-col items-end">
           {currentSlide.nextTitle && (
             <>
-              <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">NEXT</div>
-              <div className="text-sm font-bold text-gray-400 italic truncate">{currentSlide.nextTitle}</div>
+              <div className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">NEXT</div>
+              <div className="text-xs font-bold text-gray-400 italic truncate max-w-full">{currentSlide.nextTitle}</div>
             </>
           )}
         </div>

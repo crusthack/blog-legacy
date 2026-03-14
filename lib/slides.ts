@@ -11,21 +11,25 @@ export interface Slide {
 
 /** 슬라이드 분할 가중치 설정 */
 const MAX_LINES_PER_SLIDE = 10;  
-const WEIGHT_CODE_BLOCK = 8;     
 const WEIGHT_TABLE = 8;          // 테이블 전체 가중치
 const WEIGHT_LIST_ITEM = 1.0;    
 const WEIGHT_NORMAL_TEXT = 1.0;  
 const WEIGHT_HEADER = 1.0;       
 const WEIGHT_IMAGE = 8;         
 
+/** 코드 블록 가중치 계산 (이제 가중치를 부여하지 않음) */
+function getCodeBlockWeight(lines: string[]): number {
+  return 0; // 코드 블록은 슬라이드 분할에 영향을 주지 않음
+}
 export function splitContentIntoSlides(content: string): Slide[] {
   const lines = content.split('\n');
-  
+
   interface Atom {
     lines: string[];
     weight: number;
     h1: string; h2: string; h3: string;
     isForce: boolean; 
+    headerLevel?: number;
   }
 
   const atoms: Atom[] = [];
@@ -46,13 +50,13 @@ export function splitContentIntoSlides(content: string): Slide[] {
         tempAccumulatedLines = [line];
       } else {
         tempAccumulatedLines.push(line);
-        atoms.push({ lines: tempAccumulatedLines, weight: WEIGHT_CODE_BLOCK, h1: currentH1, h2: currentH2, h3: currentH3, isForce: false });
+        const weight = getCodeBlockWeight(tempAccumulatedLines);
+        atoms.push({ lines: tempAccumulatedLines, weight: weight, h1: currentH1, h2: currentH2, h3: currentH3, isForce: false });
         isInCodeBlock = false;
       }
       continue;
     }
     if (isInCodeBlock) { tempAccumulatedLines.push(line); continue; }
-
     // HTML 테이블 처리
     if (trimmed.toLowerCase().startsWith('<table')) {
       isInTable = true;
@@ -82,8 +86,17 @@ export function splitContentIntoSlides(content: string): Slide[] {
       const title = headerMatch[2].trim();
       if (level === 1) { currentH1 = title; currentH2 = ''; currentH3 = ''; }
       else if (level === 2) { currentH2 = title; currentH3 = ''; }
-      else if (level === 3) { currentH3 = title; }
-      atoms.push({ lines: [line], weight: WEIGHT_HEADER, h1: currentH1, h2: currentH2, h3: currentH3, isForce: level <= 2 });
+      else if (level >= 3) { currentH3 = title; }
+      
+      atoms.push({ 
+        lines: [line], 
+        weight: WEIGHT_HEADER, 
+        h1: currentH1, 
+        h2: currentH2, 
+        h3: currentH3, 
+        isForce: level <= 3, // ### (레벨 3)까지는 무조건 새 슬라이드로 분할
+        headerLevel: level
+      });
       continue;
     }
 
@@ -108,7 +121,9 @@ export function splitContentIntoSlides(content: string): Slide[] {
   let currentSectionWeight = 0;
 
   for (const atom of atoms) {
-    const isNewSectionStart = atom.lines[0].trim().startsWith('#');
+    // 다시 모든 헤더(#)를 새로운 섹션의 시작으로 간주하여 분할 포인트로 활용
+    const isNewSectionStart = atom.headerLevel !== undefined;
+    
     if (isNewSectionStart && currentSectionAtoms.length > 0) {
       sections.push({ atoms: currentSectionAtoms, totalWeight: currentSectionWeight, isForce: currentSectionAtoms[0].isForce });
       currentSectionAtoms = [];
