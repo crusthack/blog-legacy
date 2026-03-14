@@ -1,200 +1,231 @@
 // lib/slides.ts
-export interface Slide {
+
+export type ElementType = 'simple' | 'complex' | 'html';
+
+export interface ContentElement {
+  type: ElementType;
   content: string;
+  lines: number;
+  weight: number;
+}
+
+export interface Slide {
+  content: string;      // 전체 마크다운
+  elements: ContentElement[]; // 분해된 원소들
   h1: string;
   h2: string;
   h3: string;
   level: number;
   nextTitle: string;
-  totalWeight: number;
+  totalWeight: number;  // 현재 슬라이드의 총 가중치 합 (Simple + HTML)
+  complexWeight: number; // 복합 원소들에 의해 계산된 가중치 (코드, 테이블 행 수)
+  remainingWeight: number; // 동적 높이 계산을 위한 남은 가중치 (10 - totalWeight)
 }
 
-/** 슬라이드 분할 가중치 설정 */
-const MAX_LINES_PER_SLIDE = 10;  
-const WEIGHT_TABLE = 8;          // 테이블 전체 가중치
-const WEIGHT_LIST_ITEM = 1.0;    
-const WEIGHT_NORMAL_TEXT = 1.0;  
-const WEIGHT_HEADER = 1.0;       
-const WEIGHT_IMAGE = 8;         
+/** 슬라이드 분할 규칙 설정 */
+const MAX_WEIGHT_PER_SLIDE = 10;
+const WEIGHT_SIMPLE = 1;
+const WEIGHT_HTML = 9;
 
-/** 코드 블록 가중치 계산 (이제 가중치를 부여하지 않음) */
-function getCodeBlockWeight(lines: string[]): number {
-  return 0; // 코드 블록은 슬라이드 분할에 영향을 주지 않음
+/** 복합 원소 내부 가중치 상수 */
+const WEIGHT_CODE_LINE = 0.5;
+const WEIGHT_TABLE_ROW = 1.0;
+const WEIGHT_MATH_BLOCK = 2.0;
+const WEIGHT_IMAGE = 5.0;
+
+/** 복합 원소의 내부 가중치 계산 (정보 제공용) */
+function calculateComplexInternalWeight(type: string, content: string): number {
+    const lines = content.split('\n');
+    if (content.trim().startsWith('```')) {
+        const codeLines = Math.max(0, lines.length - 2);
+        return codeLines * WEIGHT_CODE_LINE;
+    }
+    if (content.trim().startsWith('|')) {
+        const rows = Math.max(0, lines.length - 1);
+        return rows * WEIGHT_TABLE_ROW;
+    }
+    if (content.trim().toLowerCase().startsWith('<table')) {
+        const trCount = (content.match(/<tr/gi) || []).length;
+        return trCount * WEIGHT_TABLE_ROW;
+    }
+    return 1;
 }
+
 export function splitContentIntoSlides(content: string): Slide[] {
-  const lines = content.split('\n');
-
-  interface Atom {
-    lines: string[];
-    weight: number;
-    h1: string; h2: string; h3: string;
-    isForce: boolean; 
-    headerLevel?: number;
-  }
-
-  const atoms: Atom[] = [];
+  const lines = content.trim().split('\n');
+  const slides: Slide[] = [];
+  
   let currentH1 = '', currentH2 = '', currentH3 = '';
+  let currentSlideElements: ContentElement[] = [];
+  let currentSlideWeight = 0;
+  let currentSlideComplexWeight = 0;
+  
   let isInCodeBlock = false;
+  let isInMathBlock = false;
   let isInTable = false;
-  let tempAccumulatedLines: string[] = [];
+  let isInHtmlBlock = false;
+  let currentBlockLines: string[] = [];
 
-  // 1. 최소 단위(Atom) 추출
+  const pushSlide = () => {
+    const combinedContent = currentSlideElements.map(e => e.content).join('\n').trim();
+    if (combinedContent === '') {
+        currentSlideElements = [];
+        currentSlideWeight = 0;
+        currentSlideComplexWeight = 0;
+        return;
+    }
+
+    slides.push({
+      content: combinedContent,
+      elements: [...currentSlideElements],
+      h1: currentH1,
+      h2: currentH2,
+      h3: currentH3,
+      level: currentH3 ? 3 : (currentH2 ? 2 : 1),
+      nextTitle: '',
+      totalWeight: currentSlideWeight,
+      complexWeight: currentSlideComplexWeight,
+      remainingWeight: Math.max(0, MAX_WEIGHT_PER_SLIDE - currentSlideWeight)
+    });
+    currentSlideElements = [];
+    currentSlideWeight = 0;
+    currentSlideComplexWeight = 0;
+  };
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const trimmed = line.trim();
 
-    // 코드 블록 처리
-    if (trimmed.startsWith('```')) {
-      if (!isInCodeBlock) {
-        isInCodeBlock = true;
-        tempAccumulatedLines = [line];
-      } else {
-        tempAccumulatedLines.push(line);
-        const weight = getCodeBlockWeight(tempAccumulatedLines);
-        atoms.push({ lines: tempAccumulatedLines, weight: weight, h1: currentH1, h2: currentH2, h3: currentH3, isForce: false });
-        isInCodeBlock = false;
-      }
-      continue;
-    }
-    if (isInCodeBlock) { tempAccumulatedLines.push(line); continue; }
-    // HTML 테이블 처리
-    if (trimmed.toLowerCase().startsWith('<table')) {
-      isInTable = true;
-      tempAccumulatedLines = [line];
-      continue;
-    }
-    if (isInTable) {
-      tempAccumulatedLines.push(line);
-      if (trimmed.toLowerCase().includes('</table>')) {
-        atoms.push({ lines: tempAccumulatedLines, weight: WEIGHT_TABLE, h1: currentH1, h2: currentH2, h3: currentH3, isForce: false });
-        isInTable = false;
-      }
-      continue;
-    }
-
-    // 이미지 처리
-    const imageMatch = trimmed.match(/!\[.*\]\(.*\)/);
-    if (imageMatch) {
-      atoms.push({ lines: [line], weight: WEIGHT_IMAGE, h1: currentH1, h2: currentH2, h3: currentH3, isForce: true });
-      continue;
-    }
-
-    // 헤더 처리
-    const headerMatch = trimmed.match(/^(#{1,7})\s+(.*)/);
+    // 1. 헤더 체크 (슬라이드 강제 분할점 및 가중치 1)
+    const headerMatch = line.match(/^(#{1,7})\s+(.*)/);
     if (headerMatch) {
+      if (currentSlideElements.length > 0) pushSlide();
+      
       const level = headerMatch[1].length;
       const title = headerMatch[2].trim();
       if (level === 1) { currentH1 = title; currentH2 = ''; currentH3 = ''; }
       else if (level === 2) { currentH2 = title; currentH3 = ''; }
       else if (level >= 3) { currentH3 = title; }
       
-      atoms.push({ 
-        lines: [line], 
-        weight: WEIGHT_HEADER, 
-        h1: currentH1, 
-        h2: currentH2, 
-        h3: currentH3, 
-        isForce: level <= 3, // ### (레벨 3)까지는 무조건 새 슬라이드로 분할
-        headerLevel: level
-      });
+      currentSlideElements.push({ type: 'simple', content: line, lines: 1, weight: WEIGHT_SIMPLE });
+      currentSlideWeight += WEIGHT_SIMPLE;
       continue;
     }
 
-    if (trimmed === '') {
-      if (atoms.length > 0) atoms[atoms.length - 1].lines.push(line);
+    // 2. 가중치 체크 및 자동 분할
+    if (currentSlideWeight >= MAX_WEIGHT_PER_SLIDE && currentSlideElements.length > 0) {
+        pushSlide();
+    }
+
+    // 3. 복합 문법 - 코드 블록
+    if (trimmed.startsWith('```')) {
+      if (!isInCodeBlock) {
+        isInCodeBlock = true;
+        currentBlockLines = [line];
+      } else {
+        currentBlockLines.push(line);
+        const blockContent = currentBlockLines.join('\n');
+        const internalWeight = calculateComplexInternalWeight('code', blockContent);
+        currentSlideElements.push({ type: 'complex', content: blockContent, lines: currentBlockLines.length, weight: 0 });
+        currentSlideComplexWeight += internalWeight;
+        isInCodeBlock = false;
+        currentBlockLines = [];
+      }
+      continue;
+    }
+    if (isInCodeBlock) { currentBlockLines.push(line); continue; }
+
+    // 4. 복합 문법 - 블록 수식 ($$)
+    if (trimmed.startsWith('$$')) {
+      if (!isInMathBlock) {
+        isInMathBlock = true;
+        currentBlockLines = [line];
+      } else {
+        currentBlockLines.push(line);
+        currentSlideElements.push({ type: 'complex', content: currentBlockLines.join('\n'), lines: currentBlockLines.length, weight: 0 });
+        currentSlideComplexWeight += 2; // 블록 수식은 기본적으로 2줄 정도의 공간
+        isInMathBlock = false;
+        currentBlockLines = [];
+      }
+      continue;
+    }
+    if (isInMathBlock) { currentBlockLines.push(line); continue; }
+
+    // 5. 복합 문법 - 이미지 (가중치 0)
+    if (trimmed.match(/!\[.*\]\(.*\)/)) {
+      currentSlideElements.push({ type: 'complex', content: line, lines: 1, weight: 0 });
+      currentSlideComplexWeight += 5; // 이미지는 5줄 정도의 공간 차지로 간주
       continue;
     }
 
-    // 일반 텍스트 및 리스트 항목 처리
-    const lineWeight = trimmed.match(/^([-*+]|\d+\.)\s+|<li[ >]/i) ? WEIGHT_LIST_ITEM : WEIGHT_NORMAL_TEXT;
-    atoms.push({ lines: [line], weight: lineWeight, h1: currentH1, h2: currentH2, h3: currentH3, isForce: false });
-  }
-
-  // 2. Atom들을 섹션(헤더)으로 묶기
-  interface Section {
-    atoms: Atom[];
-    totalWeight: number;
-    isForce: boolean;
-  }
-  const sections: Section[] = [];
-  let currentSectionAtoms: Atom[] = [];
-  let currentSectionWeight = 0;
-
-  for (const atom of atoms) {
-    // 다시 모든 헤더(#)를 새로운 섹션의 시작으로 간주하여 분할 포인트로 활용
-    const isNewSectionStart = atom.headerLevel !== undefined;
-    
-    if (isNewSectionStart && currentSectionAtoms.length > 0) {
-      sections.push({ atoms: currentSectionAtoms, totalWeight: currentSectionWeight, isForce: currentSectionAtoms[0].isForce });
-      currentSectionAtoms = [];
-      currentSectionWeight = 0;
-    }
-    currentSectionAtoms.push(atom);
-    currentSectionWeight += atom.weight;
-  }
-  if (currentSectionAtoms.length > 0) {
-    sections.push({ atoms: currentSectionAtoms, totalWeight: currentSectionWeight, isForce: currentSectionAtoms[0].isForce });
-  }
-
-  // 3. 섹션 단위 패킹
-  const slides: Slide[] = [];
-  let currentSlideLines: string[] = [];
-  let currentSlideWeight = 0;
-  let slideH1 = '', slideH2 = '', slideH3 = '';
-
-  const pushSlide = (weight: number) => {
-    const slideContent = currentSlideLines.join('\n').trim();
-    if (slideContent === '') return;
-    slides.push({
-      content: slideContent,
-      h1: slideH1, h2: slideH2, h3: slideH3,
-      level: slideH3 ? 3 : (slideH2 ? 2 : 1),
-      nextTitle: '',
-      totalWeight: weight
-    });
-    currentSlideLines = [];
-    currentSlideWeight = 0;
-    slideH1 = ''; slideH2 = ''; slideH3 = '';
-  };
-
-  for (const section of sections) {
-    if (section.isForce && currentSlideLines.length > 0) pushSlide(currentSlideWeight);
-
-    if (currentSlideWeight + section.totalWeight > MAX_LINES_PER_SLIDE && currentSlideLines.length > 0) {
-      if (section.atoms[0].lines[0].trim().startsWith('#')) pushSlide(currentSlideWeight);
-    }
-
-    if (currentSlideWeight + section.totalWeight <= MAX_LINES_PER_SLIDE) {
-      for (const a of section.atoms) {
-        if (currentSlideLines.length === 0) { slideH1 = a.h1; slideH2 = a.h2; slideH3 = a.h3; }
-        currentSlideLines.push(...a.lines);
+    // 6. 복합 문법 - 마크다운 표
+    if (trimmed.startsWith('|')) {
+      if (!isInTable) {
+        isInTable = true;
+        currentBlockLines = [line];
+      } else {
+        currentBlockLines.push(line);
       }
-      currentSlideWeight += section.totalWeight;
-    } 
-    else if (section.totalWeight <= MAX_LINES_PER_SLIDE) {
-      if (currentSlideLines.length > 0) pushSlide(currentSlideWeight);
-      for (const a of section.atoms) {
-        if (currentSlideLines.length === 0) { slideH1 = a.h1; slideH2 = a.h2; slideH3 = a.h3; }
-        currentSlideLines.push(...a.lines);
+      if (i + 1 === lines.length || !lines[i+1].trim().startsWith('|')) {
+        const blockContent = currentBlockLines.join('\n');
+        const internalWeight = calculateComplexInternalWeight('table', blockContent);
+        currentSlideElements.push({ type: 'complex', content: blockContent, lines: currentBlockLines.length, weight: 0 });
+        currentSlideComplexWeight += internalWeight;
+        isInTable = false;
+        currentBlockLines = [];
       }
-      currentSlideWeight = section.totalWeight;
+      continue;
     }
-    else {
-      for (const atom of section.atoms) {
-        if (currentSlideWeight + atom.weight > MAX_LINES_PER_SLIDE && currentSlideLines.length > 0) pushSlide(currentSlideWeight);
-        if (currentSlideLines.length === 0) { slideH1 = atom.h1; slideH2 = atom.h2; slideH3 = atom.h3; }
-        currentSlideLines.push(...atom.lines);
-        currentSlideWeight += atom.weight;
-      }
-    }
-  }
-  pushSlide(currentSlideWeight);
 
+    // 7. Plain HTML (가중치 9)
+    if (trimmed.toLowerCase().startsWith('<table') || trimmed.toLowerCase().startsWith('<div')) {
+        isInHtmlBlock = true;
+        currentBlockLines = [line];
+        if (trimmed.toLowerCase().includes('</table>') || trimmed.toLowerCase().includes('</div>')) {
+            if (currentSlideWeight + WEIGHT_HTML > MAX_WEIGHT_PER_SLIDE && currentSlideElements.length > 0) pushSlide();
+            const blockContent = line;
+            const internalWeight = calculateComplexInternalWeight('html', blockContent);
+            currentSlideElements.push({ type: 'html', content: blockContent, lines: 1, weight: WEIGHT_HTML });
+            currentSlideWeight += WEIGHT_HTML;
+            currentSlideComplexWeight += internalWeight;
+            isInHtmlBlock = false;
+            currentBlockLines = [];
+        }
+        continue;
+    }
+    if (isInHtmlBlock) {
+        currentBlockLines.push(line);
+        if (trimmed.toLowerCase().includes('</table>') || trimmed.toLowerCase().includes('</div>')) {
+            if (currentSlideWeight + WEIGHT_HTML > MAX_WEIGHT_PER_SLIDE && currentSlideElements.length > 0) pushSlide();
+            const blockContent = currentBlockLines.join('\n');
+            const internalWeight = calculateComplexInternalWeight('html', blockContent);
+            currentSlideElements.push({ type: 'html', content: blockContent, lines: currentBlockLines.length, weight: WEIGHT_HTML });
+            currentSlideWeight += WEIGHT_HTML;
+            currentSlideComplexWeight += internalWeight;
+            isInHtmlBlock = false;
+            currentBlockLines = [];
+        }
+        continue;
+    }
+
+    // 8. 기본 문법 (가중치 1, 단 빈 줄은 0)
+    const lineWeight = trimmed === '' ? 0 : WEIGHT_SIMPLE;
+    if (currentSlideWeight + lineWeight > MAX_WEIGHT_PER_SLIDE && currentSlideElements.length > 0) pushSlide();
+    currentSlideElements.push({ type: 'simple', content: line, lines: 1, weight: lineWeight });
+    currentSlideWeight += lineWeight;
+  }
+
+  pushSlide();
+
+  // 차기 제목 계산
   for (let i = 0; i < slides.length - 1; i++) {
     const cur = slides[i].h3 || slides[i].h2 || slides[i].h1;
     for (let j = i + 1; j < slides.length; j++) {
       const nxt = slides[j].h3 || slides[j].h2 || slides[j].h1;
-      if (nxt && nxt !== cur) { slides[i].nextTitle = nxt; break; }
+      if (nxt && nxt !== cur) { 
+        slides[i].nextTitle = nxt; 
+        break; 
+      }
     }
   }
 

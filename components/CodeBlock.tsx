@@ -60,9 +60,9 @@ const CodeBlock = ({
 
     // 슬라이드 가중치(코드 외 내용량)에 따른 동적 높이 계산
     // 가중치가 0일 때(코드만 있을 때) 82vh
-    // 가중치가 16일 때(내용이 꽉 찼을 때) 30vh
+    // 가중치가 10일 때(내용이 꽉 찼을 때) 35vh
     const dynamicMaxHeight = isSlide 
-        ? `${Math.max(30, 82 - (totalWeight * 3.25))}vh`
+        ? `${65 - (totalWeight * 7)}vh`
         : 'none';
  
     return (
