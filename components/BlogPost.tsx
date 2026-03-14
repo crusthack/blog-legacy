@@ -87,7 +87,7 @@ export default function BlogPost({ post, showSlideButton = false }: BlogPostProp
                             options={{
                                 mdxOptions: {
                                     remarkPlugins: [remarkGfm, remarkToc, remarkMath],
-                                    rehypePlugins: [rehypeCodeTitles, [rehypePrettyCode, prettyOptions], rehypeSlug, rehypeKatex],
+                                    rehypePlugins: [[rehypePrettyCode, prettyOptions], rehypeSlug, rehypeKatex],
                                 },
                             }}
                         />

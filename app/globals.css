@@ -25,6 +25,11 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* rehype-code-titles가 생성하는 기본 타이틀 숨김 (CodeBlock 내부에서 처리함) */
+.rehype-code-title {
+  display: none !important;
+}
+
 /* 본문 내 모든 제목 태그에 상단 여백 일괄 적용 */
 .markdown-body h1,
 .markdown-body h2,

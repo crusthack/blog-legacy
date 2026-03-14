@@ -58,26 +58,46 @@ const CodeBlock = ({
         setTimeout(() => setIsCopied(false), 1200);
     };
 
-    // rehype-pretty-code 등이 제공하는 data-language 속성 추출
-    const language = (props as any)["data-language"] || "";
+    // rehype-pretty-code 등이 제공하는 정보 추출
+    let language = (props as any)["data-language"] || "";
+    let title = (props as any)["data-title"] || (props as any)["title"] || "";
+
+    // 만약 언어명에 콜론이 포함되어 있다면 (예: "ts:main.ts") 분리 처리
+    if (language.includes(':')) {
+        const parts = language.split(':');
+        language = parts[0];
+        if (!title) title = parts[1]; // 타이틀이 따로 없을 때만 사용
+    }
 
     // 슬라이드 가중치(코드 외 내용량)에 따른 동적 높이 계산
-    // 가중치가 0일 때(코드만 있을 때) 600px
-    // 가중치가 10일 때(내용이 꽉 찼을 때) 150px
     const dynamicMaxHeight = isSlide 
         ? `${Math.max(60, 500 - (totalWeight * 60))}px`
         : 'none';
  
     return (
         <div className="relative group my-4 rounded-lg overflow-hidden border border-white/10 shadow-xl">
-            {/* 상단 타이틀 바 (언어 라벨 및 복사 버튼) */}
+            {/* 상단 타이틀 바 (언어 라벨, 파일 주소, 복사 버튼) */}
             <div className="
                 flex items-center justify-between
                 bg-[#1e1e1e] px-4 py-2
                 border-b border-white/5
             ">
-                <div className="text-[10px] font-mono text-gray-400 uppercase tracking-widest font-bold">
-                    {language || "code"}
+                <div className="flex items-center gap-3">
+                    {language && (
+                        <div className="text-[12px] font-mono text-blue-400 tracking-widest font-black border-r border-white/10 pr-3">
+                            {language}
+                        </div>
+                    )}
+                    {title && (
+                        <div className="text-[12px] font-mono text-gray-400 font-bold truncate max-w-[300px]">
+                            {title}
+                        </div>
+                    )}
+                    {!language && !title && (
+                        <div className="text-[12px] font-mono text-gray-500 uppercase tracking-widest font-bold">
+                            CODE
+                        </div>
+                    )}
                 </div>
                 
                 <button

@@ -115,7 +115,11 @@ export default async function SlidePage({ params }: { params: Promise<{ category
                     options={{
                         mdxOptions: {
                             remarkPlugins: [remarkGfm, remarkToc, remarkMath],
-                            rehypePlugins: [rehypeCodeTitles, [rehypePrettyCode, prettyOptions], rehypeSlug, rehypeKatex],
+                            rehypePlugins: [
+                                [rehypePrettyCode, prettyOptions], 
+                                rehypeSlug, 
+                                rehypeKatex
+                            ],
                         },
                     }}
                 />
