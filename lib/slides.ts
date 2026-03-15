@@ -78,20 +78,22 @@ export function splitContentIntoSlides(content: string): Slide[] {
       continue;
     }
     // plain html element
-    if (isInHtmlBlock || line.toLowerCase().startsWith('<')){
+    if (isInHtmlBlock || line.trim().startsWith('<')){
+      if(line.trim() == "" && htmlDepth === 0)
+      {
+        allElements.push({ type: 'html', content: currentBlockLines.join('\n'), lines: currentBlockLines.length, weight: WEIGHT_HTML });
+        isInHtmlBlock = false; currentBlockLines = [];
+      }
         isInHtmlBlock = true; currentBlockLines.push(line);
-        for(let c of line){
-          if(c==='<'){
-            htmlDepth++;
-          }
-          else if (c==='>'){
-            htmlDepth--;
-            if(htmlDepth === 0){
-              allElements.push({ type: 'html', content: line, lines: 1, weight: WEIGHT_HTML });
-              isInHtmlBlock = false; currentBlockLines = [];
-            }
-          }
+      for(let c of line){
+        if(c==='<'){
+          htmlDepth++;
         }
+        else if (c==='>'){
+          htmlDepth--;
+        }
+      }
+      continue;
     }
 
     const w = line.trim() === '' ? 0 : WEIGHT_SIMPLE;
