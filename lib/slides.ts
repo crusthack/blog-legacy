@@ -17,8 +17,8 @@ export interface Slide {
   h3: string;
   level: number;
   nextTitle: string;
-  totalWeight: number;
-  remainingWeight: number;
+  totalWeight: number; // 일반 텍스트 및 HTML의 총 가중치
+  remainingWeight: number; // 10 - totalWeight
 }
 
 /** 슬라이드 분할 규칙 설정 */
@@ -26,43 +26,20 @@ const MAX_WEIGHT_PER_SLIDE = 10;
 const WEIGHT_SIMPLE = 1;
 const WEIGHT_HTML = 9;
 
-/** 복합 원소 내부 가중치 상수 */
-const WEIGHT_CODE_LINE = 0.5;
-const WEIGHT_TABLE_ROW = 1.0;
-const WEIGHT_MATH_BLOCK = 2.0;
-const WEIGHT_IMAGE = 5.0;
-
-/** 복합 원소의 내부 가중치 계산 (정보 제공용) */
-function calculateComplexInternalWeight(type: string, content: string): number {
-    const lines = content.split('\n');
-    if (content.trim().startsWith('```')) {
-        const codeLines = Math.max(0, lines.length - 2);
-        return codeLines * WEIGHT_CODE_LINE;
-    }
-    if (content.trim().startsWith('|')) {
-        const rows = Math.max(0, lines.length - 1);
-        return rows * WEIGHT_TABLE_ROW;
-    }
-    if (content.trim().toLowerCase().startsWith('<table')) {
-        const trCount = (content.match(/<tr/gi) || []).length;
-        return trCount * WEIGHT_TABLE_ROW;
-    }
-    return 1;
-}
-
 export function splitContentIntoSlides(content: string): Slide[] {
   const lines = content.trim().split('\n');
   
-  // 1. 모든 라인을 ContentElement로 먼저 변환
+  // 1. 모든 라인을 ContentElement로 먼저 변환 (복합 원소 가중치는 무조건 0)
   const allElements: ContentElement[] = [];
   let isInCodeBlock = false, isInMathBlock = false, isInTable = false, isInHtmlBlock = false;
+  let htmlDepth = 0;
   let currentBlockLines: string[] = [];
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    const trimmed = line.trim();
 
-    if (trimmed.startsWith('```')) {
+    // 코드블럭
+    if (line.startsWith('```')) {
       if (!isInCodeBlock) { isInCodeBlock = true; currentBlockLines = [line]; }
       else {
         currentBlockLines.push(line);
@@ -72,8 +49,8 @@ export function splitContentIntoSlides(content: string): Slide[] {
       continue;
     }
     if (isInCodeBlock) { currentBlockLines.push(line); continue; }
-
-    if (trimmed.startsWith('$$')) {
+    // 수식
+    if (line.startsWith('$$')) {
       if (!isInMathBlock) { isInMathBlock = true; currentBlockLines = [line]; }
       else {
         currentBlockLines.push(line);
@@ -83,13 +60,13 @@ export function splitContentIntoSlides(content: string): Slide[] {
       continue;
     }
     if (isInMathBlock) { currentBlockLines.push(line); continue; }
-
-    if (trimmed.match(/!\[.*\]\(.*\)/)) {
+    // 사진 링크 
+    if (line.match(/!\[.*\]\(.*\)/)) {
       allElements.push({ type: 'complex', content: line, lines: 1, weight: 0 });
       continue;
     }
-
-    if (trimmed.startsWith('|')) {
+    // 테이블
+    if (line.startsWith('|')) {
       if (!isInTable) { isInTable = true; currentBlockLines = [line]; }
       else {
         currentBlockLines.push(line);
@@ -100,25 +77,24 @@ export function splitContentIntoSlides(content: string): Slide[] {
       }
       continue;
     }
-
-    if (trimmed.toLowerCase().startsWith('<table') || trimmed.toLowerCase().startsWith('<div')) {
-        isInHtmlBlock = true; currentBlockLines = [line];
-        if (trimmed.toLowerCase().includes('</table>') || trimmed.toLowerCase().includes('</div>')) {
-            allElements.push({ type: 'html', content: line, lines: 1, weight: WEIGHT_HTML });
-            isInHtmlBlock = false; currentBlockLines = [];
+    // plain html element
+    if (isInHtmlBlock || line.toLowerCase().startsWith('<')){
+        isInHtmlBlock = true; currentBlockLines.push(line);
+        for(let c of line){
+          if(c==='<'){
+            htmlDepth++;
+          }
+          else if (c==='>'){
+            htmlDepth--;
+            if(htmlDepth === 0){
+              allElements.push({ type: 'html', content: line, lines: 1, weight: WEIGHT_HTML });
+              isInHtmlBlock = false; currentBlockLines = [];
+            }
+          }
         }
-        continue;
-    }
-    if (isInHtmlBlock) {
-        currentBlockLines.push(line);
-        if (trimmed.toLowerCase().includes('</table>') || trimmed.toLowerCase().includes('</div>')) {
-            allElements.push({ type: 'html', content: currentBlockLines.join('\n'), lines: currentBlockLines.length, weight: WEIGHT_HTML });
-            isInHtmlBlock = false; currentBlockLines = [];
-        }
-        continue;
     }
 
-    const w = trimmed === '' ? 0 : WEIGHT_SIMPLE;
+    const w = line.trim() === '' ? 0 : WEIGHT_SIMPLE;
     allElements.push({ type: 'simple', content: line, lines: 1, weight: w });
   }
 
@@ -127,10 +103,10 @@ export function splitContentIntoSlides(content: string): Slide[] {
     headerLevel: number;
     elements: ContentElement[];
     totalWeight: number;
-    hasComplex: boolean;
     h1: string; h2: string; h3: string;
+    hasComplex: boolean;
   }
-  const sections: Section[] = [];
+  const initialSections: Section[] = [];
   let currentSection: Section | null = null;
   let curH1 = '', curH2 = '', curH3 = '';
 
@@ -143,106 +119,85 @@ export function splitContentIntoSlides(content: string): Slide[] {
       else if (level === 2) { curH2 = title; curH3 = ''; }
       else if (level >= 3) { curH3 = title; }
 
-      if (currentSection) sections.push(currentSection);
-      currentSection = { headerLevel: level, elements: [el], totalWeight: el.weight, hasComplex: false, h1: curH1, h2: curH2, h3: curH3 };
+      if (currentSection) initialSections.push(currentSection);
+      currentSection = { 
+        headerLevel: level, 
+        elements: [el], 
+        totalWeight: el.weight, 
+        h1: curH1, h2: curH2, h3: curH3,
+        hasComplex: el.type === 'complex'
+      };
       continue;
     }
-
     if (!currentSection) {
-        currentSection = { headerLevel: 99, elements: [], totalWeight: 0, hasComplex: false, h1: '', h2: '', h3: '' };
+        currentSection = { headerLevel: 99, elements: [], totalWeight: 0, h1: '', h2: '', h3: '', hasComplex: false };
     }
     currentSection.elements.push(el);
     currentSection.totalWeight += el.weight;
     if (el.type === 'complex') currentSection.hasComplex = true;
   }
-  if (currentSection) sections.push(currentSection);
+  if (currentSection) initialSections.push(currentSection);
 
-  // 3. 섹션들을 슬라이드에 배치 (병합 로직 적용)
-  const slides: Slide[] = [];
-  let currentSlideElements: ContentElement[] = [];
-  let currentSlideWeight = 0;
-  let hasComplexInCurrentSlide = false;
-  let isHighLevelSlide = false;
-  let slideH1 = '', slideH2 = '', slideH3 = '';
+  // 3. 섹션 병합 (헤드 레벨 7 -> 6 -> 5 순서로 다단계 병합 시도)
+  let mergedSections = initialSections;
 
-  const pushSlide = () => {
-    const combined = currentSlideElements.map(e => e.content).join('\n').trim();
-    if (combined === '') { 
-        currentSlideElements = []; currentSlideWeight = 0; 
-        hasComplexInCurrentSlide = false; isHighLevelSlide = false; 
-        return; 
-    }
-    slides.push({
-      content: combined,
-      elements: [...currentSlideElements],
-      h1: slideH1, h2: slideH2, h3: slideH3,
-      level: slideH3 ? 3 : (slideH2 ? 2 : 1),
-      nextTitle: '',
-      totalWeight: currentSlideWeight,
-      remainingWeight: Math.max(0, MAX_WEIGHT_PER_SLIDE - currentSlideWeight)
-    });
-    currentSlideElements = [];
-    currentSlideWeight = 0;
-    hasComplexInCurrentSlide = false;
-    isHighLevelSlide = false;
-  };
-
-  for (const sec of sections) {
-    const isH1toH4 = sec.headerLevel <= 4;
-    
-    // 무조건 슬라이드 분할 조건
-    // 1. h1~h4 헤더인 경우
-    // 2. 현재 슬라이드가 h1~h4로 시작된 경우 (후속 h5~h7 병합 방지)
-    // 3. 현재 슬라이드에 이미 복합 원소가 있는데 새 섹션에도 복합 원소가 있는 경우
-    // 4. 일반 가중치 합이 10을 넘는 경우
-    const shouldForceNewSlide = isH1toH4 || isHighLevelSlide || 
-                                (hasComplexInCurrentSlide && sec.hasComplex) ||
-                                (currentSlideWeight + sec.totalWeight > MAX_WEIGHT_PER_SLIDE);
-
-    if (shouldForceNewSlide && currentSlideElements.length > 0) {
-        pushSlide();
-    }
-
-    // 섹션이 너무 커서 쪼개야 하는 경우 (단일 섹션 가중치 > 10 또는 복합 원소가 여러 개일 가능성)
-    if (sec.totalWeight > MAX_WEIGHT_PER_SLIDE || sec.elements.filter(e => e.type === 'complex').length > 1) {
-        if (currentSlideElements.length > 0) pushSlide();
-        slideH1 = sec.h1; slideH2 = sec.h2; slideH3 = sec.h3;
-        for (const el of sec.elements) {
-            if (el.type === 'complex') {
-                // 복합 원소는 무조건 독립된 슬라이드 (앞뒤로 자름)
-                if (currentSlideElements.length > 0) pushSlide();
-                slideH1 = sec.h1; slideH2 = sec.h2; slideH3 = sec.h3;
-                currentSlideElements.push(el);
-                pushSlide();
-            } else {
-                if (currentSlideWeight + el.weight > MAX_WEIGHT_PER_SLIDE && currentSlideElements.length > 0) {
-                    pushSlide();
-                }
-                if (currentSlideElements.length === 0) { slideH1 = sec.h1; slideH2 = sec.h2; slideH3 = sec.h3; }
-                currentSlideElements.push(el);
-                currentSlideWeight += el.weight;
-            }
-        }
-        if (currentSlideElements.length > 0) pushSlide();
-    } 
-    // 섹션을 통째로 넣거나 병합하는 경우
-    else {
-        if (currentSlideElements.length === 0) {
-            slideH1 = sec.h1; slideH2 = sec.h2; slideH3 = sec.h3;
-            isHighLevelSlide = isH1toH4;
-        }
-        currentSlideElements.push(...sec.elements);
-        currentSlideWeight += sec.totalWeight;
-        if (sec.hasComplex) hasComplexInCurrentSlide = true;
+  for (let level = 7; level >= 5; level--) {
+    const nextPassSections: Section[] = [];
+    for (const sec of mergedSections) {
+      if (nextPassSections.length > 0) {
+        const last = nextPassSections[nextPassSections.length - 1];
+        // 병합 조건: 현재 섹션 레벨이 대상 레벨(level)이고, 가중치 합이 제한 내일 때
+        const canMerge = sec.headerLevel === level && 
+                         (last.totalWeight + sec.totalWeight <= MAX_WEIGHT_PER_SLIDE);
         
-        // 만약 방금 추가한 섹션에 복합 원소가 포함되어 있었다면, 
-        // "한 슬라이드 당 복합 원소 하나" 규칙을 위해 즉시 슬라이드 마감
-        if (sec.hasComplex) {
-            pushSlide();
+        if (canMerge) {
+          last.elements.push(...sec.elements);
+          last.totalWeight += sec.totalWeight;
+          last.hasComplex = last.hasComplex || sec.hasComplex;
+          continue;
         }
+      }
+      nextPassSections.push(sec);
     }
+    mergedSections = nextPassSections;
   }
-  pushSlide();
+
+  // 4. 섹션을 슬라이드로 최종 분할 (가중치 기준)
+  const slides: Slide[] = [];
+  
+  for (const sec of mergedSections) {
+    let currentSlideElements: ContentElement[] = [];
+    let currentSlideWeight = 0;
+    const slideH1 = sec.h1, slideH2 = sec.h2, slideH3 = sec.h3;
+
+    const pushSlide = () => {
+      const combined = currentSlideElements.map(e => e.content).join('\n').trim();
+      if (combined === '') { 
+          currentSlideElements = []; currentSlideWeight = 0; 
+          return; 
+      }
+      slides.push({
+        content: combined,
+        elements: [...currentSlideElements],
+        h1: slideH1, h2: slideH2, h3: slideH3,
+        level: slideH3 ? 3 : (slideH2 ? 2 : 1),
+        nextTitle: '',
+        totalWeight: currentSlideWeight,
+        remainingWeight: Math.max(0, MAX_WEIGHT_PER_SLIDE - currentSlideWeight)
+      });
+      currentSlideElements = [];
+      currentSlideWeight = 0;
+    };
+
+    for (const el of sec.elements) {
+      if (currentSlideWeight + el.weight > MAX_WEIGHT_PER_SLIDE && currentSlideElements.length > 0) {
+        pushSlide();
+      }
+      currentSlideElements.push(el);
+      currentSlideWeight += el.weight;
+    }
+    if (currentSlideElements.length > 0) pushSlide();
+  }
 
   // 차기 제목 계산
   for (let i = 0; i < slides.length - 1; i++) {

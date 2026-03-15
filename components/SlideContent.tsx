@@ -3,6 +3,14 @@
 
 import { useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
+import { isLocalDev } from '@/lib/config';
+
+interface ContentElement {
+  type: 'simple' | 'complex' | 'html';
+  content: string;
+  lines: number;
+  weight: number;
+}
 
 interface SlideContentProps {
   slides: {
@@ -13,6 +21,7 @@ interface SlideContentProps {
     level: number;
     nextTitle: string;
     totalWeight: number;
+    elements: ContentElement[];
     renderedContent: ReactNode;
   }[];
   category: string;
@@ -205,6 +214,41 @@ export default function SlideContent({ slides, category, slug, title, toc }: Sli
 
         {/* 오른쪽: 인덱스 및 제어 버튼 */}
         <div className="flex items-center gap-2 z-10">
+          {isLocalDev && (
+            <div className="group relative">
+              <div className="text-xs font-mono font-bold text-blue-500 mr-2 bg-blue-50 px-2 py-1 rounded border border-blue-200 cursor-help" title="Slide Weight (Dev Only)">
+                W: {currentSlide.totalWeight}
+              </div>
+              <div className="absolute right-0 top-full mt-0.5 w-72 bg-white border border-gray-200 shadow-xl rounded-md p-3 text-[10px] hidden group-hover:block z-[100] max-h-96 overflow-y-auto">
+                <div className="font-bold border-b pb-1 mb-2 text-gray-700 flex justify-between">
+                  <span>가중치 세부 정보 (Dev)</span>
+                  <span className="text-blue-500">Total: {currentSlide.totalWeight}</span>
+                </div>
+                <ul className="space-y-2">
+                  {currentSlide.elements && currentSlide.elements.length > 0 ? (
+                    currentSlide.elements.map((el, i) => (
+                      <li key={i} className="flex flex-col border-b border-gray-50 pb-1 last:border-0">
+                        <div className="flex justify-between font-mono items-center mb-0.5">
+                          <span className={`px-1 rounded ${
+                            el.type === 'complex' ? 'bg-purple-100 text-purple-600' : 
+                            (el.type === 'html' ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600')
+                          }`}>
+                            [{el.type}]
+                          </span>
+                          <span className="font-bold">w:{el.weight}</span>
+                        </div>
+                        <div className="text-gray-500 break-all line-clamp-2 italic leading-tight">
+                          {el.content.trim() || '(empty line)'}
+                        </div>
+                      </li>
+                    ))
+                  ) : (
+                    <li className="text-gray-400 italic">No elements found</li>
+                  )}
+                </ul>
+              </div>
+            </div>
+          )}
           <div className="text-sm font-medium text-gray-500 mr-2">{currentIdx + 1} / {slides.length}</div>
           
           <button onClick={() => window.print()} className="flex items-center justify-center w-10 h-10 bg-white hover:bg-gray-100 border border-gray-300 rounded-md transition-colors cursor-pointer text-gray-700" title="PDF 저장 / 프린트 (p)">

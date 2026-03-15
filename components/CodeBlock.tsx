@@ -71,7 +71,7 @@ const CodeBlock = ({
 
     // 슬라이드 가중치(코드 외 내용량)에 따른 동적 높이 계산
     const dynamicMaxHeight = isSlide 
-        ? `${Math.max(60, 500 - (totalWeight * 60))}px`
+        ? `${Math.max(50, 500 - (totalWeight * 60))}px`
         : 'none';
  
     return (
