@@ -78,20 +78,28 @@ export function splitContentIntoSlides(content: string): Slide[] {
       continue;
     }
     // plain html element
-    if (isInHtmlBlock || line.trim().startsWith('<')){
-      if(line.trim() == "" && htmlDepth === 0)
-      {
-        allElements.push({ type: 'html', content: currentBlockLines.join('\n'), lines: currentBlockLines.length, weight: WEIGHT_HTML });
-        isInHtmlBlock = false; currentBlockLines = [];
+    if (isInHtmlBlock || line.trim().startsWith('<')) {
+      isInHtmlBlock = true;
+      currentBlockLines.push(line);
+      for (let c of line) {
+        if (c === '<') htmlDepth++;
+        else if (c === '>') htmlDepth--;
       }
-        isInHtmlBlock = true; currentBlockLines.push(line);
-      for(let c of line){
-        if(c==='<'){
-          htmlDepth++;
+      
+      // 태그가 닫혔거나 파일 끝일 때
+      if (htmlDepth <= 0 || i + 1 === lines.length) {
+        const htmlContent = currentBlockLines.join('\n');
+        if (allElements.length > 0 && allElements[allElements.length - 1].type === 'simple') {
+          const last = allElements[allElements.length - 1];
+          last.content += '\n' + htmlContent;
+          last.weight += WEIGHT_HTML;
+          last.lines += currentBlockLines.length;
+        } else {
+          allElements.push({ type: 'html', content: htmlContent, lines: currentBlockLines.length, weight: WEIGHT_HTML });
         }
-        else if (c==='>'){
-          htmlDepth--;
-        }
+        isInHtmlBlock = false;
+        currentBlockLines = [];
+        htmlDepth = 0;
       }
       continue;
     }

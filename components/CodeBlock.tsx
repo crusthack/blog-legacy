@@ -75,26 +75,27 @@ const CodeBlock = ({
         : 'none';
  
     return (
-        <div className="relative group my-4 rounded-lg overflow-hidden border border-white/10 shadow-xl">
+        <div className="relative group my-4 rounded-lg overflow-hidden border border-white/10 shadow-xl print:border-none print:shadow-none print:!overflow-visible print:!max-h-none">
             {/* 상단 타이틀 바 (언어 라벨, 파일 주소, 복사 버튼) */}
             <div className="
                 flex items-center justify-between
                 bg-[#1e1e1e] px-4 py-2
                 border-b border-white/5
+                print:bg-transparent print:border-b-gray-200
             ">
                 <div className="flex items-center gap-3">
                     {language && (
-                        <div className="text-[12px] font-mono text-blue-400 tracking-widest font-black border-r border-white/10 pr-3">
+                        <div className="text-[12px] font-mono text-blue-400 tracking-widest font-black border-r border-white/10 pr-3 print:text-blue-600">
                             {language}
                         </div>
                     )}
                     {title && (
-                        <div className="text-[12px] font-mono text-gray-400 font-bold truncate max-w-[300px]">
+                        <div className="text-[12px] font-mono text-gray-400 font-bold truncate max-w-[300px] print:text-gray-700">
                             {title}
                         </div>
                     )}
                     {!language && !title && (
-                        <div className="text-[12px] font-mono text-gray-500 uppercase tracking-widest font-bold">
+                        <div className="text-[12px] font-mono text-gray-500 uppercase tracking-widest font-bold print:text-gray-400">
                             CODE
                         </div>
                     )}
@@ -122,7 +123,7 @@ const CodeBlock = ({
                     ...props.style, 
                     ...(isSlide ? { maxHeight: dynamicMaxHeight } : {}) 
                 }}
-                className={`${className} !text-[0.8rem] leading-snug !m-0 !rounded-t-none ${isSlide ? 'overflow-auto print:max-h-none print:overflow-visible' : ''} print:max-h-none print:overflow-visible print:whitespace-pre-wrap print:break-words scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent [&_code]:!text-[0.8rem] p-4`}
+                className={`${className} !text-[0.8rem] leading-snug !m-0 !rounded-t-none ${isSlide ? 'overflow-auto print:!max-h-none print:!overflow-visible' : ''} print:!max-h-none print:!overflow-visible print:whitespace-pre-wrap print:break-words scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent [&_code]:!text-[0.8rem] p-4`}
             >
                 {children}
             </pre>
