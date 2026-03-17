@@ -66,6 +66,8 @@ export default async function SlidePage({ params }: { params: Promise<{ category
         level: 1,
         nextTitle: bodySlides.length > 0 ? (bodySlides[0].h1 || bodySlides[0].h2 || bodySlides[0].h3) : '',
         totalWeight: 0,
+        complexCount: 0,
+        remainingWeight: 0,
         elements: [],
         renderedContent: (
             <div className="flex flex-col items-center justify-center text-center space-y-8 py-20 relative min-h-[60vh]">
