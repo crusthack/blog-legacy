@@ -100,32 +100,41 @@ export default async function SlidePage({ params }: { params: Promise<{ category
     };
 
     const slidesWithRenderedContent = await Promise.all(
-        bodySlides.map(async (slide) => ({
-            ...slide,
-            renderedContent: (
-                <MDXRemote
-                    source={slide.content}
-                    components={{
-                        h1: (props) => <h1 className="text-7xl md:text-6xl text-[#204090] mb-8 tracking-tighter border-b-4 border-blue-500 pb-4 inline-block" {...props} />,
-                        pre: (props) => <CodeBlock {...props} isSlide={true} totalWeight={slide.totalWeight} />,
-                        img: (props) => <MdxImage category={category} slug={slug} isSlide={true} totalWeight={slide.totalWeight} {...props} />,
-                        ul: (props) => <ul className="list-disc space-y-4 ml-8 my-6 text-xl md:text-2xl" {...props} />,
-                        ol: (props) => <ol className="list-decimal space-y-4 ml-8 my-6 text-xl md:text-2xl" {...props} />,
-                        p: (props) => <p className="text-xl md:text-2xl leading-relaxed mb-6" {...props} />,
-                    }}
-                    options={{
-                        mdxOptions: {
-                            remarkPlugins: [remarkGfm, remarkToc, remarkMath],
-                            rehypePlugins: [
-                                [rehypePrettyCode, prettyOptions], 
-                                rehypeSlug, 
-                                rehypeKatex
-                            ],
-                        },
-                    }}
-                />
-            )
-        }))
+        bodySlides.map(async (slide) => {
+            const allocatedWeight = slide.complexCount > 0 ? slide.remainingWeight / slide.complexCount : 0;
+            
+            return {
+                ...slide,
+                renderedContent: (
+                    <MDXRemote
+                        source={slide.content}
+                        components={{
+                            h1: (props) => <h1 className="text-7xl md:text-6xl text-[#204090] mb-8 tracking-tighter border-b-4 border-blue-500 pb-4 inline-block" {...props} />,
+                            pre: (props) => <CodeBlock {...props} isSlide={true} weight={allocatedWeight} />,
+                            img: (props) => <MdxImage category={category} slug={slug} isSlide={true} weight={allocatedWeight} {...props} />,
+                            ul: (props) => <ul className="list-disc space-y-4 ml-8 my-6 text-xl md:text-2xl" {...props} />,
+                            ol: (props) => <ol className="list-decimal space-y-4 ml-8 my-6 text-xl md:text-2xl" {...props} />,
+                            p: (props) => <p className="text-xl md:text-2xl leading-relaxed mb-6" {...props} />,
+                            table: (props) => (
+                                <div className="max-h-[600px] overflow-y-auto my-6 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
+                                    <table className="min-w-full border-collapse border border-gray-200" {...props} />
+                                </div>
+                            ),
+                        }}
+                        options={{
+                            mdxOptions: {
+                                remarkPlugins: [remarkGfm, remarkToc, remarkMath],
+                                rehypePlugins: [
+                                    [rehypePrettyCode, prettyOptions], 
+                                    rehypeSlug, 
+                                    rehypeKatex
+                                ],
+                            },
+                        }}
+                    />
+                )
+            };
+        })
     );
 
     const finalSlides = [titleSlide, ...slidesWithRenderedContent];

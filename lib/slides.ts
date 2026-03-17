@@ -1,6 +1,6 @@
 // lib/slides.ts
 
-export type ElementType = 'simple' | 'complex' | 'html';
+export type ElementType = 'simple' | 'complex' | 'html' | 'image' | 'code' | 'math' | 'table';
 
 export interface ContentElement {
   type: ElementType;
@@ -17,19 +17,27 @@ export interface Slide {
   h3: string;
   level: number;
   nextTitle: string;
-  totalWeight: number; // 일반 텍스트 및 HTML의 총 가중치
-  remainingWeight: number; // 10 - totalWeight
+  totalWeight: number; // 전체 요소 가중치 합
+  complexCount: number; // 복합 요소(코드, 수식, 표) 개수
+  remainingWeight: number; // 10 - (기본 + 사진 + HTML 가중치)
 }
 
 /** 슬라이드 분할 규칙 설정 */
-const MAX_WEIGHT_PER_SLIDE = 10;
+const MAX_WEIGHT_PER_SLIDE = 11;
 const WEIGHT_SIMPLE = 1;
 const WEIGHT_HTML = 9;
+
+// 각 복합원소 기본 가중치
+const WEIGHT_CODE = 2;
+const WEIGHT_IMAGE = 5;
+const WEIGHT_TABLE_ROW_UNIT = 0.5;
+const WEIGHT_TABLE_MIN = 1;
+const WEIGHT_MATH_FIXED = 1.5;
 
 export function splitContentIntoSlides(content: string): Slide[] {
   const lines = content.trim().split('\n');
   
-  // 1. 모든 라인을 ContentElement로 먼저 변환 (복합 원소 가중치는 무조건 0)
+  // 1. 모든 라인을 ContentElement로 먼저 변환
   const allElements: ContentElement[] = [];
   let isInCodeBlock = false, isInMathBlock = false, isInTable = false, isInHtmlBlock = false;
   let htmlDepth = 0;
@@ -43,7 +51,7 @@ export function splitContentIntoSlides(content: string): Slide[] {
       if (!isInCodeBlock) { isInCodeBlock = true; currentBlockLines = [line]; }
       else {
         currentBlockLines.push(line);
-        allElements.push({ type: 'complex', content: currentBlockLines.join('\n'), lines: currentBlockLines.length, weight: 0 });
+        allElements.push({ type: 'code', content: currentBlockLines.join('\n'), lines: currentBlockLines.length, weight: WEIGHT_CODE });
         isInCodeBlock = false; currentBlockLines = [];
       }
       continue;
@@ -54,7 +62,7 @@ export function splitContentIntoSlides(content: string): Slide[] {
       if (!isInMathBlock) { isInMathBlock = true; currentBlockLines = [line]; }
       else {
         currentBlockLines.push(line);
-        allElements.push({ type: 'complex', content: currentBlockLines.join('\n'), lines: currentBlockLines.length, weight: 0 });
+        allElements.push({ type: 'math', content: currentBlockLines.join('\n'), lines: currentBlockLines.length, weight: WEIGHT_MATH_FIXED });
         isInMathBlock = false; currentBlockLines = [];
       }
       continue;
@@ -62,7 +70,7 @@ export function splitContentIntoSlides(content: string): Slide[] {
     if (isInMathBlock) { currentBlockLines.push(line); continue; }
     // 사진 링크 
     if (line.match(/!\[.*\]\(.*\)/)) {
-      allElements.push({ type: 'complex', content: line, lines: 1, weight: 0 });
+      allElements.push({ type: 'image', content: line, lines: 1, weight: WEIGHT_IMAGE });
       continue;
     }
     // 테이블
@@ -72,7 +80,9 @@ export function splitContentIntoSlides(content: string): Slide[] {
         currentBlockLines.push(line);
       }
       if (i + 1 === lines.length || !lines[i+1].trim().startsWith('|')) {
-        allElements.push({ type: 'complex', content: currentBlockLines.join('\n'), lines: currentBlockLines.length, weight: 0 });
+        // 행당 가중치 계산, 최소 가중치 보장
+        const tableWeight = Math.max(WEIGHT_TABLE_MIN, Math.ceil(currentBlockLines.length * WEIGHT_TABLE_ROW_UNIT));
+        allElements.push({ type: 'table', content: currentBlockLines.join('\n'), lines: currentBlockLines.length, weight: tableWeight });
         isInTable = false; currentBlockLines = [];
       }
       continue;
@@ -135,7 +145,7 @@ export function splitContentIntoSlides(content: string): Slide[] {
         elements: [el], 
         totalWeight: el.weight, 
         h1: curH1, h2: curH2, h3: curH3,
-        hasComplex: el.type === 'complex'
+        hasComplex: ['code', 'math', 'table'].includes(el.type)
       };
       continue;
     }
@@ -144,7 +154,7 @@ export function splitContentIntoSlides(content: string): Slide[] {
     }
     currentSection.elements.push(el);
     currentSection.totalWeight += el.weight;
-    if (el.type === 'complex') currentSection.hasComplex = true;
+    if (['code', 'math', 'table'].includes(el.type)) currentSection.hasComplex = true;
   }
   if (currentSection) initialSections.push(currentSection);
 
@@ -186,14 +196,35 @@ export function splitContentIntoSlides(content: string): Slide[] {
           currentSlideElements = []; currentSlideWeight = 0; 
           return; 
       }
+
+      // 1차 가중치 합산 (분할용)
+      let complexCount = 0;
+      let baseWeight = 0;
+      for (const el of currentSlideElements) {
+        if (['code', 'image'].includes(el.type)) complexCount++;
+        else baseWeight += el.weight;
+      }
+
+      // 복합 원소 가중치 재조정: (MAX_WEIGHT_PER_SLIDE - 기본요소 가중치)를 복합 원소끼리 나눠가짐
+      const allocatedWeight = complexCount > 0 ? (MAX_WEIGHT_PER_SLIDE - baseWeight) / complexCount : 0;
+      
+      if (complexCount > 0) {
+        for (const el of currentSlideElements) {
+          if (['code', 'image'].includes(el.type)) {
+            el.weight = allocatedWeight;
+          }
+        }
+      }
+
       slides.push({
         content: combined,
         elements: [...currentSlideElements],
         h1: slideH1, h2: slideH2, h3: slideH3,
         level: slideH3 ? 3 : (slideH2 ? 2 : 1),
         nextTitle: '',
-        totalWeight: currentSlideWeight,
-        remainingWeight: Math.max(0, MAX_WEIGHT_PER_SLIDE - currentSlideWeight)
+        totalWeight: complexCount > 0 ? MAX_WEIGHT_PER_SLIDE : baseWeight, // 조정된 총 가중치
+        complexCount,
+        remainingWeight: Math.max(0, MAX_WEIGHT_PER_SLIDE - baseWeight)
       });
       currentSlideElements = [];
       currentSlideWeight = 0;

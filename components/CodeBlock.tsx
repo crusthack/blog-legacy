@@ -36,14 +36,14 @@ const IconCheck = () => (
  
 interface CodeBlockProps extends DetailedHTMLProps<HTMLAttributes<HTMLPreElement>, HTMLPreElement> {
     isSlide?: boolean;
-    totalWeight?: number;
+    weight?: number;
 }
 
 const CodeBlock = ({
     className = "",
     children,
     isSlide = false,
-    totalWeight = 0,
+    weight = 2,
     ...props
 }: CodeBlockProps) => {
     const [isCopied, setIsCopied] = useState(false);
@@ -69,9 +69,10 @@ const CodeBlock = ({
         if (!title) title = parts[1]; // 타이틀이 따로 없을 때만 사용
     }
 
-    // 슬라이드 가중치(코드 외 내용량)에 따른 동적 높이 계산
+    // 슬라이드 가중치에 따른 동적 높이 계산
+    // 전달받은 weight(할당된 가중치)를 기반으로 높이 결정
     const dynamicMaxHeight = isSlide 
-        ? `${Math.max(50, 500 - (totalWeight * 60))}px`
+        ? `${-20 + 45 * weight}px`
         : 'none';
  
     return (

@@ -21,10 +21,16 @@ interface MdxImageProps extends ImgHTMLAttributes<HTMLImageElement> {
     category: string;
     slug: string;
     isSlide?: boolean;
-    totalWeight?: number;
+    weight?: number;
 }
  
-export const MdxImage = ({ category, slug, isSlide = false, totalWeight = 0, ...props }: MdxImageProps) => {
+export const MdxImage = ({ 
+    category, 
+    slug, 
+    isSlide = false, 
+    weight = 5,
+    ...props 
+}: MdxImageProps) => {
     const {
         src,
         alt,
@@ -36,10 +42,11 @@ export const MdxImage = ({ category, slug, isSlide = false, totalWeight = 0, ...
     const resolvedSrc = resolveImagePath(category, slug, src as string);
 
     // 슬라이드 가중치에 따른 동적 높이 계산 (이미지용)
-    // 가중치 0일 때 65vh, 가중치 10일 때 30vh 정도
+    // 전달받은 weight를 기반으로 높이 결정
     const dynamicMaxHeight = isSlide 
-        ? `${Math.max(20, 60 - (totalWeight * 5))}vh`
+        ? `${-20 + 53 * weight}px`
         : '45vh'; // 일반 포스트 뷰 기본값
+
  
     return (
         <span 

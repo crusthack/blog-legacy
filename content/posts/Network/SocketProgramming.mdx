@@ -17,10 +17,10 @@ description: '소켓프로그래밍 정리'
 (일반적으로 TCP 환경을 가정)
 
 ## 소켓 통신의 특징 
-- 기초레벨에서 다루는 IO는 대부분 콘솔IO입니다.  
+- 기초레벨에서 다루는 입출력은 대부분 콘솔IO입니다.  
 알고리즘 문제를 풀거나 간단한 프로그램을 만들 시에 정해져있는 입력 유형을 통해 정해져있는 타입으로 파싱하는 일들을 합니다.
 - `scanf("%d", int)`, `std::cin >> float`, `a, b = map(int, readline().split())`. 각 C, C++, Python
-- 반면, 소켓통신은 주로 바이너리 데이터를 다룹니다. 정확히는 특정한 메시지 프로토콜을 구현한 후, 직렬화를 통해 송신 후 수신 과정에서 
+- 반면, 소켓통신은 주로 바이너리 데이터를 다룹니다. 특정한 메시지 프로토콜을 구현한 후, 직렬화를 통해 송신 후 수신 과정에서 
 각 바이트를 직접 조작하면서 유의미한 데이터(메시지)로 만들어내는 역직렬화 과정이 필요합니다. 
 
 ## 서버와 클라이언트
@@ -101,7 +101,8 @@ description: '소켓프로그래밍 정리'
 - `서버측`: 소켓 생성 -> 포트 바인딩 -> 클라이언트 연결 수락 -> 데이터 송수신 -> 소켓 종료  
 socket -> bind -> accept -> recv/send -> shutdown/close
 - `클라이언트측`: 소켓 생성 -> 서버 연결 -> 데이터 송수신 -> 소켓 종료  
-socket -> connect -> recv/send -> shutdown/close    
+socket -> connect -> recv/send -> shutdown/close  
+- **송수신 시 데이터 이동 경로**:  유저 메모리 -> 커널 메모리 -> 네트워크 인터페이스(랜카드)
 
 ## Address Family (AF_...)
 
@@ -149,10 +150,107 @@ while (n = recv(sock, buf, sizeof(buf), 0)) {
 ```
 
 ## Select
+- 파일디스크립터들의 세트를 두고서 해당 세트 안에서의 이벤트 발생 여부를 살핍니다. 
+- OS는 입출력 이벤트가 발생하면 비트 표시를 통해 송수신 여부를 기록한 뒤 `select` 콜백 함수를 호출시킵니다.
+- 사용자는 select함수가 종료되면 등록한 fd세트를 하나씩 순회하면서 송수신 여부를 확인하고서 `accept`, `recv`, `send` 함수를 호출합니다. 
+- 여러개의 소켓을 감시하면서 입출력 준비가 되면 소켓 세트를 순회하면서 확인 후 `recv`/`send` 연산을 하는 방식으로, 하나의 스레드에서 여러개의 소켓을 감시할 수 있습니다.
+- 다만, 소켓 셋을 매번 순회 해야한다는 점, fd셋 또한 초기화 해야하는 점, 이후 동기적으로 `recv`호출 하면서 뒤늦게 IO 연산이 이뤄지는 방식이기에 느리다는 단점이 있습니다. 
+```c
+// 약식 코드
+FD_SET fdRead;
+while(1)
+{
+    // fd_set 초기화
+    FD_ZERO(&fdRead);
+    for (var socket in sockets)
+        FD_SET(*it, &socket);
+    // fd set에 변화가 발생할 때까지 동기적으로 대기
+    ::select(0, &fdRead, NULL, NULL, NULL);
+
+    for(int i=0; i < sockets.length(); ++i)
+    {
+        // 비트 검사
+        if (!FD_ISSET(fdRead.fd_array[i], &fdRead))
+            continue;
+        
+        // recv 호출 
+        char szBuffer[1024] = { 0 };
+        int nReceive = ::recv(fdRead.fd_array[i],
+            (char*)szBuffer, sizeof(szBuffer), 0);
+    }
+}
+```
+
 ## poll
+- poll 방식도 select방식과 비슷하지만, set에 들어갈 수 있는 파일 디스크립터의 한계가 늘어났다는 것과 fdset을 매번 초기화해줘야했던 동작이 없어졌습니다.
+```c
+// pollfd 구조체 배열 준비
+struct pollfd fds[MAX_CLIENTS];
+
+// 초기 설정 (루프 밖에서 한 번만 해도 됨)
+for (int i = 0; i < MAX_CLIENTS; i++) {
+    fds[i].fd = client_sockets[i];
+    fds[i].events = POLLIN; // 읽기 이벤트에 관심 있음!
+    fds[i].revents = 0;     // 결과값 초기화
+}
+
+while(1) {
+    // fd_set을 매번 다시 채울 필요 없이 배열과 개수만 넘김
+    // 타임아웃 5000ms
+    int ret = poll(fds, MAX_CLIENTS, 5000);
+
+    if (ret <= 0) continue;
+
+    for (int i = 0; i < MAX_CLIENTS; i++) {
+        // 비트 검사 대신 구조체의 revents 필드 확인
+        if (fds[i].revents & POLLIN) {
+            
+            // 데이터 수신 (recv)
+            char buf[1024];
+            int n = recv(fds[i].fd, buf, sizeof(buf), 0);
+            
+            // 작업 완료 후 revents는 다음 poll 호출 시 커널이 알아서 초기화함
+        }
+    }
+}
+```
 ## Epoll(Linux)
+- epoll은 전체 순회하는게 아닌 송수신 이벤트 존재하는 소켓 셋만 반환해주기에 좀 더 빠릅니다.
+
+```c
+// 1. epoll 인스턴스 생성
+int epfd = epoll_create(1);
+
+// 2. 서버 소켓 등록 (최초 1회)
+struct epoll_event event;
+event.events = EPOLLIN; // 읽기 이벤트 감시
+event.data.fd = serv_sock;
+epoll_ctl(epfd, EPOLL_CTL_ADD, serv_sock, &event);
+
+// 이벤트가 발생한 소켓들을 담을 배열 준비
+struct epoll_event revents[MAX_EVENTS];
+
+while(1) {
+    // 3. 신호가 온 놈들의 '개수'를 반환하며, revents 배열에 그 명단을 채워줌
+    int n = epoll_wait(epfd, revents, MAX_EVENTS, -1);
+
+    // 4. 전수 조사가 필요 없음! 딱 신호 온 개수(n)만큼만 루프 돌면 됨
+    for (int i = 0; i < n; i++) {
+        if (revents[i].data.fd == serv_sock) {
+            // 신규 연결 처리 (accept)
+            // 신규 클라이언트도 epoll_ctl로 딱 한 번만 등록해주면 됨
+        } else {
+            // 데이터 수신 처리 (recv)
+            // 명단에 있는 놈들이므로 즉시 작업 수행
+        }
+    }
+}
+```
+
 ## IO_uring(Linux)
 ## IOCP(Windows)
+- 얜 입출력 요청하면, OS가 알아서 유저메모리까지 데이터 올려준 뒤에 함수 종료되고나서 해당 소켓 반환해주기에 더 빠름
+
 ## RIO(Windows)
 
 
@@ -187,7 +285,8 @@ while (n = recv(sock, buf, sizeof(buf), 0)) {
 게임에 적용한 네트워크 라이브러리에서도 그런 구조가 될 수 있도록 하는게 좋을 것 같습니다.
 
 ##### 스펙 요소
-- 서버측에선 연결된 클라이언트를 구분하기 위한 세션 객체 혹은 세션 번호 같은 걸 같이 반환해줘야 합니다.
+- 서버측에서연결된 클라이언트를 구분하기 위한 세션 객체 혹은 세션 번호 같은 걸 같이 반환해줘야 합니다. 
+ 단순히 0부터 시작되는 번호가 아닌, 접속 시간 및 여러 메타 정보를 포함한 문자열을 활용해도 좋을 것 같습니다. 
 - OnConnected, OnRecived, OnDisconnected와 같은 이벤트 핸들러를 제공해야 합니다. 
 - 메시지 파싱 실패시 연결을 끊어 버리도록 해야합니다. 
 

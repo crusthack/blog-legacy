@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { isLocalDev } from '@/lib/config';
 
 interface ContentElement {
-  type: 'simple' | 'complex' | 'html';
+  type: 'simple' | 'complex' | 'html' | 'image' | 'code' | 'math' | 'table';
   content: string;
   lines: number;
   weight: number;
@@ -21,6 +21,8 @@ interface SlideContentProps {
     level: number;
     nextTitle: string;
     totalWeight: number;
+    complexCount: number;
+    remainingWeight: number;
     elements: ContentElement[];
     renderedContent: ReactNode;
   }[];
@@ -220,9 +222,15 @@ export default function SlideContent({ slides, category, slug, title, toc }: Sli
                 W: {currentSlide.totalWeight}
               </div>
               <div className="absolute right-0 top-full mt-0.5 w-72 bg-white border border-gray-200 shadow-xl rounded-md p-3 text-[10px] hidden group-hover:block z-[100] max-h-96 overflow-y-auto">
-                <div className="font-bold border-b pb-1 mb-2 text-gray-700 flex justify-between">
-                  <span>가중치 세부 정보 (Dev)</span>
-                  <span className="text-blue-500">Total: {currentSlide.totalWeight}</span>
+                <div className="font-bold border-b pb-1 mb-2 text-gray-700 flex flex-col gap-1">
+                  <div className="flex justify-between">
+                    <span>가중치 세부 정보 (Dev)</span>
+                    <span className="text-blue-500">Total: {currentSlide.totalWeight}</span>
+                  </div>
+                  <div className="flex justify-between text-[9px] text-gray-400">
+                    <span>Remaining (for Complex): {currentSlide.remainingWeight}</span>
+                    <span>Complex: {currentSlide.complexCount}</span>
+                  </div>
                 </div>
                 <ul className="space-y-2">
                   {currentSlide.elements && currentSlide.elements.length > 0 ? (
@@ -230,8 +238,9 @@ export default function SlideContent({ slides, category, slug, title, toc }: Sli
                       <li key={i} className="flex flex-col border-b border-gray-50 pb-1 last:border-0">
                         <div className="flex justify-between font-mono items-center mb-0.5">
                           <span className={`px-1 rounded ${
-                            el.type === 'complex' ? 'bg-purple-100 text-purple-600' : 
-                            (el.type === 'html' ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600')
+                            ['code', 'math', 'table'].includes(el.type) ? 'bg-purple-100 text-purple-600' : 
+                            (el.type === 'image' ? 'bg-green-100 text-green-600' : 
+                            (el.type === 'html' ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600'))
                           }`}>
                             [{el.type}]
                           </span>
