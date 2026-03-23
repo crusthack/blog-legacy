@@ -6,30 +6,56 @@ title: '인공지능보안'
 - AI, 머신러닝 시스템에 대한 취약점 학습 및 여러가지 공격, 방어 기법에 대한 학습 정리
 - 학교 수업 학습 내용 정리
 
-## a. AI의 한계
-**학습 데이터에 기반한 확률론적 출력 장치**  
-    AI는 머신러닝을 통해 여러 학습 데이터를 통한 학습을 통해 AI모델을 구축한 뒤 새로운 출력을 받고서 
+## 인공지능 보안이란?
+- AI(LLM, Agent)의 내부 시스템 딥러닝의 취약점을 파고들어 서비스 제공자가 원치 않은 출력이 나오도록 하는 것. 
+- **기밀성**: AI가 학습하는 데에 사용한 데이터가 공개돼 개인정보가 침해당하는 경우
+- **무결성**: 입력 데이터를 변조해 정상적이지 않은 출력값이 나오게 함
+- **가용성**: 트래픽 공격으로 서비스 무력화 
+- **단**, 일반적인 정보보안에서의 보안 3개 요소는 인공지능 보안에서 크게 의미있진 않음. 
+- 딥러닝 단계에서의 어느 부분을 공격하느냐, 공격의 종류가 무엇이으냐 같은 것에 더 초점을 둠.
 
-## 최적화 알고리즘
-- d.g. 개선 알고리즘
-- Momentum, arasprog? => adam
-
-# 딥러닝 학습
-- 데이터를 이용하여 파라미터(기울기, ??)를 최적화 하는 과정
-1. 데이터 입력, 2. 예측 생성, 3. 오차 계산 4. 기울기 계산, 5. 파라미터 업데이트
-
+## 딥러닝
+- 데이터를 이용하여 파라미터(가중치, 편향값)를 최적화 하는 과정
+##### 딥러닝 모델 학습 과정
 1. 데이터 입력
-- 학습데이터(x(입력), y(정답)) label -> e.g. 이미지 => 클래스, 문장 => 의미
-2. 예측 생성(forward propagation)
-- 입력 데이터를 신경망에 통과시켜 예측값을 계산 y = f세타(x) 예측값 = 신경망모델, 모델 파라미터(입력값)
-3. 오차 계산(Loss)
-- 예측값과 실제값의 차이를 계산 e.g. MSE, 크로스뭐시기 ...
-4. 기울기 계산(back propagation)
-- Loss가 계산되면 chain rule을 이용한 파라미터에 대한 기울기(gradiant) 계산
+2. 예측 생성
+3. 오차 계산
+4. 기울기 계산
 5. 파라미터 업데이트
-- learning rate 계산?
+6. 반복
 
-## gradiant descent 계산 종류
+### 1. 데이터 입력 (Data Input)
+학습의 기초가 되는 데이터를 준비하고 신경망에 주입하는 단계입니다.
+* **구성**: 입력값($x$)과 정답 레이블($y$, Label)로 이루어집니다.
+* **예시**: 
+    * 이미지 데이터 $\rightarrow$ 클래스(강아지, 고양이 등)
+    * 텍스트 데이터 $\rightarrow$ 감성/의미(긍정, 부정 등)
+
+### 2. 예측 생성 (Forward Propagation)
+입력 데이터를 신경망에 통과시켜 결과값을 도출하는 **순전파** 단계입니다.
+* **메커니즘**: 데이터가 각 층(Layer)의 가중치($W$)와 편향($b$)을 거치며 계산됩니다.
+* **수식**: $$\hat{y} = f_\theta(x)$$
+    * $\hat{y}$: 모델의 예측값
+    * $\theta$: 모델의 파라미터 (가중치와 편향)
+
+### 3. 오차 계산 (Loss Function)
+예측값($\hat{y}$)과 실제 정답($y$) 사이의 차이를 수치화하여 모델의 현재 성능을 측정합니다.
+* **주요 손실 함수**:
+    * **MSE (Mean Squared Error)**: 회귀 문제에서 사용하며 오차의 제곱 합을 계산합니다.
+    * **Cross-Entropy**: 분류 문제에서 사용하며 두 확률 분포의 차이를 계산합니다.
+
+### 4. 기울기 계산 (Backpropagation)
+계산된 오차를 바탕으로, 각 파라미터가 오차에 얼마나 기여했는지 파악하는 **역전파** 단계입니다.
+* **연쇄 법칙 (Chain Rule)**: 출력층에서 입력층 방향으로 미분을 적용하여 각 파라미터에 대한 **기울기(Gradient)**를 구합니다.
+* **목적**: 손실(Loss)을 최소화하기 위해 파라미터를 어느 방향으로 수정해야 할지 결정합니다.
+
+### 5. 파라미터 업데이트 (Optimization)
+계산된 기울기를 사용하여 실제 모델의 파라미터($\theta$)를 갱신하는 단계입니다.
+* **학습률 (Learning Rate, $\eta$)**: 한 번의 업데이트에서 파라미터를 얼마나 큰 폭으로 조정할지 결정하는 비율입니다.
+* **업데이트 공식**: $$\theta_\text{neww} = \theta_{old} - (\eta \times \text{Gradient})$$
+* **옵티마이저 (Optimizer)**: 업데이트를 효율적으로 수행하는 알고리즘 (예: Adam, SGD 등).
+
+#### gradiant descent 계산 종류
 1. batch gradiant descent
 - 전체 Data를 사용 => 안정적인 업데이트, 계산량 많음 
 
@@ -39,9 +65,304 @@ title: '인공지능보안'
 3. Mini-Batch g.d.
 - batch size(32, 64, 128)를 이용해 일부 데이터 사용 => 계산 효율, 안정적
 
-## Fast Gradient Sign Method(FGSM)
-- 손실이 가장 빨리 증가하는 방향의 부호태그, 각 입력 성분을 허용한계 입실론만큼 한 번에 이동시키는 공격
+# 적대적 공격(Adversarial Attack)
+- **정의**: AI 모델을 속여 **잘못된 예측**을 하게 하거나 **민감한 정보를 공개**하도록 조작하는 기술
+- 모델을 속이기 위해, 인간의 눈으로는 구별 못 하는 **노이즈**를 심어 의도와 다른 동작을 하도록 함.
+
+## 적대적 공격의 종류
+- **Poisoning Attack**: 딥러닝 훈련 과정에서의 학습 데이터 조작
+- **Evasion Attack**: 모델이 잘못된 예측을 하도록 데이터 조작
+- **Extraction Attack**: 모델의 내부 정보, 아키텍처를 조사하기 위해 쿼리
+- **Inference Attack**: 모델 학습과정에 쓰인 데이터를 조사하기 위해 쿼리
+
+## 적대적 공격의 분류
+- **Knowledge**, **Space**, **Strategy**, **Goal**, **Target** 5개 사항으로 공격 분류가 가능
+- 공격자가 모델에 대해 어느 수준으로 정보를 가지고 있는지, 입력 데이터를 어느 범위에서 조작할 수 있는지, 어느 방식으로 공격하는지, 최종 공격 목적이 무엇인지, 공격 대상이 무엇인지.
+
+##### Knowledge (지식 수준)
+-  White Box, Black Box, Gray Box
+
+##### Space (공격 범위)
+- Feature Space(바이너리 데이터), Problem Space(현실 물체)
+
+##### Strategy (공격 방식)
+- Poisoning(학습 단계), Evasion(테스트 단계), Oracle(운영 단계)
+
+##### Goal (공격 목적)
+- CIA 3개 분류로 나뉨. 기밀성 무결성 가용성 
+
+##### Target (공격 대상)
+- ML Model(), Physical Domain(현실 대상)
+
+##### Attack Object 
+- 공격 결과에 대해, 특정 오답으로 유도 하는건 **Targeted**, 단순히 오답을 내게해 식별 못 하게 하는건 **Untargeted**로 분류
+
+
+# FGSM(Fast Gradient Sign Method) 공격
+- 딥러닝 모델의 **손실함수**에 대한 **기울기 부호**를 이용하여, 입력 데이터를 **손실이 증가하는 방향**으로 **한 번만** 변형시켜 **오답**을 내게하는 적대적 공격
+- White Box, Feature Space, Evasion Attack, Integrity Attack, ML Model, UnTargeted
+- 현대 딥러닝 모델은 선형 계층을 깊게 적층하여 최적화 되어있음. -> 고차원 입력 공간에서는 미세한 변화(노이즈)가 모이면 아주 큰 오차를 일으킬 수 있음.
+- 각 손실함수 가중치 기울기에 대응되는 노이즈값($+\epsilon \text{ 혹은} -\epsilon$)을 부여하여 손실을 증가시킴.
+
+## 공격 방법
+- 손실이 가장 빨리 증가하는 방향의 부호태그, 각 입력 성분을 허용한계 입실론만큼씩 이동시키는 공격
 1.  ?? 노이즈 안에서 손실을 최대화하는 공격 문제 설정
 2. 손실 함수 1차 테일러 함수로 근사화
 3. 결국 gradient와의 내적을 최대화하는 문제로 변환
 4. $L_\infty$ 제약에서는 각 성부을 gradient부호 방향으로 움직이는 것, 최적화
+
+## 공격 원리
+##### 1. 문제 설정  
+  $x_{adv} = x + \delta$ 이 입력이 모델의 손실($L(\theta , x + \delta , y)$)을 최대한 크게 만들도록 하는 것.  
+    단, 노이즈가 너무 크면 인간의 눈에 보이게되므로, $||\delta||_\infty \le \epsilon$ 각 성분별 변화량이 최대 에타를 넘지 말아야 함.  
+    따라서, max(L) \<= 델타무한
+
+##### 2. 테일러 1차 근사화를 통한 계산결과, 뒤의 델타항을 최대한 시키는 것이 목표로 나옴
+  손실함수 L은 보통 매우 복잡한 비선형 함수  
+    => x근처에서 1차 테일러 전개함  
+    => L(세타, x+델타, y) ~~ L(세타, x, y) + 델타L(세타, x, y)
+
+##### 3. 최적화 문제 단순화
+  델타와 gradient의 내적을 최적화 하는 문제로 바뀜. 
+
+##### 4. 일반화
+  component - wise analysis
+  델타^T 델타_x L.. = 시그마 i=1부터 n, 델타_i * 델타L / 델타x_i 내적 최대로..
+  기울기가 양수면, 델타_i도 양수로, 기울기가 음수면 델타_i도 음수여야 총합이 커짐. 
+
+## 결론
+- $x_{adv} = x + \delta$ 이므로, $x_{adv} = x + \epsilon * sign(\Delta_xL(\theta, x, y))$
+- 각 가중치에 맞는 부호의 입실론 값 노이즈 부여
+
+## 실습 코드
+```python
+import tensorflow as tf
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+
+mpl.rcParams['figure.figsize'] = (8, 8)
+mpl.rcParams['axes.grid'] = False
+
+
+pretrained_model = tf.keras.applications.MobileNetV2(include_top=True,
+                                                     weights='imagenet')
+pretrained_model.trainable = False
+
+# ImageNet labels
+decode_predictions = tf.keras.applications.mobilenet_v2.decode_predictions
+
+def preprocess(image):
+  imgae = tf.cast(image, tf.float32)
+  image = tf.image.resize(image, (224, 224))
+  image = tf.keras.applications.mobilenet_v2.preprocess_input(image)
+  image = image[None, ...]
+  return image
+
+def get_imagenet_label(probs):
+  return decode_predictions(probs, top=1)[0][0]
+
+image_path = tf.keras.utils.get_file('YellowLabradorLooking_new.jpg',
+                                     'https://storage.googleapis.com/download.tensorflow.org/example_images/YellowLabradorLooking_new.jpg')
+
+image_raw = tf.io.read_file(image_path)
+image = tf.image.decode_image(image_raw)
+image = preprocess(image)
+image_probs = pretrained_model.predict(image)
+
+plt.figure()
+plt.imshow(image[0] * 0.5 + 0.5) # To change [-1, 1] to [0, 1]
+_, image_class, class_confidence = get_imagenet_label(image_probs)
+plt.title('{} : {:.2f}% Confidence'.format(image_class, class_confidence*100))
+plt.show()
+
+
+### 공격 이전, 예측 결과 확인
+
+### FGSM 공격 
+
+loss_object = tf.keras.losses.CategoricalCrossentropy()
+
+def create_adversarial_pattern(input_image, input_label):
+  with tf.GradientTape() as tape:
+    # todo
+    # watch the input_image for gradient computation 
+    tape.watch(input_image)
+    # forward pass to get prediction
+    prediction = pretrained_model(input_image)
+    # compute loss using (input_label, prediction)
+    loss = loss_object(input_label, prediction)
+    pass
+  # todo
+  # compute gradient of loss w.r.t input_image
+  gradient = tape.gradient(loss, input_image)
+  # take sign of gradient (FGSM)
+  return tf.sign(gradient)
+
+labrador_retriever_index = 208
+label = tf.one_hot(labrador_retriever_index, image_probs.shape[-1])
+label = tf.reshape(label, (1, image_probs.shape[-1]))
+
+perturbations = create_adversarial_pattern(image, label)
+plt.imshow(perturbations[0] * 0.5 + 0.5)
+
+def display_images(image, description):
+  _, label, confidence = get_imagenet_label(pretrained_model.predict(image))
+  plt.figure()
+  plt.imshow(image[0]*0.5 + 0.5)
+  plt.title('{} \n {} : {:.2f}% Confidence'.format(description, label, confidence*100))
+  plt.show()
+
+epsilons = [0, 0.01, 0.1, 0.15]
+descriptions = [('Epsilon = {:0.3f}'.format(eps) if eps else 'Input')
+                for eps in epsilons]
+perturbations = create_adversarial_pattern(image, label)
+for i, eps in enumerate(epsilons):
+  # todo
+  # generate adversarial example using FGSM
+  adv_x = image + eps * perturbations
+  # clip adv_x to valid range (MobileNetV2 preprocess range is [01, 1])
+  adv_x = tf.clip_by_value(adv_x, -1, 1)  
+
+  display_images(adv_x, descriptions[i])  
+```
+
+
+## 한계
+- 모델의 극소부분을 선형적이라는 가정하에 진행되는 공격 -> 실제로는 변수가 많음, 공격 강도가 약함
+- 적대적 공격에 대한 대응 학습을 한 모델에게 쉽게 대응됨. 
+
+
+# PGD(Projected Gradient Descent)
+- FGSM을 세밀하게 여러번 수행해서 좀 더 정밀하고 강력하게 공격을 함. 
+
+## FGSM & PGD 실습
+```python
+import tensorflow as tf
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+
+mpl.rcParams['figure.figsize'] = (8, 8)
+mpl.rcParams['axes.grid'] = False
+
+
+pretrained_model = tf.keras.applications.MobileNetV2(include_top=True,
+                                                     weights='imagenet')
+pretrained_model.trainable = False
+
+# ImageNet labels
+decode_predictions = tf.keras.applications.mobilenet_v2.decode_predictions
+
+def preprocess(image):
+  imgae = tf.cast(image, tf.float32)
+  image = tf.image.resize(image, (224, 224))
+  image = tf.keras.applications.mobilenet_v2.preprocess_input(image)
+  image = image[None, ...]
+  return image
+
+def get_imagenet_label(probs):
+  return decode_predictions(probs, top=1)[0][0]
+
+image_path = tf.keras.utils.get_file('YellowLabradorLooking_new.jpg',
+                                     'https://storage.googleapis.com/download.tensorflow.org/example_images/YellowLabradorLooking_new.jpg')
+
+image_raw = tf.io.read_file(image_path)
+image = tf.image.decode_image(image_raw)
+image = preprocess(image)
+image_probs = pretrained_model.predict(image)
+
+plt.figure()
+plt.imshow(image[0] * 0.5 + 0.5) # To change [-1, 1] to [0, 1]
+_, image_class, class_confidence = get_imagenet_label(image_probs)
+plt.title('{} : {:.2f}% Confidence'.format(image_class, class_confidence*100))
+plt.show()
+
+
+### 공격 이전, 예측 결과 확인
+
+### FGSM 공격 
+
+loss_object = tf.keras.losses.CategoricalCrossentropy()
+
+def create_adversarial_pattern(input_image, input_label):
+  with tf.GradientTape() as tape:
+    # todo
+    # watch the input_image for gradient computation 
+    tape.watch(input_image)
+    # forward pass to get prediction
+    prediction = pretrained_model(input_image)
+    # compute loss using (input_label, prediction)
+    loss = loss_object(input_label, prediction)
+    pass
+  # todo
+  # compute gradient of loss w.r.t input_image
+  gradient = tape.gradient(loss, input_image)
+  # take sign of gradient (FGSM)
+  return tf.sign(gradient)
+
+labrador_retriever_index = 208
+label = tf.one_hot(labrador_retriever_index, image_probs.shape[-1])
+label = tf.reshape(label, (1, image_probs.shape[-1]))
+
+perturbations = create_adversarial_pattern(image, label)
+plt.imshow(perturbations[0] * 0.5 + 0.5)
+
+def display_images(image, description):
+  _, label, confidence = get_imagenet_label(pretrained_model.predict(image))
+  plt.figure()
+  plt.imshow(image[0]*0.5 + 0.5)
+  plt.title('{} \n {} : {:.2f}% Confidence'.format(description, label, confidence*100))
+  plt.show()
+
+epsilons = [0, 0.01, 0.1, 0.15]
+descriptions = [('Epsilon = {:0.3f}'.format(eps) if eps else 'Input')
+                for eps in epsilons]
+perturbations = create_adversarial_pattern(image, label)
+for i, eps in enumerate(epsilons):
+  # todo
+  # generate adversarial example using FGSM
+  adv_x = image + eps * perturbations
+  # clip adv_x to valid range (MobileNetV2 preprocess range is [01, 1])
+  adv_x = tf.clip_by_value(adv_x, -1, 1)  
+
+  display_images(adv_x, descriptions[i])  
+
+## PGD 공격
+
+def pgd_attack(input_image, input_label, epsilon, alpha, num_iter):
+    # copy img to start
+    adv_image = tf.identity(input_image)
+
+    for i in range(num_iter):
+      # calculate gradients with respect to the current adversarial image
+      # Reuse the create_adversarial_pattern function defiend earlier
+      pertubation = create_adversarial_pattern(adv_image, input_label)
+
+      # 2. Update adversarial image
+      # maximize the loss (Gradient ascent)
+      adv_image = adv_image + alpha * pertubation
+
+      # 3. Projection clip the perturbation to be within epsilon
+      # noise doesn't exceed the allowed budget (epilon)
+      perturbation_total = adv_image - input_image 
+
+      perturbation_total = tf.clip_by_value(perturbation_total, -epsilon, epsilon)
+
+      adv_image = input_image + perturbation_total
+                                                                          
+      adv_image = tf.clip_by_value(adv_image, -1, 1)
+
+    return adv_image
+
+epsilons = [0.01, 0.03]
+pgd_alpha = 0.005
+pgd_iterations = 10
+
+print(f"Running PGD Attack with alpha={pgd_alpha}, iteratinos={pgd_iterations}...\n")
+
+for i, eps in enumerate(epsilons):
+  adv_x_pgd = pgd_attack(image, label, epsilon=eps, alpha=pgd_alpha, num_iter=pgd_iterations)
+  
+  description = 'PGD\nEpsilon = {:0.3f}'.format(eps)
+  display_images(adv_x_pgd, description)
+```
+  

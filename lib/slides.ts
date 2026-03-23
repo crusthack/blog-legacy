@@ -23,7 +23,7 @@ export interface Slide {
 }
 
 /** 슬라이드 분할 규칙 설정 */
-const MAX_WEIGHT_PER_SLIDE = 11;
+const MAX_WEIGHT_PER_SLIDE = 10;
 const WEIGHT_SIMPLE = 1;
 const WEIGHT_HTML = 9;
 
