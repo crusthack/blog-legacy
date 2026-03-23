@@ -7,6 +7,8 @@ export default function CategorySidebar({ currentCategory }: { currentCategory: 
   const sortedPosts = [...posts].sort((a, b) => {
     if (a.slug === 'index') return -1;
     if (b.slug === 'index') return 1;
+    console.log(a.slug + ". " + b.slug)
+    console.log(a.title + ", " + b.title)
     return a.title.localeCompare(b.title); 
   });
  
