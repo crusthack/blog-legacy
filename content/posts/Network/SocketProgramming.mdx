@@ -250,7 +250,9 @@ while(1) {
 ## IO_uring(Linux)
 ## IOCP(Windows)
 - 얜 입출력 요청하면, OS가 알아서 유저메모리까지 데이터 올려준 뒤에 함수 종료되고나서 해당 소켓 반환해주기에 더 빠름
-
+- 자세한 코드는 아래 저장소 혹은 MSDN 참고
+- [https://github.com/crusthack/2025WinsockUnrealNetworking.git](https://github.com/crusthack/2025WinsockUnrealNetworking.git)
+- [I/O Completion Ports MSDN](https://learn.microsoft.com/en-us/windows/win32/fileio/i-o-completion-ports)
 ## RIO(Windows)
 
 
@@ -322,10 +324,18 @@ Nagle 알고리즘을 통해 작은 패킷들을 하나로 묶어서 보내는 �
 
 - 유저 메모리 - 커널 메모리 - NIC 메모리 복사 과정을 생략하기 위한 기술도 존재함. 베어메탈, kafka
 
-
-
 # 상용 네트워크 라이브러리
 - [boost.asio](https://www.boost.org/doc/libs/latest/doc/html/boost_asio.html)
 - [ACE](https://www.cs.wm.edu/~dcschmidt/ACE.html)
 - [photon](https://www.photonengine.com/)
 - [proudnet](https://proudnet.com/)
+
+# 개인적인 소켓 프로그래밍 학습 기록
+- 2025년에 상반기에 진행해, C#에서 소켓을 통신을 활용한 채팅 프로그램을 만들어본 적이 있습니다. ASP.Net을 활용한 회원가입 시스템도 있습니다. 
+- 제작한지 오래되기도 하고 너무 수준이 낮아서 따로 정리는 안 하였습니다. 
+- [C# 채팅 프로그램 깃허브 저장소](https://github.com/crusthack/2025CSharp-ChattingApp)
+- 2026년 1월 ~ 2월에 진행한 프로젝트입니다. C# 네트워크 라이브러리 제작을 하였으며, 채팅 프로그램 및 유니티 게임에 적용해 간단한 멀티플레이를 약식으로 구현해보았습니다.
+- [Unity 2D Multi 블로그 설명](https://crusthack.github.io/blog/Project/Unity2DMulti)
+- 2025년 하반기에 진행한 C++에서의 Winsock 활용한 채팅 프로그램 제작 프로젝트입니다.  
+따로 정리를 하진 않았으며, Winsock 라이브러리에 대한 개괄적인 내용 정리 포스트르 작성할 계획이 있지만, 실행 의지는 아직 없습니다.
+- [Winsock Programming 깃허브 저장소](https://github.com/crusthack/2025WinsockUnrealNetworking.git)
