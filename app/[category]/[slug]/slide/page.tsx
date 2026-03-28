@@ -12,7 +12,6 @@ import rehypePrettyCode from "rehype-pretty-code";
 import remarkMath from 'remark-math';
 import CodeBlock from '@/components/CodeBlock';
 import { MdxImage } from '@/components/MdxImage';
-import rehypeCodeTitles from 'rehype-code-titles';
 import { getTocFromMarkdown } from '@/lib/parseToc';
 import { Metadata } from 'next';
 import { isLocalDev, repoName } from '@/lib/config';
@@ -56,7 +55,7 @@ export default async function SlidePage({ params }: { params: Promise<{ category
     const bodySlides = splitContentIntoSlides(postData.content);
     
     const baseurl = isLocalDev ? '' : `https://crusthack.github.io/${repoName}`;
-    const postUrl = `${baseurl}/${category}/${slug}`;
+    const postUrl = `https://crusthack.github.io/${repoName}/${category}/${slug}`;
 
     const titleSlide = {
         content: '',
