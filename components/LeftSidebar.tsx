@@ -1,13 +1,14 @@
 // /components/LeftSidebar.tsx
 import Link from "next/link";
 import { getAllPostData } from "@/lib/posts";
+import { specialCategories } from "@/lib/config";
  
 export default function LeftSidebar() {
   const allPosts = getAllPostData();
-  const recentPosts = allPosts.filter(p => p.category !== "Secret").slice(0, 3);
+  const recentPosts = allPosts.filter(p => !specialCategories.some(sc => sc.category === p.category)).slice(0, 4);
   const categories: string[] = Array.from(
     new Set(allPosts.map((post) => post.category).filter((cat): cat is string => Boolean(cat)))
-  ).filter((c): c is string => c !== "Secret") .sort();
+  ).filter((c): c is string => !specialCategories.some(sc => sc.category === c)) .sort();
   const counts = allPosts.reduce<Record<string, number>>((acc, p) => {
     const cat = p.category ?? "";
     acc[cat] = (acc[cat] ?? 0) + 1;

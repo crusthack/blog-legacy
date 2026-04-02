@@ -20,6 +20,10 @@ export const specialCategories: SpecialCategoryConfig[] = [
   {
     category: "Secret",
     label: "",
+  },
+  {
+    category: "Temp",
+    label: "",
   }
 ];  
  
