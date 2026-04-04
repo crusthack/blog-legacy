@@ -60,17 +60,20 @@ export default function Navi({ posts }: NaviProps) {
       {/* 가운데 네비 */}
       <div className="flex w-full items-center justify-between">
         {/* 좌측 */}
-        <div className="flex items-center justify-start px-6 gap-10">
-          <Link href="/" className="flex w-full text-xl items-center font-bold hover:opacity-70 transition">
+        <div className="flex items-center justify-start px-6 gap-3">
+          <Link href="/" className="flex w-full text-xl items-center font-bold hover:opacity-70 mr-6">
             <img
               src="https://avatars.githubusercontent.com/u/161662653?v=4"
               alt="avatar"
-              className="w-12 h-12 rounded-full"
-            />
-            <p>Main</p>
+              className="w-max h-12 rounded-full"
+              />
+            Main
           </Link>
           <Link href="https://crusthack.github.io/catbattle/" target="_blank" className="whitespace-nowrap flex w-full text-xl items-center font-bold hover:opacity-70 transition">
             냥코DB
+          </Link>
+          <Link href="/game" className="flex w-full text-xl items-center font-bold hover:opacity-70 transition">
+            공룡게임
           </Link>
         </div>
 
