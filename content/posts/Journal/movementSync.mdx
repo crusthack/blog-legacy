@@ -1,0 +1,254 @@
+---
+title: "캐릭터 이동 동기화"
+date: "2026-04-04"
+--- 
+
+# 개요
+- [유니티 멀티 프로젝트](https://crusthack.github.io/blog/Project/Unity2DMulti)
+- 직접 소켓프로그래밍을 통해 네트워크 통신 라이브러리를 제작한 후, 간단한 2D 게임을 만들어 멀티플레이를 구현해보려 한 프로젝트에서 발생한 문제 사항 해결 시도 정리입니다.
+
+## 문제 설명
+- 기존 프로젝트는, 네트워크 라이브러리를 제작한 후 유니티 엔진에 적용해보는 것까지가 목표였기에  
+간단하게 라이브러리를 통한 메시지 통신이 원활하다는 것을 확인하기 위한 아주 간단한 게임 구현을 하였습니다. 
+- 로그인, 게임 룸 시스템 구현 및 인게임에서는 각 유저가 조작하는 캐릭터의 이동 동기화까지만 구현하였습니다. (rpc, sync)
+- 이동을 아주 간단하게 구현하였기에 각 유저가 보는 캐릭터의 움직임이 끊어지듯이 보인다는 문제점이 있습니다. 
+- 당시에는 네트워크 라이브러리 동작만 확인하고 미완성으로 종료하였지만, 뒤늦게 문제 해결을 하겠다는 생각을 하게 됐습니다.
+
+## 현재 구현된 이동 동기화 방식
+1. 이동키(wasd) 입력시 RPC를 이용한 이동 상태 변경 전파
+2. 주기적인 sync 메시지를 통한 위치 동기화 (5초 단위로 설정하였음)
+- 게임 방을 만든 호스트 유저가 책임 서버가 되고, 룸에 접속한 유저(이하 게스트 유저)가 rpc를 통해 상태 변경을 요청. 
+- 호스트 유저는 주기적으로 게임 상태(유저들의 캐릭터 정보만)를 전파하여 sync메시지 전송. 
+
+## 세부 문제 상황
+1. 메시지 송수신 양을 늘리면, 파싱이 제대로 안 되고 버퍼 접근이 터짐 -> 네트워크 라이브러리 구현 문제
+2. 클라이언트 측에서 움직임이 끊기듯이 보임 -> 동기화 문제
+3. 미세하게 캐릭터 위치가 다름 -> 동기화 문제(좌표를 int형으로 처리중)
+4. 메시지가 제대로 송수신 되고 있는지 확인이 힘듦. 매 루프마다 메시지 수십개씩 보내게 되다보니 일일이 파악할 수가 없음.   
+가끔씩 메시지가 안 가는거 같든가 동작이 이상할 때가 종종 있음. -> 라이브러리 측 문제였던 것으로 추정
+
+## 목표
+- 유저간의 캐릭터 이동이 자연스럽게 보이게 하도록 구현하는 것을 목표로 둠. 서버에서 인증을 한다거나 여러가지 후보정? 같은 게임 시스템은 배제
+
+# 실시간 이동 동기화 
+- 기본 컨셉: 플레이어의 요청(클라이언트 로컬 입력) - 서버(호스트)측에서의 반응 - 전체 클라이언트에게의 상태 전파
+- 유저의 입력에 따른 게임 내부 상태 변화를 최대한 모든 유저들에게 전파를 해야함.
+- 네트워크 상의 지연 문제 때문에, 모든 유저가 동일한 화면을 볼 수는 없음. 모든 유저의 틱 연산을 동일하게 유지하는 방식의 동기화라면 가능은 하겠지만 불합리한 방식.  
+- 상태 불일치를 감안해서 지속적으로 동기화를 통한 상태 보정을 수행하여야만 함. 
+
+## 동기화 방법
+1. RPC: 입력에 따라 즉각적으로 이동 상태를 변경하라는 원격 프로시저 호출.
+2. 위치 정보 동기화: 주기적으로 위치 정보를 전파하면서 상태를 동기화 및 보정.
+- 유저 입력에 따른 move 함수 호출, move rpc함수 호출이 즉각적으로 이뤄진다면 동기화 문제가 없겠지만,  
+네트워크 지연에 따라 각 클라이언트들이 move 함수를 원격으로 호출하는 시점이 달라지게 됨. 사소한 차이가 쌓이면 큰 차이가 됨.
+- 이를 위해 주기적으로 동기화를 해야할 필요가 있음. 
+
+# 수정 사항
+## 1. 네트워크 라이브러리 offset 추가
+- 어쩌다 그렇게 됐는지 모르겠다만 소켓 버퍼활용에 있어서 offset값 없이 매번 수신 버퍼의 0번 인덱스부터 파싱을 시도하고 있었음
+- 근데 수신 자체는 또 인덱스 계산하면서 순환버퍼 방식으로 함. 이상하게도 메시지 처리가 대부분 잘 수행됐어서 자각하지 못 했었음
+- 오프셋 방식 추가하고서 파싱이 제대로 되기 시작했는지 메시지가 일부 씹힌다고 느끼던 점들이 대부분 해결됐음
+
+## 2. 이동 동기화 메시지, 좌표값 타입 float으로 수정
+- int형으로 되어있어 데이터 손실이 일어나던 것을 float으로 수정한 후 좌표 동기화가 매우 괜찮아짐. 
+
+## 3. 서버(호스트 클라이언트)는 게스트 클라이언트를 믿는다
+- 일단 해킹의 경우를 배제하고서, 다른 클라이언트들이 보내는 본인의 위치정보가 참인 정보라고 가정하기로 함.
+- 호스트 유저가 자신에 대해 보내는 위치정보는 동기화 X
+- 게스트 유저가 보내는 위치정보에 대해 해당 유저의 이동을 매 틱마다 보정해줌. (Rigidbody2D에 즉각적으로 addforce해주는 식으로 함)
+- 결과 => 각 플레이어는 자신의 움직임에 대해 매우 편안해졌음(당연히 자기 로컬 움직임을 그대로 따르니까), 다만 유저간의 상호작용(충돌)에서 끊김 발생, 또한 캐릭터 진동 발생
+
+## 4. 위치보정 Lerp 방식으로 수정, 이동방향 동기화 정보, 정수 타입형에 의한 문제 발견
+- `Vector3.Lerp(transform.position, (Vector3)targetPosition, Time.fixedDeltaTime * 15f);`으로 수정하고서 캐릭터간 충돌 작용이 나름 부드러워짐 
+- 캐릭터 이동방향 동기화가 제대로 안 되고 멈추는거 같아서 보니까 이동방향 정보 타입을 int로 썼어서, (0.7, 0.7) => (0, 0)이 되고있었음, 그냥 이건 동기화 사항에서 제외(생략)해버림. 
+
+## 중간 상황 정리
+- 네트워크 라이브러리 문제 수정 후, rpc 자체는 잘 호출 되는 느낌임 -> 이동 요청, rpc에 의한 상태변화가 잘 되고 있음
+- 위치 정보 동기화 때문에 다른 유저들의 움직임이 울퉁불퉁하게 보임.
+- 현 문제점: 세부적인 이동 위치 차이가 존재, 위치 동기화 때문에 다른 유저들 움직임이 울퉁불퉁함.(즉시 좌표 순간이동 방식으로 수정함)
+
+##### 현재 상태
+- rpc를 통한 move 호출 -> 이동 상태 변경 전파
+- 위치 동기화 시 순간이동, 동기화 조건 - 현재 위치와 목표 위치의 거리 차이가 1 이상 혹은 캐릭터가 멈춰있을 때(이동중이지 않을 때)
+- 캐릭터가 이동하다가 멈출 시에 좀 더 앞으로 이동되거나 뒤로 이동되는 현상 발생
+
+## 동기화 로직 개선안
+- 캐릭터 이동 상태 정리
+1. 새로운 이동 방향과 현재 이동 방향과 동일한 경우 -> 그대로 직선 따라 이동
+2. 새로운 이동 방향이 현재 이동 방향과 다른 경우 -> 본래 캐릭터가 진행하고 싶어하는 직선으로 올려주는 보정이 필요
+3. 캐릭터가 정지했을 경우 -> 정지했다고 통지된 좌표까지 캐릭터를 이동 시킨 뒤 멈추는 동작이 필요
+- 만약에 정지 통지가 늦게 와서 레플리카가 목표 지점을 넘어섰을 경우? 2번과 같은 방식으로 처리
+- 이를 위해, move rpc호출할 때 캐릭터의 현재 위치를 같이 전송해야 가상의 직선을 그리고서 그 위에 안착시킬 수 있음. 
+
+## 새로운 동기화 로직
+- move rpc 호출 시에, 입력(x, y)값과 현재 위치(position_x, position_y)전달
+- move rpc 수신 시, 대상 위치와 입력값 저장 -> 매번 fixed update마다 목적 위치로 이동속도만큼 이동, 목적 위치는 해당 이동 상태 입력 값을 토대로 따로 이동 
+- 목적 위치와 현재 위치가 많이 다르면(sqrdistance > 1f) 순간이동 
+
+## 코드
+### OnMove
+```csharp
+    public void OnMove(InputValue value)
+    {
+        var movVec = value.Get<Vector2>();
+        Move(movVec);
+        GameManager.Instance.NetworkCon?.RPC_Move(value, transform.position);
+    }
+```
+- 유저 입력시에 호출되는 OnMove함수, 멀티 구현 시에 rpc호출 위에 마지막에 RPC호출 추가하였음.
+
+### RPC_Move
+```csharp
+public void RPC_Move(InputValue value, Vector2 position)
+{
+    if (!GameManager.Instance.Session.IsMulti)
+        return;
+
+    // 변수 초기화 생략
+
+    var g = new GameMessage
+    {
+        Rpc = new RPC
+        {
+            PlayerId = playerID,
+            RpcName = "Move",
+            Values = { x.ToString(), y.ToString(), position_x.ToString(), position_y.ToString() },
+        },
+        DoBroadcast = GameManager.Instance.Session.IsHost,
+    };
+
+    var m = new ProtobufMessage(g, ProtobufMessage.OpCode.Game);
+    GameManager.Instance.NetworkManager.SendMessage(m);
+}
+```
+- 입력값 x, y와 현재 위치 pos_x, pos_y 정보가 담긴 rpc 메시지를 호스트로 전송
+
+### ProcessRPCMove
+```csharp
+void ProcessRPCMove(GameMessage message)
+{
+    var rpc = message.Rpc;
+    if (!Players.TryGetValue(rpc.PlayerId, out var p))
+        return;
+
+    p.GetComponent<Player>().Move(new Vector2(x, y), new Vector2(position_x, position_y));
+
+    // 호스트 유저면 rpc 전파
+    if (GameManager.Instance.Session.IsHost)
+    {
+        GameManager.Instance.NetworkManager.SendMessage(
+            new ProtobufMessage(new GameMessage
+            {
+                DoBroadcast = true,
+                Rpc = rpc
+            }, ProtobufMessage.OpCode.Game));
+    }
+}
+```
+
+### Move와 FixedUpdate
+```csharp
+public void Move(Vector2 dir, Vector2 targetPos)
+{
+    Vector2 pos = transform.position;
+    var distance = targetPos - pos;
+    if(distance.sqrMagnitude > 1f)
+    {
+        transform.position = targetPos;
+    }
+
+    targetPosition = targetPos;
+}
+```
+- 거리 계산 후 순간이동 및 targetPos 세팅
+```csharp
+void FixedUpdate()
+{
+    Vector3 movDir = Vector3.zero;
+
+    if (targetPosition != null)
+    {
+        Vector3 target = (Vector3)targetPosition + new Vector3(MovDir.x, MovDir.y) * Speed * Time.fixedDeltaTime;
+        float distance = Vector3.Distance(transform.position, target);
+
+        float step = Speed * Time.fixedDeltaTime;
+
+        if (distance <= step)
+        {
+            transform.position  = target;
+            targetPosition = null;
+        }
+        else
+        {
+            movDir = target - transform.position;
+        }
+    }
+    else
+    {
+        movDir = new Vector3(MovDir.x, MovDir.y, 0);
+    }
+
+    var movement = movDir.normalized * Speed *Time.fixedDeltaTime;
+
+        transform.Translate(movement, Space.World);
+}
+```
+
+
+# 정리 
+## 플레이 영상(수정 이전, 중간 단계, 최종 단계)
+[2D 이동 동기화](https://youtu.be/Fa8qoPC_aak)
+
+## 소감
+- sync 메시지 의존 없이 move rpc + 위치정보 기반 보정을 토대로 이동 동기화를 구현
+- 단순 2D에서의 x, y좌표값 동기화를 수행하였는데, 이를 3D 높이 축 + 회전 있는 것까지 생각하면 좀 더 머리 아플 것 같음.
+- 네트워크 라이브러리 오동작으로 인한 문제도 있었어서, 괜히 시간이 좀 많이 걸렸음. 
+- 개발환경에서의 테스트만 이뤄졌고 아주 간단한 게임 + 혼자 입력을 처리했기에 실제 배포환경에서 어떻게 틀어질지도 모르는 일
+
+# 네트워크 라이브러리 에러 사항
+### 1. 버퍼 오프셋 에러 SocketContext.cs 147라인
+```c#
+else if (RecvBuf.Length - (RecvBufOffset + RecvBufDataSize) < ParserInvoker<T>.GetMaxSize())
+{
+    Console.WriteLine($"remain memory is less than one message\n" +
+        $"buf len: {RecvBuf.Length}, urrent offset: {RecvBufOffset}, current data size: {RecvBufDataSize}");
+    Buffer.BlockCopy(RecvBuf, RecvBufOffset, RecvBuf, 0, RecvBufDataSize);
+    RecvBufOffset = RecvBufDataSize;
+}
+RecvArgs.SetBuffer(
+    RecvBufOffset + RecvBufDataSize,
+    RecvBuf.Length - (RecvBufOffset + RecvBufDataSize)
+);
+```
+- 10240, 20, 9233 출력, -> 이후 셋 버퍼에서 오프셋을 18466으로 잡았다고 뜸(9233 * 2)
+- 오프셋 0으로 잡아야 하는데, 데이터 사이즈만큼 잡고 있었음;;
+
+### 2. 페이로드 사이즈 문제
+```csharp
+try
+{
+    var payloadBytes = new byte[messageHeader.PayloadSize];
+Buffer.BlockCopy(data, ProtobufMessageHeader.HeaderSize, payloadBytes, 0, messageHeader.PayloadSize);
+var payload = ProtobufParserRegistry.Parse(messageHeader.OpCode, payloadBytes);
+msg = new ProtobufMessage(payload, (OpCode)messageHeader.OpCode);
+
+return ProtobufMessageHeader.HeaderSize + messageHeader.PayloadSize;
+}
+catch (Exception ex)
+{
+    Console.ForegroundColor = ConsoleColor.Blue;
+    Console.WriteLine(messageHeader.PayloadSize);
+    Console.ForegroundColor = ConsoleColor.White;
+    throw new Exception("!!!");
+}
+// Console.WriteLine(messageHeader.PayloadSize); => 8241
+at NetworkController.Message.ProtobufMessage.Parse(Byte[] data, Int32 size, ProtobufMessage& msg) 
+in C:\Users\crusthack\Documents\Unity2DMulti\NetworkController\Message\ProtobufMessage.cs:line 99
+   at NetworkController.Message.ParserInvoker`1.Parse(Byte[] data, Int32 size, T& message) 
+in C:\Users\crusthack\Documents\Unity2DMulti\NetworkController\Message\ParserInvoker.cs:line 35
+```
+- 페이로드 사이즈 지정에서 문제 생긴 듯. 8000바이트나 되는 메시지 생성될 일이 없음. 
+    
+# 학습자료
+- [언리얼에서 movement component 동기화 하는 방법](https://dev.epicgames.com/documentation/ko-kr/unreal-engine/understanding-networked-movement-in-the-character-movement-component-for-unreal-engine)
+- [넥슨 개발자 컨퍼런스 CAP 동기화](https://youtu.be/j3eQNm-Wk04?si=dLk87FE4hrb5LGpQ)

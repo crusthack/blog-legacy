@@ -375,3 +375,11 @@ for i, eps in enumerate(epsilons):
 - 공격 성공과 왜곡 최소간의 트레이드 오프를 조절하는 상수 c 존재. c가 크면 공격 성공이 더 중요, c가 작으면 왜곡 최소화가 더 중요.
 - L_2가 중요, L_0는 L_2의 반복(픽셀 변화 수 낮아질 때까지)
 - L_inf -> if delta_i \<= tau -> 0. if delta_i > tau -> penalty. 얘도 반복하면서 타우값 조절.
+
+# ta
+- 딥러닝 모델들은 보통 공통적인 discriminative feature를 학습 \<\< 이를 공략
+- targeted model 공격에 사용했던 예제가 untargeted에도 사용 가능
+- k 공격 생성 과정에서의 gradiant step 반복 횟수, 증가할수록 공격 성공 확률 증가
+- 공격 예제는 모델간 전이 가능
+- k(공격 정도)가 커질수록 전이 확률 증가
+- untargeted attack이 targeted attack보다 전이가 쉬움

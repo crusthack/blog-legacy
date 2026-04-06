@@ -14,6 +14,10 @@ export const specialCategories: SpecialCategoryConfig[] = [
     label: "프로젝트",
   },
   {
+    category: "Journal",
+    label: "개발 일지",
+  },
+  {
     category: "Common",
     label: "일반",
   },

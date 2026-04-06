@@ -72,7 +72,7 @@ const CodeBlock = ({
     // 슬라이드 가중치에 따른 동적 높이 계산
     // 전달받은 weight(할당된 가중치)를 기반으로 높이 결정
     const dynamicMaxHeight = isSlide 
-        ? `${-20 + 45 * weight}px`
+        ? `${-20 + 50 * weight}px`
         : 'none';
  
     return (
@@ -124,7 +124,7 @@ const CodeBlock = ({
                     ...props.style, 
                     ...(isSlide ? { maxHeight: dynamicMaxHeight } : {}) 
                 }}
-                className={`${className} !text-[0.8rem] leading-snug !m-0 !rounded-t-none ${isSlide ? 'overflow-auto print:!max-h-none print:!overflow-visible' : ''} print:!max-h-none print:!overflow-visible print:whitespace-pre-wrap print:break-words scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent [&_code]:!text-[0.8rem] p-4`}
+                className={`${className} !text-[2rem] leading-snug !m-0 !rounded-t-none ${isSlide ? 'overflow-auto print:!max-h-none print:!overflow-visible' : ''} print:!max-h-none print:!overflow-visible print:whitespace-pre-wrap print:break-words scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent [&_code]:!text-[1rem] p-4`}
             >
                 {children}
             </pre>
