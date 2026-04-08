@@ -1,6 +1,6 @@
 ---
 title: "캐릭터 이동 동기화"
-date: "2026-04-04"
+date: "2026-04-06"
 --- 
 
 # 개요
@@ -197,13 +197,14 @@ void FixedUpdate()
 
 # 정리 
 ## 플레이 영상(수정 이전, 중간 단계, 최종 단계)
-[2D 이동 동기화](https://youtu.be/Fa8qoPC_aak)
+<iframe width="560" height="315" src="https://www.youtube.com/embed/WTwTqzGj9Qg?si=5wUsEVzqg5kYThKO" title="YouTube video player" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen></iframe>
 
 ## 소감
 - sync 메시지 의존 없이 move rpc + 위치정보 기반 보정을 토대로 이동 동기화를 구현
 - 단순 2D에서의 x, y좌표값 동기화를 수행하였는데, 이를 3D 높이 축 + 회전 있는 것까지 생각하면 좀 더 머리 아플 것 같음.
-- 네트워크 라이브러리 오동작으로 인한 문제도 있었어서, 괜히 시간이 좀 많이 걸렸음. 
-- 개발환경에서의 테스트만 이뤄졌고 아주 간단한 게임 + 혼자 입력을 처리했기에 실제 배포환경에서 어떻게 틀어질지도 모르는 일
+- 네트워크 라이브러리 오동작으로 인한 문제도 있었어서, 괜히 시간이 좀 많이 걸렸음. 수정 후 상당히 안정화 됨. 
+- 개발환경에서의 테스트만 이뤄졌고 아주 간단한 게임 + 혼자 입력을 처리했기에 테스트 미흡, 실제 배포환경에서 어떻게 틀어질지도 모름
+- 앞으로 실제 배포하기 위한 게임을 제작하면서 여러가지 서비스 기능들을 구현해볼 생각. 
 
 # 네트워크 라이브러리 에러 사항
 ### 1. 버퍼 오프셋 에러 SocketContext.cs 147라인
@@ -221,7 +222,7 @@ RecvArgs.SetBuffer(
 );
 ```
 - 10240, 20, 9233 출력, -> 이후 셋 버퍼에서 오프셋을 18466으로 잡았다고 뜸(9233 * 2)
-- 오프셋 0으로 잡아야 하는데, 데이터 사이즈만큼 잡고 있었음;;
+- 오프셋(유효 데이터의 시작 주소) 0으로 잡아야 하는데, 데이터 사이즈만큼 잡고 있었음;;
 
 ### 2. 페이로드 사이즈 문제
 ```csharp
@@ -247,7 +248,7 @@ in C:\Users\crusthack\Documents\Unity2DMulti\NetworkController\Message\ProtobufM
    at NetworkController.Message.ParserInvoker`1.Parse(Byte[] data, Int32 size, T& message) 
 in C:\Users\crusthack\Documents\Unity2DMulti\NetworkController\Message\ParserInvoker.cs:line 35
 ```
-- 페이로드 사이즈 지정에서 문제 생긴 듯. 8000바이트나 되는 메시지 생성될 일이 없음. 
+- 페이로드 사이즈 지정에서 문제 생긴 듯. 8000바이트나 되는 메시지 생성될 일이 없는데 이렇게 뜸.
     
 # 학습자료
 - [언리얼에서 movement component 동기화 하는 방법](https://dev.epicgames.com/documentation/ko-kr/unreal-engine/understanding-networked-movement-in-the-character-movement-component-for-unreal-engine)
