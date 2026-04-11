@@ -10,12 +10,12 @@ export interface SpecialCategoryConfig {
  
 export const specialCategories: SpecialCategoryConfig[] = [
   {
-    category: "Project",
-    label: "프로젝트",
-  },
-  {
     category: "Journal",
     label: "개발 일지",
+  },
+  {
+    category: "Project",
+    label: "프로젝트",
   },
   {
     category: "Common",

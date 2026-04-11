@@ -116,7 +116,8 @@ export default function Navi({ posts }: NaviProps) {
 
           {/* 스페셜 카테고리 (config 기반) */}
           {specialCategories.filter(sc=>sc.label).map(sc => {
-            const items = postsBySpecial.get(sc.category) ?? [];
+            const items = postsBySpecial.get(sc.category)?.sort(
+              (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).sort((a, b)=> (b.slug =='index')? 1 : -1) ?? [];
 
             return (
               <div
@@ -140,7 +141,7 @@ export default function Navi({ posts }: NaviProps) {
                         href={`/${encodeURIComponent(post.category)}/${encodeURIComponent(post.slug)}`}
                         className="block px-3 py-2 hover:bg-gray-100 rounded"
                       >
-                        {post.slug}
+                        {post.title}
                       </Link>
                     ))}
                   </div>

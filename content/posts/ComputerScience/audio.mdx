@@ -1,0 +1,198 @@
+---
+title: '오디오 프로그래밍'
+date: '2023-04-10'
+---
+
+# 개요
+오디오 프로그래밍은 컴퓨터를 통해 소리의 발생, 처리, 출력 및 입력을 제어하는 기술입니다. 단순히 소리 파일을 재생하는 것을 넘어, 실시간으로 파동을 합성하거나 마이크 입력 데이터를 분석하여 시각화하고, 복잡한 효과(Reverb, Echo 등)를 입히는 등 소리의 전 과정을 프로그래밍으로 다룹니다.
+
+과거에는 하드웨어 성능의 한계로 오디오 처리가 매우 까다로웠으나, 현대에는 강력한 CPU와 고성능 라이브러리 덕분에 다양한 분야에서 활발히 활용되고 있습니다.
+
+# 디지털 오디오의 기초
+오디오 프로그래밍을 시작하기 위해선 소리가 디지털 데이터로 어떻게 표현되는지 이해해야 합니다.
+
+1. **샘플링 레이트 (Sampling Rate)**: 1초당 소리를 몇 번 쪼개어 기록하는지를 의미합니다. (예: 44.1kHz, 48kHz)
+2. **비트 깊이 (Bit Depth)**: 각 샘플의 정밀도를 나타냅니다. (예: 16-bit, 24-bit, 32-bit Float)
+3. **채널 (Channels)**: 소리의 방향 개수입니다. (예: 1.0 Mono, 2.0 Stereo, 5.1 Surround)
+4. **버퍼 (Buffer)**: 실시간 처리를 위해 소리 데이터를 일정한 크기로 묶어 처리하는 단위입니다.
+
+# 오디오 라이브러리 생태계
+용도와 플랫폼에 따라 다양한 라이브러리가 존재합니다.
+
+## OS 레벨 (Low-Level)
+가장 지연 시간이 짧지만 사용법이 복잡합니다.
+- **Windows**: WASAPI (현대 표준), DirectSound (레거시), ASIO (전문 음악 장비용)
+- **Linux**: ALSA (기본), PulseAudio, JACK (전문 오디오용)
+- **macOS/iOS**: CoreAudio
+- **Android**: AAudio (고성능), OpenSL ES
+
+## 크로스 플랫폼 라이브러리 (Mid-Level)
+여러 OS에서 동일한 코드로 작동하도록 래핑된 라이브러리입니다.
+- **portaudio**: 가장 널리 쓰이는 오픈소스 라이브러리
+- **miniaudio**: 단일 헤더 파일로 구성되어 사용이 매우 간편함 (C/C++ 권장)
+- **SDL2_mixer**: 게임 개발 시 사운드 기능을 위해 자주 사용됨
+
+## 고수준 엔진 (High-Level)
+게임 엔진이나 상용 소프트웨어에서 복잡한 효과를 위해 사용합니다.
+- **FMOD / Wwise**: 게임 산업의 표준 오디오 미들웨어
+- **JUCE**: 오디오 플러그인(VST) 및 DAW 개발의 표준 프레임워크
+
+# 핵심 기술 개념
+
+## TTS (Text To Speech)
+텍스트를 음성으로 변환하는 기술입니다.
+- **SAPI (Speech API)**: Windows 내장 엔진으로 별도 설치 없이 사용 가능합니다.
+- **Deep Learning TTS**: 최근에는 Google TTS, Azure AI, 오픈소스인 Coqui TTS 등 딥러닝 기반의 자연스러운 목소리가 대세입니다.
+
+## WASAPI (Windows Audio Session API)
+Windows의 가장 현대적인 오디오 인터페이스입니다.
+- **Shared Mode**: 여러 프로그램이 소리를 섞어서 출력 (윈도우 기본 방식)
+- **Exclusive Mode**: 특정 프로그램이 오디오 장치를 독점하여 지연 시간(Latency)을 최소화 (전문가용)
+
+# 오디오 프로그래밍으로 할 수 있는 것들
+1. **실시간 오디오 시각화 (Visualization)**: FFT(고속 푸리에 변환)를 사용하여 소리 주파수를 분석하고 이퀄라이저를 구현합니다.
+2. **이펙터 개발 (Digital Signal Processing)**: 리버브, 에코, 디스토션 등 소리를 가공하는 알고리즘을 만듭니다.
+3. **신디사이저 구현 (Synthesis)**: 수학적 함수(Sine, Square, Saw)를 조합하여 세상에 없던 새로운 소리를 생성합니다.
+4. **오디오 세션 제어**: 특정 프로그램의 볼륨을 조절하거나 음소거하는 유틸리티를 제작합니다.
+5. **공간 음향 (Spatial Audio)**: 가상 현실(VR) 등에서 소리의 방향과 거리를 계산하여 입체감을 부여합니다.
+
+# 코드 예시
+
+## 1. 미니 신디사이저 + TTS (C++)
+`miniaudio` 라이브러리를 사용하여 실시간으로 소리를 생성하고, Windows `SAPI`를 통해 음성 안내를 추가한 예제입니다.
+
+```cpp
+#define MINIAUDIO_IMPLEMENTATION
+#include "miniaudio.h"
+#include <iostream>
+#include <cmath>
+#include <conio.h>
+#include <map>
+#include <sapi.h>
+#include <objbase.h>
+
+#pragma comment(lib, "sapi.lib")
+#pragma comment(lib, "ole32.lib")
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
+struct SynthState {
+    double time = 0.0;
+    float sampleRate = 44100.0f;
+    float targetFreq = 0.0f;
+    float currentFreq = 0.0f;
+    float volume = 0.0f;
+    int framesRemaining = 0;
+};
+
+void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount) {
+    SynthState* pState = (SynthState*)pDevice->pUserData;
+    float* pOut = (float*)pOutput;
+
+    for (ma_uint32 i = 0; i < frameCount; ++i) {
+        // 볼륨 및 주파수 페이드 (클릭 노이즈 방지)
+        if (pState->framesRemaining > 0) {
+            pState->volume += (0.2f - pState->volume) * 0.1f;
+            pState->framesRemaining--;
+        } else {
+            pState->volume += (0.0f - pState->volume) * 0.1f;
+        }
+        pState->currentFreq += (pState->targetFreq - pState->currentFreq) * 0.1f;
+
+        float sample = (float)std::sin(2.0 * M_PI * pState->currentFreq * pState->time) * pState->volume;
+        pOut[i * 2 + 0] = sample; // Left
+        pOut[i * 2 + 1] = sample; // Right
+
+        pState->time += 1.0 / pState->sampleRate;
+    }
+}
+
+int main() {
+    ::CoInitializeEx(NULL, COINIT_MULTITHREADED);
+    ISpVoice* pVoice = NULL;
+    if (SUCCEEDED(CoCreateInstance(CLSID_SpVoice, NULL, CLSCTX_ALL, IID_ISpVoice, (void**)&pVoice))) {
+        pVoice->Speak(L"Synthesizer Started.", SPF_ASYNC, NULL);
+    }
+
+    SynthState state;
+    ma_device_config config = ma_device_config_init(ma_device_type_playback);
+    config.playback.format = ma_format_f32;
+    config.playback.channels = 2;
+    config.sampleRate = 44100;
+    config.dataCallback = data_callback;
+    config.pUserData = &state;
+
+    ma_device device;
+    if (ma_device_init(NULL, &config, &device) != MA_SUCCESS) return -1;
+    ma_device_start(&device);
+
+    std::cout << "Keys [A-K] to play notes, [Q] to quit" << std::endl;
+    std::map<char, float> notes = {{'a', 261.63f}, {'s', 293.66f}, {'d', 329.63f}, {'f', 349.23f}, {'g', 392.00f}};
+
+    while (true) {
+        if (_kbhit()) {
+            char key = _getch();
+            if (key == 'q') break;
+            if (notes.count(key)) {
+                state.targetFreq = notes[key];
+                state.framesRemaining = 4410; // 약 0.1초 재생
+            }
+        }
+    }
+
+    ma_device_uninit(&device);
+    ::CoUninitialize();
+    return 0;
+}
+```
+
+## 2. 개별 프로그램 음소거 (WASAPI)
+시스템 마스터 볼륨은 유지한 채, 특정 세션만 제어하는 하위 레벨 접근 예제입니다.
+
+```cpp
+#include <windows.h>
+#include <mmdeviceapi.h>
+#include <audiopolicy.h>
+#include <iostream>
+
+int main() {
+    CoInitialize(NULL);
+    IMMDeviceEnumerator* pEnum = NULL;
+    CoCreateInstance(__uuidof(MMDeviceEnumerator), NULL, CLSCTX_ALL, __uuidof(IMMDeviceEnumerator), (void**)&pEnum);
+
+    IMMDevice* pDevice = NULL;
+    pEnum->GetDefaultAudioEndpoint(eRender, eConsole, &pDevice);
+
+    IAudioSessionManager2* pMgr = NULL;
+    pDevice->Activate(__uuidof(IAudioSessionManager2), CLSCTX_ALL, NULL, (void**)&pMgr);
+
+    IAudioSessionEnumerator* pSessions = NULL;
+    pMgr->GetSessionEnumerator(&pSessions);
+
+    int count = 0;
+    pSessions->GetCount(&count);
+    for (int i = 0; i < count; i++) {
+        IAudioSessionControl* pCtrl = NULL;
+        pSessions->GetSession(i, &pCtrl);
+        ISimpleAudioVolume* pVol = NULL;
+        pCtrl->QueryInterface(__uuidof(ISimpleAudioVolume), (void**)&pVol);
+        
+        pVol->SetMute(TRUE, NULL); // 모든 세션 음소거
+        
+        pVol->Release();
+        pCtrl->Release();
+    }
+
+    pSessions->Release();
+    pMgr->Release();
+    pDevice->Release();
+    pEnum->Release();
+    CoUninitialize();
+    return 0;
+}
+```
+
+# 마무리
+오디오 프로그래밍은 수학적 지식과 하드웨어에 대한 이해가 동시에 요구되는 흥미로운 분야입니다. 단순히 재생을 넘어 소리를 "창조"하고 "제어"하는 경험은 개발자에게 새로운 영감을 줍니다. 기초를 다진 후에는 VST 플러그인 개발이나 실시간 음성 변조 시스템 같은 프로젝트에 도전해 보시기 바랍니다.

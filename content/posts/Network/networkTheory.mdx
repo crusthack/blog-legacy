@@ -28,14 +28,12 @@ description: '네트워크 이론 정리'
     </tr>
   </tbody>
 </table>
+- 보통 네트워크 계층을 이야기할 때 자주 거론되는 OSI 7계층을 기반으로 정리했습니다.
+- 물리계층과 세션, 표현, 응용계층은 다루지 않습니다. 애플리케이션 계층은 따로 기술별로 정리할 예정입니다. 
 
-개인적으로는 TCP/IP 4계층 구분을 좀 더 선호하지만 대부분 네트워크 이론 수업이나 교재가 osi 7계층 기반으로 작성돼 있기 때문에 이 페이지 또한 osi 7계층을 기반으로 정리를 하였습니다.  
-다만, 물리 계층은 제외하였습니다. 
+# Network Access Layer(2계층)
 
-
-# Network Access Layer
-
-# Network Layer
+# Network Layer(3계층)
 네트워크 레이어는 종단 호스트간의 패킷 통신을 수행합니다. (전송 단위: 패킷)  
 춣발지부터 목적지까지의 경로를 계산하는 라우팅, 포워딩이 주요 기능입니다.  
 
@@ -157,7 +155,7 @@ SDN은 경로 계산을 라우터가 직접 하지 않고 중앙 네트워크 �
 Input Ports를 통한 동시 다발적인 데이터 수신, Switching fabric을 통한 데이터 포워딩, Output Ports를 통한 데이터 송신을 잘 하는 것에 대해 연구  
 큐잉, 스케줄링, 내부 데이터 송수신(메모리, 버스, interconnected network) 등 
 
-# Transport Layer
+# Transport Layer(4계층)
 프로세스간의 통신을 처리하는 계층입니다.   
 - 흐름 제어: 슬라이딩 윈도우
 - 오류 제어
@@ -213,8 +211,3 @@ Input Ports를 통한 동시 다발적인 데이터 수신, Switching fabric을 
 - tcp와 udp의 속성을 혼합한 프로토콜, (UDP 위에서 구현)
 - 주로 스트리밍 서비스에서 사용
 - 순서번호, 타임스탬프 사용 
-
-
-# Session Layer
-# Presentation Layer
-# Application Layer
