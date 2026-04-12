@@ -391,4 +391,63 @@ namespace aspdotnet.Controllers
 - 이로써 ASP.Net을 활용하여 웹 API서버를 만들어 보았고, Next.js의 정적 웹사이트에서 활용할 수 있음을 확인했습니다.
 - 이제 이를 확장하여 유니티 프로젝트에서의 웹 통신 구현을 학습하도록 합니다.
 
-# 2. 유니티 클라이언트 제작 및 웹 API, gRPC 통신 확인
+# 유니티 클라이언트 제작 및 웹 http, gRPC 통신 확인
+
+## Http 통신(UnityWebRequest)
+- [유니티 웹통신 문서](https://docs.unity3d.com/Manual/web-request-intro.html)
+
+### UnityWebRequest 클래스
+- `UnityWebRequest.Get`, `UnityWebRequest.Post` 와 같은 정적 메소드를 통해 `webrequest` 인스턴스 생성, 혹은 직접 new를 통해 생성 후 method 지정 가능
+- get/post 메소드 지정과 함께 url 지정, 데이터 지정하는 형식으로 사용.
+
+#### 사용 예시 코드
+```csharp
+IEnumerator GetRequest(string uri)
+{
+    using (UnityWebRequest webRequest = UnityWebRequest.Get(uri))
+    {
+        webRequest.timeout = 5;
+
+        yield return webRequest.SendWebRequest();
+
+        if (webRequest.result == UnityWebRequest.Result.Success)
+            Debug.Log("Received: " + webRequest.downloadHandler.text);
+        else if (webRequest.result == UnityWebRequest.Result.ConnectionError ||
+                            webRequest.result == UnityWebRequest.Result.ProtocolError)
+        {
+            Debug.LogError("Error: " + webRequest.error);
+        }
+    }
+}
+
+IEnumerator PostRequest(string url, string json)
+{
+    using (UnityWebRequest webRequest = UnityWebRequest.Post(url, json, "application/json"))
+    {
+        // 타임아웃 추가
+        webRequest.timeout = 5;
+
+        yield return webRequest.SendWebRequest();
+
+        if (webRequest.result == UnityWebRequest.Result.Success)
+        {
+            Debug.Log("Post 성공: " + webRequest.downloadHandler.text);
+        }
+        else
+        {
+            Debug.LogError("Post 실패: " + webRequest.error);
+        }
+    }
+}
+```
+
+#### 쿠키(헤더) 설정
+- `SetRequestHeader` 메서드를 통해 설정.
+
+## gRPC
+### ASP.Net Core 서버에 gRPC 서비스 추가
+- `dotnet add package Grpc.AspNetCore`
+
+# 2. 클라이언트 게임 구현
+## 기획
+    - 
