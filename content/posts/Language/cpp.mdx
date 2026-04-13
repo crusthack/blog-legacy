@@ -1,7 +1,71 @@
 ---
 title: 'C++'
 date: '2026-01-01'
+description: 'C++ 전체적인 정리'
 ---
+
+# Windows에서의 clang/llvm 환경 설정
+
+- llvm 설치  
+[LLVM](https://github.com/llvm/llvm-project)
+
+- cmake 설치  
+[CMAKE](https://cmake.org/download/)
+
+- ninja 설치 후 llvm bin파일로 이동  
+[Ninja](https://github.com/ninja-build/ninja)
+
+- llvm - clang을 프론트로 사용하는 백엔드 컴파일러 툴체인, cpp 컴파일러 clang이 같이 설치됨.
+- cmake - cpp 프로젝트 빌드 툴
+- Ninja - cmake를 스크립트로 사용하는 빌드 툴
+
+## 프로젝트 설정
+### 디렉토리 구조
+```txt
+cpp/
+├── CMakeLists.txt      (cmake 설정 파일)
+├── src/                (소스 파일)
+│   ├── main.cpp
+│   ├── src...
+└── build/              (컴파일 결과물 - 언제든 지워도 되는 곳)
+```
+- src폴더에 소스파일 두고서 cmakelist로 빌드 설정, build 폴더에 빌드 출력물 모음
+
+### cmake 설정 예시
+```txt
+// cmake 버전 명시
+cmake_minimum_required(VERSION 4.00)
+project(cpp LANGUAGES CXX)
+
+// C++ 26 표준 설정
+set(CMAKE_CXX_STANDARD 26)
+
+// src 폴더 내의 소스 파일 지정
+add_executable(main 
+    src/main.cpp 
+    src/sub/sub.cpp
+)
+
+// 헤더 파일 경로 추가 (include 시에 앞에 폴더명 안 적어도 되게 해줌)
+target_include_directories(main PRIVATE src/sub)
+```
+
+- 수동으로 소스파일 추가할 수도 있고, 자동으로 모든 소스파일 추적해서 추가하는 옵션도 있음. 
+- 블로그 호환성을 위해 주석 //로 설정, 실제 파일은 #으로 주석처리 해야함
+
+### 빌드 명령어
+```cmd
+mkdir build
+cd build
+// cmake 설정, 이전 디렉토리(..) 의 CMakeLists.txt 기반
+cmake -G "Ninja" -DCMAKE_CXX_COMPILER=clang++ ..
+cmake --build .
+main.exe    
+```
+
+
+
+
 
 # 기본 입출력
 ```c++
