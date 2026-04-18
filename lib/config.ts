@@ -38,6 +38,14 @@ export interface UsefulLink {
 }
 export const usefulLinks: UsefulLink[] = [
   { name: "Next.js 학습자료", url: "https://sangkon.com/practice-ts/" },
-  { name: "C# 학습자료", url: "https://sangkon.com/practice-csharp/"}
+  { name: "C# 학습자료", url: "https://sangkon.com/practice-csharp/"},
+  { name: ".Net Docs", url: "https://github.com/dotnet/docs"},
+  { name: "Unity Docs", url: "https://docs.unity3d.com/Manual/"},
+  { name: "Unreal Docs", url: "https://dev.epicgames.com/documentation/unreal-engine"},
+  { name: "ASP.Net Docs", url: "https://learn.microsoft.com/en-us/aspnet/core/?view=aspnetcore-10.0"},
+  { name: "cpp reference", url: "https://www.cppreference.com/"},
+  { name: "LeetCode", url: "https://leetcode.com/"},
+  { name: "Linux kernel", url: "https://github.com/torvalds/linux"},
+  { name: "Rust Docs", url: "https://doc.rust-lang.org/"}
   // r, pb, ts, jvm, mcp, csharp
 ];

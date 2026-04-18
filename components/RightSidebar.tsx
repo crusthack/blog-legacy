@@ -39,7 +39,7 @@ export default function RightSidebar() {
                 href={l.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block hover:text-blue-600"
+                className="block hover:text-blue-600 mt-2"
               >
                 {l.name}
               </a>
