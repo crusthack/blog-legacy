@@ -1,8 +1,8 @@
 // /components/Navigation.tsx
 "use client";
 
-import { Post } from "@/lib/posts";
-import { specialCategories } from "@/lib/config";
+import { getPostsByCategory, Post } from "@/lib/posts";
+import { Menu } from "@/lib/config";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -18,40 +18,6 @@ export default function Navi({ posts }: NaviProps) {
 
   const close = (key: string) =>
     setOpenMenu(prev => ({ ...prev, [key]: false }));
-
-  const specialKeys = specialCategories.map(sc => sc.category);
-
-  const categories = Array.from(
-    new Set(posts.map(post => post.category))
-  )
-    .filter(
-      (category): category is string =>
-        Boolean(category) && !specialKeys.includes(category)
-    )
-    .sort((a, b) => {
-      const latestA = Math.max(
-        ...posts
-          .filter(p => p.category === a)
-          .map(p => new Date(p.date).getTime())
-      );
-
-      const latestB = Math.max(
-        ...posts
-          .filter(p => p.category === b)
-          .map(p => new Date(p.date).getTime())
-      );
-
-      return latestB - latestA;
-    });
-
-  const firstCategory = categories[0] ?? "";
-
-  const postsBySpecial = new Map(
-    specialCategories.map(sc => [
-      sc.category,
-      posts.filter(p => p.category === sc.category),
-    ])
-  );
 
   return (
     <nav className="relative w-full h-16 bg-transparent grid grid-cols-[1fr_1000px_1fr]">
@@ -83,67 +49,53 @@ export default function Navi({ posts }: NaviProps) {
             href="/about"
             className="px-3 py-2 hover:bg-gray-200 rounded transition"
           >
-            소개
+            개발자 소개
           </Link>
 
-          {/* 문서 드롭다운 */}
-          <div
-            className="relative"
-            onPointerEnter={() => open("docs")}
-            onPointerLeave={() => close("docs")}
-          >
-            <Link
-              href={`/${encodeURIComponent(firstCategory)}`}
-              className="px-3 py-2 hover:bg-gray-200 rounded transition"
-            >
-              문서
-            </Link>
-
-            {openMenu["docs"] && (
-              <div className="absolute left-0 min-w-[12rem] bg-white shadow-lg rounded-md border p-2 z-50">
-                {categories.sort((a,b)=> b < a ? 1 : -1).map(cat => (
-                  <Link
-                    key={cat}
-                    href={`/${encodeURIComponent(cat)}`}
-                    className="block px-3 py-2 hover:bg-gray-100 rounded"
-                  >
-                    {cat}
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* 스페셜 카테고리 (config 기반) */}
-          {specialCategories.filter(sc=>sc.label).map(sc => {
-            const items = postsBySpecial.get(sc.category)?.sort(
-              (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).sort((a, b)=> (b.slug =='index')? 1 : -1) ?? [];
-
+          {/* 메뉴 (config 기반) */}
+          {Menu.filter(sc=>sc.label).map(item => {
+            const isSpecial = item.categories.length > 1;
             return (
               <div
-                key={sc.category}
+                key={item.label}
                 className="relative"
-                onPointerEnter={() => open(sc.category)}
-                onPointerLeave={() => close(sc.category)}
+                onPointerEnter={() => open(item.label)}
+                onPointerLeave={() => close(item.label)}
               >
                 <Link
-                  href={`/${sc.category}`}
-                  className="px-3 py-2 hover:bg-gray-200 rounded transition"
+                  href={`/${item.categories[0]}`}
+                  className="px-2 py-2 hover:bg-gray-200 rounded transition"
                 >
-                  {sc.label}
+                  {item.label}
                 </Link>
 
-                {openMenu[sc.category] && (
+                {openMenu[item.label] && (
                   <div className="absolute left-0 min-w-[12rem] bg-white shadow-lg rounded-md border p-2 z-50">
-                    {items.map(post => (
-                      <Link
-                        key={post.slug}
-                        href={`/${encodeURIComponent(post.category)}/${encodeURIComponent(post.slug)}`}
-                        className="block px-3 py-2 hover:bg-gray-100 rounded"
-                      >
-                        {post.title}
-                      </Link>
-                    ))}
+                    {
+                      isSpecial ?
+                        item.categories.map(ct =>{
+                          return (
+                          <Link
+                            key={ct}
+                            href={`/${encodeURIComponent(ct)}`}
+                            className="block px-3 py-2 hover:bg-gray-100 rounded"
+                          >
+                            {ct}
+                          </Link>
+                        )})
+                      :
+                      posts
+                        .filter(post => post.category === item.categories[0])
+                        .map(post => (
+                          <Link
+                            key={post.slug}
+                            href={`/${post.category}/${encodeURIComponent(post.slug)}`}
+                            className="block px-3 py-2 hover:bg-gray-100 rounded"
+                          >
+                            {post.title}
+                          </Link>
+                        ))
+                    }
                   </div>
                 )}
               </div>

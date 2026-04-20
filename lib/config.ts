@@ -3,33 +3,42 @@
 export const isLocalDev = process.env.NODE_ENV === 'development'
 export const repoName = "blog"
 
-export interface SpecialCategoryConfig {
-  category: string;          // category 이름 (posts.category와 동일)
+export interface MenuItem {
+  categories: string[];     // category 모음
   label: string;        // 네비에 보일 이름
 }
  
-export const specialCategories: SpecialCategoryConfig[] = [
+export const Menu: MenuItem[] = [
   {
-    category: "Journal",
+    categories: ["ComputerScience", "Graphics", "Network", "Language", "Web"],
+    label: "문서",
+  },
+  {
+    categories: ["UnrealEngine", "Unity",],
+    label: "프레임워크",
+  },
+  {
+    categories: ["Journal"],
     label: "개발 일지",
   },
   {
-    category: "Project",
+    categories: ["Project"],
     label: "프로젝트",
   },
   {
-    category: "Common",
+    categories: ["Common"],
     label: "일반",
   },
   {
-    category: "Secret",
-    label: "",
+    categories: ["Review"],
+    label: "리뷰",
   },
-  {
-    category: "Temp",
-    label: "",
-  }
 ];  
+
+export const excludeCategories: string[] = 
+[
+  "Temp",
+]
  
 // 유용한 사이트
 export interface UsefulLink {
