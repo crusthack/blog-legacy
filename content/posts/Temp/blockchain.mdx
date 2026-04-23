@@ -125,8 +125,7 @@ date: '2026-04-17'
 - UTXO는 걍 냅두고 장부에만 기록 남겨서 부하 덜라는 용도로 op-return을 통한 기록 저장을 가능하게 함. 
 - nLockTime. 5억 아래값이면 블록 높이를, 5억 이상 값이면 유닉스 타임 기반 제한
 - 하나의 UTXO에 대해 여러개의 lock걸 수 있음. 기존 락은 증발
-- OP_CLTV. 시간 잠금 걸린 트랜잭션 즉시 발행. OP_CHECKLOCKTIMEVERIFY
-- OP_CSV 상대적 시간 잠금. OP_CHECKSEQUENCEVERIFY
+
 
 - OP_IF, NOTIF, ELSE, ENDIF 와 같은 조건 연산자 존재
 - if문으로써 endif옵션까지 넣는 것보다, OP_EQUALVERIFY 사용하는게 더 효율적임. 분기 없다면 verify 사용
@@ -153,5 +152,84 @@ scriptpath(mast)시, 새로이 계산한 tweaked publickey가 merkle root기반�
 
 # 네트워크
 
-
 # bitcoin cli
+
+- 정리 전략
+key에서부터 네트워크까지 
+시작으로 돌아와 개요랑 오버뷰, 뒤에서 다루지 않은 키워드 뽑아내기
+cli 주요 명령어 정리
+
+인코딩
+Base58
+Bech32(q 취약점)
+BIP39
+
+- key
+타원 곡선 암호, 공개 키 암호 시스템
+공개키 -> 65바이트 (부호 및 x y 각 32바이트)
+압축 -> 33바이트 (부호 및 x값만, y는 방정식에 넣어서 부호와 함께 유추)
+P2PK
+P2PKH
+P2WPKH
+P2SH
+P2WSH
+P2C
+P2TR
+배니티 주소와 종이 지갑.
+
+- wallet(H)
+고전 키 관리 -> 매번 랜덤으로 키 생성
+결정적 구조 키 관리 시스템 -> 시드값이 안전하다는 가정 하에 해시함수를 통한 구조적 키 생성
+BIP39를 통한 인코딩, passphrases를 통해 원하는 단어 설정 가능하지만, 오류 감지 기능 약화(체크섬, 오타)
+시드에 512해시를 통해 마스터 키와 체인 생성 -> 키의 공개키, 체인, 인덱스를 해시함으로써 자식키와 자식키의 체인 생성...
+xprv, xpub, 암호키 혹은 공개키와 체인 값을 함께 줌으로써 키 구조 생성 가능
+부모 공개키와 체인 값, 그리고 자식 암호키를 알게되면, 부모 암호키 탈취가능
+HD지갑 포맷 예시: masterseed/BIP버전/코인타입/논리인덱스(depth)/지갑용도/주소인덱스
+$child\_sk = parent\_sk + t$ 이므로,$parent\_sk = child\_sk - t$
+
+ECDSA 
+Schnorr
+
+OP_CHECKSIG, OP_CHECKSIGVERIFY, OP_CHECKMULTISIG, OP_CHECKMULTISIGVERIFY, OP_CHECKSIGADD
+- OP_CLTV. 시간 잠금 걸린 트랜잭션 즉시 발행. OP_CHECKLOCKTIMEVERIFY
+- OP_CSV 상대적 시간 잠금. OP_CHECKSEQUENCEVERIFY
+Protocol Steps:
+1. Commitment: Alice picks random nonce k, computes kG, sends kG to Bob
+2. Challenge: Bob picks random scalar e, sends e to Alice
+3. Response: Alice computes s = k + ex, sends s to Bob
+4. Verification: Bob checks sG == kG + exG
+
+RBF
+CPFP
+
+spv
+Bloom Filter
+Compact Block Filter
+
+cli
+
+./src/bitcoin-cli -regtest -datadir=./data getblockchaininfo
+
+# 3. 지갑 생성 및 주소 발급
+./src/bitcoin-cli createwallet "wallet1"
+
+# 주소 발급
+./src/bitcoin-cli getnewaddress
+
+./src/bitcoin-cli generatetoaddress 101 "bcrt1q0ue7glayjfkc50dk89ykhkc8snxsdj47m4wpfv"
+
+./src/bitcoin-cli getbalance
+./src/bitcoin-cli listunspent
+
+./src/bitcoin-cli -regtest -datadir=./data createrawtransaction 
+
+# 3. 트랜잭션 서명 (지갑 활용)
+createrawtransaction "[inputs]" "{outputs}" 
+signrawtransactionwithwallet "hexstring" 
+sendrawtransaction "hexstring"
+
+# 4. 트랜잭션 네트워크 전송
+./src/bitcoin-cli sendrawtransaction "\<서명된_HEX_값>"
+
+# 트랜잭션 상세 조회 (verbose 모드)
+./src/bitcoin-cli getrawtransaction "f192404e5e68a971e1ed9568ef33909201aa6d2ebc51f1e2221c0c5a7459b197" true
