@@ -1,3 +1,5 @@
 {
-    "mdx-preview.preview.enableScripts": true
+    "mdx-preview.preview.enableScripts": false,
+    "markdown.validate.enabled": false,
+    "mdx-preview.framework": "auto"
 }

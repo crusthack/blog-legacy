@@ -4,7 +4,7 @@ date: '2026-01-30'
 description: |
     2026/03/11 슬라이드로 보기위한 내용 수정
 ---
-
+ 
 # 개요
 ## 유니티 엔진을 이용한 멀티플레이 구현 프로젝트
 - 소켓통신을 활용해 네트워크 라이브러리를 만들어보고, 게임에 적용해 게임에서 네트워크 통신을 어떻게 적용하는지 학습하기 위한 프로젝트입니다.
@@ -37,17 +37,18 @@ description: |
 - 단순히 이번 프로젝트만을 위한 라이브러리가 아닌, 이전 소켓프로그래밍 경험을 토대로 유연한 라이브러리를 제작하고자 하였습니다. 
 - 기본적인 메시지 클래스를 설계한 후, 실제 프로젝트에서는 Protobuf 메시지를 송수신 할 수 있도록 ProtobufMessage 클래스를 구현하였습니다.
 
-
 ## 1. 메시지 설계
 - 소켓통신을 통해 주고받을 메시지를 설계합니다. 
 - 소켓통신을 수행하는 클래스 측에서 데이터를 파싱해 메시지를 생성할 수 있도록 기본 클래스 BaseMessage와 IMessageParser\<T\> 인터페이스를 만들었습니다. 
+
 ### BaseMessage
 - 기본적인 소켓통신에서 수신한 바이트 스트림을 곧바로 문자열로 출력하는 상황을 가정한 구현입니다.   
 
 **주요 메서드**  
 - `public virtual Int32 Serialize(Span<byte> buffer)` 메시지를 바이트 스트림으로 직렬화해서 반환합니다. 
 - `public virtual Int32 Serialize(Span<byte> buffer)` 메시지를 직렬화 했을 때 바이트 크기를 반환합니다.
-**IMessageParser\<T\>
+
+**IMessageParser\<T\>**
 - `static abstract int Parse(byte[] data, int size, out T? message)` 바이트 스트림을 받아 파싱을 성공한다면, message를 내보내고 파싱에 사용한 바이트 수를 반환합니다. 음수(-1) 반환시 파싱 실패입니다.
 - `static abstract Int32 GetMaxSize()` 메시지의 최대 크기를 받습니다. 버퍼 크기 설정을 위해 사용합니다.
 
