@@ -1,5 +1,5 @@
 ---
-title: '멀티스레딩 정리'
+title: '멀티스레드 프로그래밍'
 date: '2025-12-30'
 description: '멀티스레드를 이용한 프로그래밍 정리'
 ---
@@ -18,10 +18,10 @@ description: '멀티스레드를 이용한 프로그래밍 정리'
 ## 멀티 스레딩을 하는 이유(스레드의 등장 배경)
 - -> 스레드를 여러개 생성해서 실행 흐름을 생성하는 이유
 - cpu 코어의 발전이 한계에 다다름. 이를 극복하기 위해 코어 개수를 늘리는 방향으로 발전. 
-1. 멀티코어 활용, **병렬 처리**. (예. 스레드1은 1에서부터 100까지의 덧셈을, 스레드2는 100부터 200까지의 덧셈을 동시에 한 뒤 두 결과값을 합침)
-- blocking 작업이 발생하는 경우, 프로세스의 동작이 멈춰버림. (예. 디스크에서 게임 정보를 불러오는 동안에 화면이 멈춰버리는 현상)
-2. thread-blocking(e,g, io 작업) 동안에 **다른 일**을 하려고. (예. 디스크에서 게임 정보를 불러오는 동안에 화면엔 로딩바가 움직이게 하는 동시 동작)
+1. thread-blocking(e,g, io 작업) 동안에 **다른 일**을 하려고. (예. 디스크에서 게임 정보를 불러오는 동안에 화면엔 로딩바가 움직이게 하는 동시 동작)
 - 즉, 컴퓨터 자원을 더 효율적으로 유휴자원 없이 최대한 활용하기 위해 멀티스레딩을 함. 
+2. 멀티코어 활용, **병렬 처리**. (예. 스레드1은 1에서부터 100까지의 덧셈을, 스레드2는 100부터 200까지의 덧셈을 동시에 한 뒤 두 결과값을 합침)
+- blocking 작업이 발생하는 경우, 프로세스의 동작이 멈춰버림. (예. 디스크에서 게임 정보를 불러오는 동안에 화면이 멈춰버리는 현상)
 - 윈도우에서 작업관리자를 실행한 후 성능 탭을 보면, 현재 실행되고 있는 **프로세스 수**와 **스레드 수**가 나옴. 평균적으로 **프로세스당 10개 이상**의 스레드를 사용하고 있음이 확인됨.
  
 ## 프로세스와 스레드의 차이
@@ -92,276 +92,23 @@ description: '멀티스레드를 이용한 프로그래밍 정리'
 - 메모리를 읽고 쓰는 과정에서 서로 병렬적인 접근이 발생할 경우 동작상의 문제 발생. **race condition**
 - 이를 위해 각 스레드가 공유 자원에 접근할 때 순차적인 데이터 접근을 하도록 동기화 과정이 필요. 
 
----
-# 아래는 LLM 정리 내용
+## 원자적 연산(Atomic Operation)
+- 하드웨어 단위에서 지원하는 동기화입니다. 
+- **컨텍스트 스위칭**이 발생하지 않는다는 장점이 있습니다. 
+- 다만, 때문에 코드단위에서 지속적인 루프를 통해 동기화를 하기 때문에 cpu 부하가 생길 수 있습니다. 
 
-# 1. 하드웨어 수준의 로우레벨 동시성 (Hardware & Memory Model)
+### Test Ans Set 
+### Compare And Swap
+### Load-Linked and Store-Conditional
+### Fetch And Add
 
-소프트웨어 논리를 넘어 CPU와 메모리 구조가 동시성에 미치는 영향입니다. 최신 CPU는 성능을 위해 명령어 순서를 재배치(Out-of-order execution)하거나 캐시를 지연 동기화합니다.
+## Park/UnPark
 
-## 1.1 Memory Barriers (Fences)
-CPU나 컴파일러가 최적화를 위해 명령어의 실행 순서를 바꾸는 것을 방지하는 경계선입니다.
+## Mutex
 
-*   **LoadLoad Fence**: 펜스 이전의 Load가 이후의 Load보다 먼저 완료됨을 보장.
-*   **StoreStore Fence**: 펜스 이전의 Store가 이후의 Store보다 먼저 완료됨을 보장.
-*   **LoadStore / StoreLoad Fence**: 읽기와 쓰기 간의 순서를 엄격히 제한.
+## 상태 변수(Condition Veriable)
 
-```cpp
-// C++ Memory Barrier 상세 예시
-#include <atomic>
-#include <thread>
-#include <cassert>
+## Semaphore
 
-std::atomic<bool> ready(false);
-int data = 0;
-
-void producer() {
-    data = 42; 
-    // memory_order_release: 이 작업 이전의 모든 메모리 쓰기가 완료되었음을 보장 (StoreStore + LoadStore)
-    ready.store(true, std::memory_order_release);
-}
-
-void consumer() {
-    // memory_order_acquire: 이 작업 이후의 모든 메모리 읽기가 이 로드 이후에 수행됨을 보장 (LoadLoad + LoadStore)
-    while (!ready.load(std::memory_order_acquire));
-    assert(data == 42); // 가시성이 보장되어 절대 실패하지 않음
-}
-```
-
-## 1.2 Memory Consistency Models
-여러 스레드가 메모리 변화를 관찰하는 가시성(Visibility) 규칙입니다.
-- **Sequential Consistency (순차적 일관성)**: 모든 스레드가 동일한 순서로 메모리 연산을 관찰합니다. (가장 직관적이나 성능 저하 발생)
-- **Relaxed Memory Ordering**: 성능을 극대화하기 위해 순서 보장을 포기합니다. 오직 원자성(Atomicity)만 보장하며, 실행 순서는 CPU 마음대로 바뀔 수 있습니다.
-
-```rust
-// Rust의 Relaxed Ordering: 단순 카운터처럼 순서가 중요하지 않은 경우 사용
-use std::sync::atomic::{AtomicUsize, Ordering};
-
-let counter = AtomicUsize::new(0);
-counter.fetch_add(1, Ordering::Relaxed); 
-```
-
-## 1.3 Cache Coherence (MESI) & False Sharing
-- **MESI 프로토콜**: 멀티 코어 환경에서 각 코어의 캐시 상태를 4가지(Modified, Exclusive, Shared, Invalid)로 관리하여 데이터 일관성을 유지합니다.
-- **False Sharing (거짓 공유)**: 서로 다른 스레드가 인접한 메모리를 수정할 때, 같은 캐시 라인(Cache Line)을 공유하여 성능이 급격히 떨어지는 현상입니다.
-
-```cpp
-// False Sharing 성능 비교용 코드 구조
-struct BadStruct {
-    volatile long x; // Thread A가 수정
-    volatile long y; // Thread B가 수정 (x와 같은 캐시라인에 있을 확률 높음)
-};
-
-struct GoodStruct {
-    alignas(64) volatile long x; 
-    alignas(64) volatile long y; // 별도의 캐시라인으로 격리됨 (Padding/Alignment)
-};
-```
-
----
-
-# 2. 비차단 동기화 (Non-blocking Synchronization)
-
-Mutex와 같은 Lock을 사용하면 데드락과 컨텍스트 스위칭 비용이 발생합니다. Non-blocking 기법은 시스템의 가용성을 극대화합니다.
-
-## 2.1 CAS (Compare-And-Swap)
-기대하는 값(Expected)과 메모리의 현재 값이 같을 때만 새로운 값(Desired)으로 변경하는 하드웨어 지원 원자적 연산입니다.
-
-```cpp
-// C++를 이용한 간단한 Lock-free Counter
-#include <atomic>
-
-struct LockFreeCounter {
-    std::atomic<int> val;
-
-    void increment() {
-        int current = val.load();
-        while (!val.compare_exchange_weak(current, current + 1)) {
-            // 실패 시 current는 자동으로 현재의 val로 업데이트됨 (Loop & Retry)
-        }
-    }
-};
-```
-
-## 2.2 ABA Problem
-CAS 수행 시 값이 `A -> B -> A`로 변했을 때, 실제로는 변했음에도 불구하고 값이 같다고 판단하여 발생하는 논리적 오류입니다.
-
-```cpp
-// ABA 문제 발생 시나리오 (Lock-free Stack)
-// 1. Thread 1이 Pop을 시도, Top(A)와 Next(B)를 확인.
-// 2. Thread 2가 A를 Pop하고, C를 Push하고, 다시 A를 Push함. (Stack: A -> C)
-// 3. Thread 1이 다시 실행되어 CAS(Top, A, B)를 수행. 성공해버림!
-// 결과: Stack의 Top은 B가 되지만, 실제 B는 이미 사라졌을 수도 있어 메모리 오염 발생.
-```
-- **해결책**: **Tagged Pointers** (포인터 옆에 버전 번호를 붙여 A-v1과 A-v2를 구분)
-
-## 2.3 Lock-free / Wait-free / Obstruction-free
-- **Lock-free**: 시스템 전체에서 최소 하나의 스레드는 진행(Progress)됨을 보장합니다.
-- **Wait-free**: 모든 스레드가 유한한 단계(Bounded steps) 내에 작업을 완료함을 보장합니다. (예: `Atomic::fetch_add` 단일 호출)
-
-## 2.4 RCU (Read-Copy-Update)
-읽기 작업은 아무런 제약 없이 수행하고, 쓰기 시에는 데이터를 복사하여 수정한 뒤 포인터를 단 한 번의 원자적 연산으로 교체합니다. 이전 데이터는 모든 읽기 작업이 끝난 후(Grace Period) 삭제합니다.
-
----
-
-# 3. 현대적 동시성 모델 (Modern Concurrency Models)
-
-## 3.1 CSP (Communicating Sequential Processes) - Go
-스레드 간 상태 공유를 피하고 **채널(Channel)**을 통해 메시지를 전달합니다.
-
-```go
-// Go Channel을 통한 데이터 전송 및 동기화
-func worker(done chan bool) {
-    fmt.Print("working...")
-    time.Sleep(time.Second)
-    done <- true // 작업 완료 신호 송신
-}
-
-func main() {
-    done := make(chan bool, 1)
-    go worker(done)
-    <-done // 작업 완료까지 대기 (Blocking 수신)
-}
-```
-
-## 3.2 Actor Model (Akka)
-상태를 고립시키고 오직 메시지 패싱으로만 통신합니다. 분산 시스템 환경에서 매우 강력합니다.
-
-```scala
-// Akka Actor (Scala) 예시
-class CounterActor extends Actor {
-  var count = 0 // 고립된 상태
-  def receive = {
-    case "increment" => count += 1
-    case "get" => sender() ! count
-  }
-}
-```
-
-## 3.3 Fork-Join Model & Work-Stealing
-- **Fork-Join**: 작업을 재귀적으로 잘게 쪼개어 병렬로 실행하고 합치는 방식.
-- **Work-Stealing Algorithm**: 바쁜 스레드가 자기 큐의 작업(LIFO)을 처리하는 동안, 한가한 스레드가 다른 스레드의 큐 뒤쪽(FIFO)에서 작업을 훔쳐오는 부하 분산 기법.
-
----
-
-# 4. 경량 스레드 및 비동기 추상화 (Lightweight Threads & Async)
-
-## 4.1 Virtual Threads (Java 21)
-OS 스레드와 매핑되지 않는 수백만 개의 유저 레벨 스레드입니다.
-
-```java
-// Java 21 가상 스레드 활용
-try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
-    executor.submit(() -> {
-        // I/O 블로킹 작업 수행 시, 하부의 OS 스레드는 다른 가상 스레드에 양보됨
-        Thread.sleep(Duration.ofSeconds(1));
-    });
-}
-```
-
-## 4.2 Event Loop & Reactor Pattern
-Node.js, Nginx 등에서 사용. 단일 스레드가 비차단 I/O(epoll, kqueue)를 감시하다가 이벤트가 발생하면 콜백을 실행합니다.
-
-## 4.3 Async / Await & State Machine
-컴파일러가 비동기 함수를 상태 머신(State Machine)으로 변환합니다. `await` 시점에 현재 상태를 저장하고 제어권을 반환했다가, 비동기 작업 완료 후 해당 지점부터 다시 실행합니다.
-
----
-
-# 5. 스케줄링 및 OS 심화 (Advanced OS Concepts)
-
-## 5.1 Priority Inversion & Inheritance
-낮은 우선순위의 스레드가 락을 쥐고 있어 높은 우선순위 스레드가 진행하지 못하는 현상입니다. **우선순위 상속(Priority Inheritance)**을 통해 락을 쥔 스레드의 우선순위를 일시적으로 높여 해결합니다.
-
-## 5.2 Futex (Fast User-space Mutex)
-경합이 없을 때는 커널 모드 진입 없이 유저 공간에서 원자적 연산으로 처리하고, 경합 시에만 시스템 콜을 통해 커널 스레드를 잠재우거나 깨웁니다. (리눅스 뮤텍스의 핵심)
-
----
-
-# 6. 검증 및 안전성 (Verification & Safety)
-
-## 6.1 Rust Ownership & Borrow Checker
-컴파일 타임에 데이터 레이스를 원천 차단합니다. "가변 참조자는 오직 하나만 존재하거나, 불변 참조자만 여러 개 존재할 수 있다"는 규칙을 강제합니다.
-
-## 6.2 Formal Verification (TLA+)
-동시성 알고리즘을 수학적으로 모델링하여 모든 가능한 상태 전이를 검증합니다. AWS DynamoDB 등의 설계 검증에 사용되었습니다.
-
----
-
-# 7. 비동기 프로그래밍 모델 심화 (Advanced Async Models)
-
-## 7.1 Coroutines (코루틴)
-코루틴은 실행을 일시 중단하고 나중에 재개할 수 있는 함수입니다.
-
-*   **Stackful**: 호출 스택 전체를 저장하여 어디서든 중단 가능. (Go루틴)
-*   **Stackless**: 상태 머신으로 변환되어 특정 `yield/await` 지점에서만 중단 가능. (C#, Rust, Python, Kotlin)
-
-```python
-# Python Coroutine (async/await)
-import asyncio
-
-async def fetch_data():
-    print("Start fetching...")
-    await asyncio.sleep(1) # 중단점
-    print("Done!")
-    return {"data": 123}
-
-asyncio.run(fetch_data())
-```
-
-## 7.2 Reactive Programming (반응형 프로그래밍)
-데이터를 연속적인 스트림으로 취급합니다. (RxJava, RxJS)
-
-```java
-// RxJava 예시: 데이터 필터링 및 비동기 처리
-Observable.fromIterable(list)
-    .filter(x -> x > 10)
-    .observeOn(Schedulers.io()) // 아래 작업은 IO 스레드에서
-    .subscribe(System.out::println);
-```
-
----
-
-# 8. 플랫폼별 동시성 아키텍처 (Platform Architectures)
-
-## 8.1 Android의 동시성
-*   **Main Thread**: UI 업데이트만 담당. 5초 이상 블로킹 시 ANR 발생.
-*   **Coroutines + Dispatchers**:
-    *   `Dispatchers.Main`: UI 작업용.
-    *   `Dispatchers.IO`: 네트워크, 디스크 작업용 (스레드 풀 공유).
-    *   `Dispatchers.Default`: 복잡한 연산용 (CPU 코어 수에 비례).
-
-## 8.2 Unity의 동시성
-Unity는 기본적으로 메인 스레드 기반 엔진입니다.
-
-*   **Job System + Burst Compiler**: 멀티코어를 활용해 대량의 연산을 수행.
-```csharp
-// Unity Job System 예시
-public struct MyJob : IJobParallelFor {
-    public NativeArray<float> results;
-    public void Execute(int index) {
-        results[index] = math.sqrt(index); // 병렬 연산
-    }
-}
-```
-*   **Unity Coroutines**: 비동기 처리를 흉내 내는 열거형(Enumerator) 기반 협력적 루틴.
-
-## 8.3 Unreal Engine의 동시성
-*   **Task Graph**: 태스크 간의 선후 관계(Prerequisite)를 정의하여 최적으로 분산 실행.
-```cpp
-// Unreal Engine Task Graph 예시
-TGraphTask<FMyTask>::CreateTask(NULL, ENamedThreads::GameThread).ConstructAndDispatchWhenReady();
-```
-*   **Async\<T>**: 간단한 비동기 작업 실행 및 Future 반환.
-*   **Thread Safety**: `FCriticalSection`, `TAtomic` 등을 통해 수동으로 제어.
-
----
-
-# 9. 동시성 정복을 위한 공부 순서 추천
-
-1. **Concurrency vs Parallelism**: 두 개념의 철학적 차이를 먼저 이해하세요.
-2. **Memory Model 이해**: CPU와 컴파일러의 최적화 원리를 파악하세요.
-3. **CAS 및 Lock-free 자료구조 구현**: 원자적 연산의 강력함과 ABA 문제의 고통을 겪어보세요.
-4. **Work-stealing & Scheduling**: 현대적인 스케줄러가 부하를 분산하는 방식을 분석하세요.
-5. **Modern Abstractions**: 고루틴, 가상 스레드 등 최신 기술의 내부 구조를 파헤치세요.
-6. **Platform Architectures**: 실제 개발 중인 엔진(Android, Unity, Unreal)의 제약 사항과 모범 사례를 적용하세요.
-
+# 참고 자료
+- [ostep](https://pages.cs.wisc.edu/~remzi/OSTEP/)

@@ -1,12 +1,79 @@
 ---
 title: '가비지 컬렉션'
-date: '2026-05-02'
+date: '2026-05-04'
 ---
 
 # 개요
-- .Net 가비지 컬렉션 정리입니다.
+- .Net CLR 기반 가비지 컬렉션 정리입니다.
+- .Net 깃허브에 있는 문서 기반으로 작성하였습니다. [링크](https://github.com/dotnet/docs/blob/main/docs/standard/garbage-collection/index.md)
 
-## 참고 자료
+# 가비지 컬렉션 기초
+- [Fundamentals of garbage collection](https://github.com/dotnet/docs/blob/main/docs/standard/garbage-collection/fundamentals.md)
+- GC(Garbage Collection)는 메모리 관리를 자동으로 해주는 도구입니다. 개발자가 메모리 관리를 신경쓰지 않아도 되도록 도와줍니다. 
+- 메모리 누수와 잘못된 메모리 접근을 방지합니다. 
+
+## 가상 메모리 
+- 가상 메모리엔 3가지 상태가 존재. **Free**, **Reserved**, **Committed**
+- `Free`: 아무런 정립이 안 된, 비어있는 메모리 공간
+- `Reserved`: 나중에 쓰일 것이라고 가상 주소가 예약돼 있음. 실제 물리 메모리에 매핑은 안 됨 
+- `Committed`: 실제 물리 공간이 할당된 상태
+- GC는 힙에 메모리를 미리 예약받아놔, unmanaged 언어들보다 힙 할당이 더 빠르다고 주장
+
+## 메모리 해제 
+- GC는 뿌리(정적 필드, 지역 변수, cpu 레지스터, Finalize Queue)로부터 참조 대상을 탐색함으로써 현재 사용중인 객체들을 마킹 
+- 마킹이 안 된, 도달 불가능한 객체들은 불필요하다고 간주하여 메모리 해제(null 대입)를 수행
+- 이로인해 연속된 힙 메모리에 객체들이 존재하다가, 중간 중간 소멸되어 빈칸이 생기게 됨
+- 살아남은 객체들을 앞으로 복사 이동 하면서 메모리 압축을 수행. 
+- 객체들의 주소가 바뀌게 되므로 애플리케이션의 포인터들 값을 수정해줘야 함. 이 때 안전을 위해 모든 스레드가 멈추게 됨. 
+
+## 가비지 컬렉션 동작 조건 
+- 시스템에 메모리가 부족하다고 OS가 알리거나, 다른 주체가 메시지를 보낼 때 
+- 힙 메모리 용량이 특정 임계값을 넘겼을 때
+- `xref:System.GC.Collect*?displayProperty=nameWithType` 메소드를 직접 호출할 때.(최대한 자제할 것)
+
+## 가비지 컬렉션의 세대 관리 
+- 세대 관리 기본 사항 
+1. 전체 힙에 대해 압축하는 것보다, 일부만 하는 것이 더 빠르고 효율적
+2. 새로 생성된 객체는 수명이 짧고, 오래된 객체는 수명이 길거라 예측
+3. 새로 생성되는 객체들은 서로간에 지역성이 짙을것이라 예측 
+- 위에 기반해 객체를 3개 세대로 분류(0세대, 1세대, 2세대). 새로 생성된 객체는 0세대. 점차 1세대 2세대로 승급함. 
+- 크기가 매우 큰 객체는 세대 분류 상관없이 LOH(Large Object Heap)에 분류됨. 이 객체는 2세대 GC가 돌아갈 때 같이 정리됨.
+- GC돌릴 때 우선 0세대 대상으로만 수행한 후, 메모리가 여전히 부족하면 1세대, 이후 2세대 및 LOH까지 GC 수행 
+- GC는 자의적으로 메모리 관리 수준을 파악한 후 GC빈도수 조절을 위해 메모리 관리 임계값을 수정할 수 있음. 
+
+## 임시 세대와 세그먼트
+- 메모리를 세그먼트 단위로 할당받아 GC를 수행. 
+- 기존 GC를 수행하고서 2세대 객체가 남아있는 세그먼트를 배제시키고 새로운, 빈 세그먼트에 0세대 1세대 할당해 관리하면  
+더 적은 세그먼트만을 관리하면 되므로 효율적이게 됨. 
+
+## GC 동작중 일어나는 일 
+- 3개 페이즈로 구분. **marking phase**, **relocating phase**, **compacting phase**
+1. `marking phase`: 참조중인, 살아있는 개체들을 객체 그래프 순환을 통해 찾고서 마킹을 수행 
+2. `relocating phase`: 살아남은 객체가 이동될 주소를 미리 계산하고서, 참조 포인터 값들 수정
+3. `compacting phase`: 살아남은 객체 복사 이동으로 메모리 압축 수행. LOH는 기본적으로 압축 안 함.(옵션에 따라 가능)
+- GC가 시작되기 전에, 모든 관리 스레드가 정지됨. 
+
+## 비관리 자원 
+- OS 커널 자원(파일 핸들러, 윈도우 핸들, 네트워크 연결, DB 연결)은 명시적으로 종료 단계를 걸쳐야함. 
+- Dispose 메서드 구현 혹은 Finalize를 통해 자원 관리를 직접 해야함 
+
+# 클라이언트(Workstation)와 서버 간의 가비지 컬렉션 차이
+- [Workstation and server garbage collection](https://github.com/dotnet/docs/blob/main/docs/standard/garbage-collection/workstation-server-gc.md)
+- 워크스테이션 모드와 서버 모드 존재. 대용량의 무거운 프로그램일 시 서버 모드 택하는게 좋음.
+- 비동시모드와 동시모드(백그라운드 모드). 비동시 모드는 GC도는 동안 워커 스레드 락 걸어 버림. 동시모드는 2세대 GC 도는동안엔 0세대 1세대 활용하는 스레드 활성화
+
+## 성능 고려 사항
+- **워크스테이션 GC**: GC를 유발한 스레드에서 GC를 돌림.일반 유저 스레드와 같은 우선순위를 가져, 상대적으로 시간이 많이 걸리게 됨. 
+- 싱글 코어 CPU에서는 무조건 워크스테이션 GC로 돌아감.
+- **서버 GC**: CPU 코어마다 GC스레드가 돌아감. 우선순위가 매우 높은 스레드들임. 
+- 성능이 빠르겠지만, 컨텍스트 스위칭 오버헤드가 발생할 수 있음. 
+- 애플리케이션 프로세스를 여러개(1천여개) 띄울거면 그냥 워크스테이션 GC 써는게 효율적이라고 함. 
+
+## BackGround Garbage Collection
+- [링크](https://github.com/dotnet/docs/blob/main/docs/standard/garbage-collection/background-gc.md)
+-
+
+# 참고 자료
 - [.Net Docs](https://github.com/dotnet/docs/blob/main/docs/standard/garbage-collection/index.md)
-- [유니티 로드쇼 - 이제민님 발표](https://youtu.be/H7aVy48mAVU)
+- [유니티 로드쇼 - 유니티 메모리와 가비지 컬렉터](https://youtu.be/H7aVy48mAVU)
 - [Unite On-Air 2025 유니티 메모리 이해](https://youtu.be/7VN135Nyx5Y)
