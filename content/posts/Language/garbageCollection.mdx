@@ -57,7 +57,7 @@ date: '2026-05-04'
 - OS 커널 자원(파일 핸들러, 윈도우 핸들, 네트워크 연결, DB 연결)은 명시적으로 종료 단계를 걸쳐야함. 
 - Dispose 메서드 구현 혹은 Finalize를 통해 자원 관리를 직접 해야함 
 
-# 클라이언트(Workstation)와 서버 간의 가비지 컬렉션 차이
+# 클라이언트(Workstation)와 서버 가비지 컬렉션 모드
 - [Workstation and server garbage collection](https://github.com/dotnet/docs/blob/main/docs/standard/garbage-collection/workstation-server-gc.md)
 - 워크스테이션 모드와 서버 모드 존재. 대용량의 무거운 프로그램일 시 서버 모드 택하는게 좋음.
 - 비동시모드와 동시모드(백그라운드 모드). 비동시 모드는 GC도는 동안 워커 스레드 락 걸어 버림. 동시모드는 2세대 GC 도는동안엔 0세대 1세대 활용하는 스레드 활성화
