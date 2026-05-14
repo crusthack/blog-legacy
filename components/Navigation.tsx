@@ -86,8 +86,11 @@ export default function Navi({ posts }: NaviProps) {
                       :
                       posts
                         .filter(post => post.category === item.categories[0])
-                        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-                        .sort((_, b)=> (b.slug ==='index')? 1 : -1)
+                        .sort((a, b) => {
+                          if(a.slug === "index") return -1;
+                          if(b.slug === "index") return 1;
+                          return new Date(b.date).getTime() - new Date(a.date).getTime()
+                        })
                         .map(post => (
                           <Link
                             key={post.slug}
