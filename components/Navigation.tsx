@@ -32,7 +32,7 @@ export default function Navi({ posts }: NaviProps) {
               src="https://avatars.githubusercontent.com/u/161662653?v=4"
               alt="avatar"
               className="w-max h-12 rounded-full"
-              />
+            />
             Main
           </Link>
           <Link href="https://crusthack.github.io/catbattle/" target="_blank" className="whitespace-nowrap flex w-full text-xl items-center font-bold hover:opacity-70 transition">
@@ -40,6 +40,9 @@ export default function Navi({ posts }: NaviProps) {
           </Link>
           <Link href="/game" className="flex w-full text-xl items-center font-bold hover:opacity-70 transition">
             공룡게임
+          </Link>
+          <Link href="https://crusthack.github.io/UnityProject/" className="flex w-full text-xl items-center font-bold hover:opacity-70 transition">
+            유니티 프로젝트
           </Link>
         </div>
 
@@ -53,7 +56,7 @@ export default function Navi({ posts }: NaviProps) {
           </Link>
 
           {/* 메뉴 (config 기반) */}
-          {Menu.filter(sc=>sc.label).map(item => {
+          {Menu.filter(sc => sc.label).map(item => {
             const isSpecial = item.categories.length > 1;
             return (
               <div
@@ -73,33 +76,34 @@ export default function Navi({ posts }: NaviProps) {
                   <div className="absolute left-0 min-w-[12rem] bg-white shadow-lg rounded-md border p-2 z-50">
                     {
                       isSpecial ?
-                        item.categories.map(ct =>{
+                        item.categories.map(ct => {
                           return (
-                          <Link
-                            key={ct}
-                            href={`/${encodeURIComponent(ct)}`}
-                            className="block px-3 py-2 hover:bg-gray-100 rounded"
-                          >
-                            {ct}
-                          </Link>
-                        )})
-                      :
-                      posts
-                        .filter(post => post.category === item.categories[0])
-                        .sort((a, b) => {
-                          if(a.slug === "index") return -1;
-                          if(b.slug === "index") return 1;
-                          return new Date(b.date).getTime() - new Date(a.date).getTime()
+                            <Link
+                              key={ct}
+                              href={`/${encodeURIComponent(ct)}`}
+                              className="block px-3 py-2 hover:bg-gray-100 rounded"
+                            >
+                              {ct}
+                            </Link>
+                          )
                         })
-                        .map(post => (
-                          <Link
-                            key={post.slug}
-                            href={`/${post.category}/${encodeURIComponent(post.slug)}`}
-                            className="block px-3 py-2 hover:bg-gray-100 rounded"
-                          >
-                            {post.title}
-                          </Link>
-                        ))
+                        :
+                        posts
+                          .filter(post => post.category === item.categories[0])
+                          .sort((a, b) => {
+                            if (a.slug === "index") return -1;
+                            if (b.slug === "index") return 1;
+                            return new Date(b.date).getTime() - new Date(a.date).getTime()
+                          })
+                          .map(post => (
+                            <Link
+                              key={post.slug}
+                              href={`/${post.category}/${encodeURIComponent(post.slug)}`}
+                              className="block px-3 py-2 hover:bg-gray-100 rounded"
+                            >
+                              {post.title}
+                            </Link>
+                          ))
                     }
                   </div>
                 )}
