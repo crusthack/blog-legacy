@@ -24,33 +24,33 @@ export default function Navi({ posts }: NaviProps) {
       <div />
 
       {/* 가운데 네비 */}
-      <div className="flex w-full items-center justify-between">
+      <div className="grid w-full grid-cols-2 items-center">
         {/* 좌측 */}
-        <div className="flex items-center justify-start px-6 gap-3">
-          <Link href="/" className="flex w-full text-xl items-center font-bold hover:opacity-70 mr-6">
+        <div className="flex items-center justify-start gap-4 px-6">
+          <Link href="/" className="flex items-center text-xl font-bold hover:opacity-70 whitespace-nowrap mr-4">
             <img
               src="https://avatars.githubusercontent.com/u/161662653?v=4"
               alt="avatar"
-              className="w-max h-12 rounded-full"
+              className="w-auto h-12 rounded-full mr-2"
             />
             Main
           </Link>
-          <Link href="https://crusthack.github.io/catbattle/" target="_blank" className="whitespace-nowrap flex w-full text-xl items-center font-bold hover:opacity-70 transition">
+          <Link href="https://crusthack.github.io/catbattle/" target="_blank" className="flex items-center text-xl font-bold hover:opacity-70 transition whitespace-nowrap">
             냥코DB
           </Link>
-          <Link href="/game" className="flex w-full text-xl items-center font-bold hover:opacity-70 transition">
+          <Link href="/game" className="flex items-center text-xl font-bold hover:opacity-70 transition whitespace-nowrap">
             공룡게임
           </Link>
-          <Link href="https://crusthack.github.io/UnityProject/" className="flex w-full text-xl items-center font-bold hover:opacity-70 transition">
+          <Link href="https://crusthack.github.io/UnityProject/" className="flex items-center text-xl font-bold hover:opacity-70 transition whitespace-nowrap">
             유니티 프로젝트
           </Link>
         </div>
 
         {/* 우측 */}
-        <div className="flex items-center justify-end px-6 gap-2">
+        <div className="flex items-center justify-end gap-2 px-6">
           <Link
             href="/about"
-            className="px-3 py-2 hover:bg-gray-200 rounded transition"
+            className="px-3 py-2 hover:bg-gray-200 rounded transition whitespace-nowrap"
           >
             개발자 소개
           </Link>
@@ -67,7 +67,7 @@ export default function Navi({ posts }: NaviProps) {
               >
                 <Link
                   href={`/${item.categories[0]}`}
-                  className="px-2 py-2 hover:bg-gray-200 rounded transition"
+                  className="block px-2 py-2 hover:bg-gray-200 rounded transition whitespace-nowrap"
                 >
                   {item.label}
                 </Link>
@@ -81,7 +81,7 @@ export default function Navi({ posts }: NaviProps) {
                             <Link
                               key={ct}
                               href={`/${encodeURIComponent(ct)}`}
-                              className="block px-3 py-2 hover:bg-gray-100 rounded"
+                              className="block px-3 py-2 hover:bg-gray-100 rounded whitespace-nowrap"
                             >
                               {ct}
                             </Link>
@@ -99,7 +99,7 @@ export default function Navi({ posts }: NaviProps) {
                             <Link
                               key={post.slug}
                               href={`/${post.category}/${encodeURIComponent(post.slug)}`}
-                              className="block px-3 py-2 hover:bg-gray-100 rounded"
+                              className="block px-3 py-2 hover:bg-gray-100 rounded whitespace-nowrap"
                             >
                               {post.title}
                             </Link>
