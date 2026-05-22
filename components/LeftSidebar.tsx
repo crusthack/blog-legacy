@@ -5,7 +5,7 @@ import { excludeCategories, Menu } from "@/lib/config";
  
 export default function LeftSidebar() {
   const allPosts = getAllPostData();
-  const recentPosts = allPosts.slice(0, 4);
+  const recentPosts = allPosts.filter(post=> (post.category !== "Common") && (post.category !== "Temp")).slice(0, 4);
   const categories: string[] = Array.from(
     new Set(allPosts.map((post) => post.category).filter((cat): cat is string => Boolean(cat)))
   ).filter(ct => !excludeCategories.some(item => item===ct)) .sort();
