@@ -27,7 +27,7 @@ export default function Navi({ posts }: NaviProps) {
       <div className="grid w-full grid-cols-2 items-center">
         {/* 좌측 */}
         <div className="flex items-center justify-start gap-4 px-6">
-          <Link href="/" className="flex items-center text-xl font-bold hover:opacity-70 whitespace-nowrap mr-4">
+          <Link href="/" className="flex items-center text-xl font-bold hover:opacity-70 whitespace-nowrap mr-1">
             <img
               src="https://avatars.githubusercontent.com/u/161662653?v=4"
               alt="avatar"
@@ -35,19 +35,19 @@ export default function Navi({ posts }: NaviProps) {
             />
             Main
           </Link>
-          <Link href="https://crusthack.github.io/catbattle/" target="_blank" className="flex items-center text-xl font-bold hover:opacity-70 transition whitespace-nowrap">
-            냥코DB
-          </Link>
-          <Link href="/game" className="flex items-center text-xl font-bold hover:opacity-70 transition whitespace-nowrap">
+          <Link href="/game" className="flex items-center text-l font-bold hover:opacity-70 transition whitespace-nowrap">
             공룡게임
           </Link>
-          <Link href="https://crusthack.github.io/UnityProject/" className="flex items-center text-xl font-bold hover:opacity-70 transition whitespace-nowrap">
+          <Link href="https://crusthack.github.io/catbattle/" target="_blank" className="flex items-center text-l font-bold hover:opacity-70 transition whitespace-nowrap">
+            냥코DB
+          </Link>
+          <Link href="https://crusthack.github.io/UnityProject/" target="_blank" className="flex items-center text-l font-bold hover:opacity-70 transition whitespace-nowrap">
             유니티 프로젝트
           </Link>
         </div>
 
         {/* 우측 */}
-        <div className="flex items-center justify-end gap-2 px-6">
+        <div className="flex items-center justify-end gap-.5 px-6">
           <Link
             href="/about"
             className="px-3 py-2 hover:bg-gray-200 rounded transition whitespace-nowrap"
