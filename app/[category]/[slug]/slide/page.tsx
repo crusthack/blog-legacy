@@ -15,6 +15,46 @@ import { MdxImage } from '@/components/MdxImage';
 import { getTocFromMarkdown } from '@/lib/parseToc';
 import { Metadata } from 'next';
 import { isLocalDev, repoName } from '@/lib/config';
+import { visit } from 'unist-util-visit';
+
+function remarkNormalizeCodeMeta() {
+  return (tree: any) => {
+    visit(tree, 'code', (node: any) => {
+      if (typeof node.lang === 'string' && node.lang.includes(':')) {
+        const [lang, filename] = node.lang.split(':');
+
+        node.lang = lang;
+        node.meta = `${node.meta || ''} title="${filename}"`.trim();
+      }
+    });
+  };
+}
+
+function rehypeInjectTitle() {
+  return (tree: any) => {
+    visit(tree, "element", (node: any) => {
+      if (
+        node.tagName === "figure" &&
+        node.properties?.["data-rehype-pretty-code-figure"] !== undefined
+      ) {
+        const figcaption = node.children?.find(
+          (child: any) => child.tagName === "figcaption"
+        );
+
+        const pre = node.children?.find(
+          (child: any) => child.tagName === "pre"
+        );
+
+        const title = figcaption?.children?.[0]?.value;
+
+        if (title && pre) {
+          pre.properties = pre.properties || {};
+          pre.properties["data-title"] = title;
+        }
+      }
+    });
+  };
+}
 
 const prettyOptions = {
     theme: "github-dark",
@@ -36,7 +76,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
     const { category, slug } = await params;
     const post = getPostData(category, slug);
-    
+
     return {
         title: post ? post.title : 'Slide',
         description: post?.description,
@@ -53,7 +93,7 @@ export default async function SlidePage({ params }: { params: Promise<{ category
 
     const toc = getTocFromMarkdown(postData.content);
     const bodySlides = splitContentIntoSlides(postData.content);
-    
+
     const baseurl = isLocalDev ? '' : `https://crusthack.github.io/${repoName}`;
     const postUrl = `https://crusthack.github.io/${repoName}/${category}/${slug}`;
 
@@ -87,10 +127,10 @@ export default async function SlidePage({ params }: { params: Promise<{ category
                 )}
                 {/* 왼쪽 하단 포스트 URL 추가 */}
                 <div className="absolute bottom-0 left-0 text-left">
-                    <a 
-                        href={postUrl} 
+                    <a
+                        href={postUrl}
                         className="text-3xl font-mono text-blue-500 hover:text-blue-700 underline decoration-1 underline-offset-4 transition-colors"
-                        target="_blank" 
+                        target="_blank"
                         rel="noopener noreferrer"
                     >
                         블로그 포스트: {postUrl}
@@ -103,7 +143,7 @@ export default async function SlidePage({ params }: { params: Promise<{ category
     const slidesWithRenderedContent = await Promise.all(
         bodySlides.map(async (slide) => {
             const allocatedWeight = slide.complexCount > 0 ? slide.remainingWeight / slide.complexCount : 0;
-            
+
             return {
                 ...slide,
                 renderedContent: (
@@ -124,11 +164,17 @@ export default async function SlidePage({ params }: { params: Promise<{ category
                         }}
                         options={{
                             mdxOptions: {
-                                remarkPlugins: [remarkGfm, remarkToc, remarkMath],
+                                remarkPlugins: [
+                                    remarkGfm,
+                                    remarkToc,
+                                    remarkMath,
+                                    remarkNormalizeCodeMeta,
+                                ],
                                 rehypePlugins: [
-                                    [rehypePrettyCode, prettyOptions], 
-                                    rehypeSlug, 
-                                    rehypeKatex
+                                    rehypeSlug,
+                                    rehypeKatex,
+                                    [rehypePrettyCode, prettyOptions],
+                                    rehypeInjectTitle
                                 ],
                             },
                         }}
@@ -141,10 +187,10 @@ export default async function SlidePage({ params }: { params: Promise<{ category
     const finalSlides = [titleSlide, ...slidesWithRenderedContent];
 
     return (
-        <SlideContent 
-            slides={finalSlides} 
-            category={category} 
-            slug={slug} 
+        <SlideContent
+            slides={finalSlides}
+            category={category}
+            slug={slug}
             title={postData.title}
             toc={toc}
         />

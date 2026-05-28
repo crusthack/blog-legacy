@@ -83,3 +83,6 @@ body {
     display: none;
   }
 }
+figure[data-rehype-pretty-code-figure] > figcaption {
+  display: none;
+}

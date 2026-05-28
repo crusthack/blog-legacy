@@ -49,16 +49,16 @@ export default async function Post({ params }: { params: Promise<{ category: str
     const toc = getTocFromMarkdown(postData.content);
     return (
         <div className="grid grid-cols-[1fr_1000px_1fr] gap-8 w-full">
-            <div className="flex justify-end">
+            <div className="flex justify-end min-w-0">
                 <CategorySidebar currentCategory={category} />
             </div>
  
             {/* 중앙 콘텐츠 */}
-            <div className="w-full mx-auto Markdown-body">
+            <div className="w-full mx-auto Markdown-body min-w-0">
                 <BlogPost post={postData} showSlideButton={true} />
             </div>
  
-            <div className="flex justify-start">
+            <div className="flex justify-start min-w-0">
                 <TOC toc={toc} />
             </div>
         </div>

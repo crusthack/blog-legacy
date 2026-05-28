@@ -1,0 +1,263 @@
+---
+title: "win32 기초"
+date: '2026-05-26'
+---
+
+# 개발 환경 설정 
+- windows환경에서 Visual Studio를 통한 개발. VS에서 C++을 통한 데스크탑 개발 설치. 
+- 포스트 작성시의 윈도우 버전: **Microsoft Windows [Version 10.0.26200.8457]**
+- Visual Studio 버전: **VS2026 18.6.1**
+
+## 프로젝트 설정 
+### 1. C++ 프로젝트 생성 
+- ![프로젝트 생성](1.JPG)
+- empty project를 하나 생성해줍니다. 
+
+### 2. Linker 컴파일 설정 
+- ![Linker SubSystem](2.JPG)
+- Console -> Windows 변경을 통해 윈도우 프로그램 개발 설정을 해줍니다. 
+
+## WinMain 함수 
+```cpp:main.cpp
+#include <Windows.h>
+
+int WINAPI wWinMain(_In_ HINSTANCE hInstance, 
+	_In_opt_ HINSTANCE hPrevInstance, 
+	_In_ LPWSTR lpCmdLine, 
+	_In_ INT nCmdShow)
+{
+	return 0;
+}
+```
+- Window 프로그램의 기본 시작점인 `WinMain`함수입니다. 
+- 앞의 접두사(a/w)는 프로그램이 ANSI/UTF-16 둘 중 하나의 버전으로 동작하게 합니다 .
+- 기본적으로 윈도우는 UTF-16의 wide character 기반으로 동작합니다. w 접두사/접미사를 권장합니다. 
+
+### main함수 요소 정리 
+- `#include <Windows.h>`: win32 api 라이브러리 포함 
+- `WINAPI`: 함수 호출 규약. `__stdcall`로 변환됨. 
+- `_In_`, `_In_opt_`: 파라미터 메타데이터, 함수 호출 시 요구사항(not nullable...)
+
+##### 파라미터 
+- `hInstance`: 현재 실행 중인 **프로그램** 인스턴스에 대한 핸들
+- `hPrevInstance`: 동일 exe파일로 로드된 프로세스가 이미 있는지 확인. 현재는 deprecated돼서 안 쓰임
+- `lpCmdLine`: 프로그램 실행시 명령줄 인자. 한 줄로 합쳐져서 들어옴. split을 통해 분할해야됨. 
+- `nCmdShow`: 창 실행 옵션. 최대, 최소, 일반, 숨김 등...
+
+## 코드 작성 규칙 
+- 포인터는 최대한 `lp`접두사를 사용합니다. 
+- wide charcter, w 접두사/접미사를 사용하여 utf-16으로 동작하도록 합니다. 
+- 솔직히 헝가리안 명명법 잘 모르겠음. 
+- `int` 같은 키워드도 `INT`로 최대한 변경 시도합니다.
+
+# 기본 튜토리얼 
+- MSDN에 존재하는 기본 튜토리얼 학습입니다. 
+- [링크](https://learn.microsoft.com/en-us/windows/win32/learnwin32/learn-to-program-for-windows)
+## 1. Windows 애플리케이션 기본 동작 
+- 윈도우에서 프로그램 창을 띄우는 간단한 예제입니다. 
+- 윈도우 애플리케이션을 생성하고 메시지 루프를 처리하는 기본적인 동작을 학습합니다. 
+- [MS 예제](https://learn.microsoft.com/en-us/windows/win32/learnwin32/your-first-windows-program)
+
+### 코드 
+```cpp:main.cpp
+#include <Windows.h>
+
+// 전방 선언 
+HRESULT InitWindow(HINSTANCE hInstance, int nCmdShow);
+LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+
+int WINAPI wWinMain(_In_ HINSTANCE hInstance,
+	_In_opt_ HINSTANCE hPrevInstance,
+	_In_ LPWSTR lpCmdLine,
+	_In_ INT nCmdShow)
+{
+	// 컴파일러에 파라미터 미사용 알림
+	UNREFERENCED_PARAMETER(hPrevInstance);
+	UNREFERENCED_PARAMETER(lpCmdLine);
+
+	// 윈도우 생성 
+	if (FAILED(InitWindow(hInstance, nCmdShow)))
+		return 0;
+
+	// 메시지 처리 루프 
+	MSG msg = {};
+	while (GetMessageW(&msg, NULL, 0, 0) > 0)
+	{
+		TranslateMessage(&msg);
+		// 메시지 처리 
+		DispatchMessage(&msg);
+	}
+
+	return 0;
+}
+
+// 윈도우 생성 
+HRESULT InitWindow(HINSTANCE hInstance, int nCmdShow)
+{
+	LPCWSTR className = L"Sample Window Class";
+
+	// 윈도우 클래스 선언 
+	WNDCLASSEXW wcex = {};
+	wcex.cbSize = sizeof(WNDCLASSEXW);
+	wcex.lpfnWndProc = WindowProc;
+	wcex.hInstance = hInstance;
+	wcex.lpszClassName = className;
+
+	if (!RegisterClassExW(&wcex))
+		return E_FAIL;
+	
+	// 윈도우 생성 
+	auto hwnd = CreateWindowExW(WS_EX_LAYERED, className, L"Learn to Program Windows", WS_OVERLAPPEDWINDOW,
+		CW_USEDEFAULT, CW_USEDEFAULT, 640, 480,
+		NULL, NULL, hInstance, NULL);
+
+	if (!hwnd)
+		return E_FAIL;
+	// 투명도 
+	SetLayeredWindowAttributes(hwnd, 0, 240, LWA_ALPHA);
+
+	ShowWindow(hwnd, nCmdShow);
+
+	return S_OK;
+}
+
+// 윈도우 메시지 처리 
+LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	int ret;
+	switch (uMsg)
+	{
+	case WM_CLOSE:
+		ret = MessageBox(hwnd, L"Really quit?", L"My application", MB_OKCANCEL);
+		switch (ret)
+		{
+		case IDOK:
+			DestroyWindow(hwnd);
+			return 0;
+		case IDCANCEL:
+			MessageBoxW(hwnd, L"Cancel clicked", L"message", MB_ABORTRETRYIGNORE);
+			return 0;
+		}
+		return 0;
+
+	case WM_DESTROY:
+		PostQuitMessage(0);
+		return 0;
+
+	case WM_PAINT:
+	{
+		PAINTSTRUCT ps;	
+		HDC hdc = BeginPaint(hwnd, &ps);
+
+		FillRect(hdc, &ps.rcPaint, (HBRUSH)(COLOR_WINDOW + 1));
+
+		EndPaint(hwnd, &ps);
+		return 0;
+	}
+
+	}
+	return DefWindowProc(hwnd, uMsg, wParam, lParam);
+}
+```
+
+### InitWindow
+- `InitWindow`: 윈도우 창을 하나 생성합니다. 반투명한 창으로 설정하였습니다. 
+- 내부적으로 윈도우 클래스를 정의해준 뒤, 등록해줍니다. 
+- 윈도우 창을 생성할 때 해당 클래스의 내부적인 동작을 윈도우 클래스를 통해 처리합니다. 문자열을 통해 바인딩합니다. 
+- 윈도우 생성 이후 해당 윈도우를 컨트롤할 수 있는 윈도우 핸들을 반환받습니다. 
+- 생성된 윈도우는 반드시 `ShowWindow`를 통해 화면에 보이도록 합니다. 
+
+### WindowProc
+- 윈도우 메시지를 처리하는 함수입니다. 윈도우 클래스에 붙여 이벤트를 소비하도록 합니다. 
+- 윈도우 메시지를 `Post`될 수도, `Send`될 수도 있습니다.
+- **Post**된 메시지는 메시지 큐에 쌓인 후 `GetMessage`를 통해 소비됩니다. **DisPatch**를 통해 메시지 처리 함수를 호출합니다. 
+- **Send**된 메시지는 즉각적으로 윈도우 핸들에 등록된 `WndProc`에서 소비됩니다. 
+
+### 정리 
+- 윈도우를 생성한 후 화면에 표시할 수 있음
+- 메시지 처리 루프를 통해 윈도우 이벤트를 처리할 수 있음 
+
+## OOP에서의 애플리케이션 메시지 처리
+- 일반 멤버 함수는 내부적으로 this 포인터가 존재하므로, 바로 함수포인터 연결이 불가능합니다. 
+- 이를 위해 간접적으로 전역 함수, 정적 메서드 정의 후 간접적으로 메시지 처리 메서드를 호출하여야합니다. 
+
+### 윈도우 공식 예제 BaseWindow
+- 처음 윈도우 생성 후 생성되는 **WM_NCCREATE** 메시지를 활용하여 윈도우 핸들에 객체 포인터를 연결합니다. 
+```cpp:main.cpp
+	// 메서드 정의부
+	BOOL Create(PCWSTR lpWindowName, DWORD dwStyle,	DWORD dwExStyle = 0,	
+	int x = CW_USEDEFAULT, int y = CW_USEDEFAULT, int nWidth = CW_USEDEFAULT, int nHeight = CW_USEDEFAULT,
+	HWND hWndParent = 0, HMENU hMenu = 0)
+    {
+        WNDCLASS wc = {0};
+
+        wc.lpfnWndProc   = DERIVED_TYPE::WindowProc;
+        wc.hInstance     = GetModuleHandle(NULL);
+        wc.lpszClassName = ClassName();
+
+        RegisterClass(&wc);
+
+		// 마지막 인자 lpParam에 객체 포인터 전달 
+        m_hwnd = CreateWindowEx(
+            dwExStyle, ClassName(), lpWindowName, dwStyle, x, y,
+            nWidth, nHeight, hWndParent, hMenu, GetModuleHandle(NULL), this
+            );
+
+        return (m_hwnd ? TRUE : FALSE);
+    }
+	// 정적 메서드 
+    static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+    {
+        DERIVED_TYPE *pThis = NULL;
+
+        if (uMsg == WM_NCCREATE)
+        {
+            CREATESTRUCT* pCreate = (CREATESTRUCT*)lParam;
+            pThis = (DERIVED_TYPE*)pCreate->lpCreateParams;
+			// 윈도우 핸들의 필드 lpParam에 객체 포인터 저장 
+            SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)pThis);
+
+            pThis->m_hwnd = hwnd;
+        }
+        else
+        {
+			// 윈도우 핸들로부터 객체 포인터 불러오기 
+            pThis = (DERIVED_TYPE*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+        }
+        if (pThis)
+        {
+			// 핸들러 메서드 호출 
+            return pThis->HandleMessage(uMsg, wParam, lParam);
+        }
+        else
+        {
+            return DefWindowProc(hwnd, uMsg, wParam, lParam);
+        }
+    }
+```
+#### 설명 
+- 윈도우 처음 생성시, **WM_NCCREATE** 메시지가 생성됩니다. 이를 처리할 때 딸려오는 **CREATESTRUCT**를 활용하여 객체 포인터를 저장합니다. 
+- **CREATESTRUCT**는 윈도우 생성 함수에 들어가는 파라미터 정보를 가지고 있습니다. lpParam로 객체 포인터 **this**를 넘깁니다. 
+- **SetWindowLongPtr**를 통해 윈도우 핸들의 **GWLP_USERDATA**에 객체 포인터를 저장한 뒤, **GetWindowLongPtr**를 통해 꺼내 사용합니다. 
+
+### Unreal Engine에서의 처리 방식 
+- 언리얼 엔진의 `Engine/Source/Runtime/ApplicationCore/Private/Windows/WindowsApplication.cpp` 경로에 존재하는 파일입니다.
+```c++
+// Defined as a global so that it can be extern'd by UELibrary
+LRESULT WindowsApplication_WndProc(HWND hwnd, uint32 msg, WPARAM wParam, LPARAM lParam)
+{
+	ensure( IsInGameThread() );
+
+	return WindowsApplication->ProcessMessage( hwnd, msg, wParam, lParam );
+}
+
+LRESULT CALLBACK FWindowsApplication::AppWndProc(HWND hwnd, uint32 msg, WPARAM wParam, LPARAM lParam)
+{
+	return WindowsApplication_WndProc( hwnd, msg, wParam, lParam );
+}
+```
+- 전역 객체 포인터 하나 두고서 관리합니다. 
+- **참고** 보통 GetMessage 호출시 스레드가 블락되므로, PeekMessage를 통해 block 없는 busy wait를 수행함. 
+
+
+## 2. COM 사용하기

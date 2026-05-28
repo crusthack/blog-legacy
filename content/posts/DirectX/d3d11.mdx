@@ -1,0 +1,398 @@
+---
+title: 'D3D11'
+date: '2026-05-01'
+---
+
+# 개요
+- DirectX11 학습 기록 공간입니다.
+- 각종 튜토리얼 자료들을 따라 해보고 코드를 해석한 뒤 최종적으로 나만의 3D 프로젝트를 수행하는 것을 목표로 합니다. 
+- Win32 API에 관한 정리는 따로하여, 여기에선 DirectX에 대해서만 집중합니다. 
+
+## 학습 자료
+- [MSDN](https://learn.microsoft.com/en-us/windows/win32/direct3d11/)
+- [D3D11.3 명세](https://microsoft.github.io/DirectX-Specs/d3d/archive/D3D11_3_FunctionalSpec.htm)
+- [rastertek 블로그 - D11 튜토리얼](https://www.rastertek.com/tutdx11win10.html)
+- [walbourn 깃허브](https://github.com/walbourn/directx-sdk-samples-reworked})
+- [DirectX 11 SDK](https://www.microsoft.com/en-us/download/details.aspx?id=6812)
+
+
+# 1. DirectX11 기본
+
+## DirectX 프로그램 기본 구조, main.cpp 
+```c++:main.cpp
+#include <windows.h>
+#include <d3d11.h>
+
+#pragma comment(lib, "d3d11.lib")
+
+// WinMain
+int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int nCmdShow)
+{
+    if (FAILED(InitWindow(hInstance, nCmdShow)))
+        return 0;
+
+    if (FAILED(InitDevice()))
+    {
+        CleanupDevice();
+        return 0;
+    }
+
+    MSG msg = { 0 };
+    while (WM_QUIT != msg.message)
+    {
+        if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+        {
+            TranslateMessage(&msg);
+            DispatchMessage(&msg);
+        }
+        else
+        {
+            Render();
+        }
+    }
+
+    CleanupDevice();
+    return (int)msg.wParam;
+}
+```
+- directX 라이브러리를 매크로를 통해 링크 설정
+- WinMain에서 윈도우 생성 후, `InitDevice` -> `Render` -> `CleanupDevice` 순서로 동작
+
+## InitDevice 함수 
+```cpp
+HRESULT InitDevice()
+{
+    HRESULT hr = S_OK;
+
+    RECT rc;
+    GetClientRect(g_hWnd, &rc);
+    UINT width = rc.right - rc.left;
+    UINT height = rc.bottom - rc.top;
+
+    UINT createDeviceFlags = 0;
+#ifdef _DEBUG
+    createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
+#endif
+
+    D3D_DRIVER_TYPE driverTypes[] =
+    {
+        D3D_DRIVER_TYPE_HARDWARE,
+        D3D_DRIVER_TYPE_WARP,
+        D3D_DRIVER_TYPE_REFERENCE,
+    };
+    UINT numDriverTypes = ARRAYSIZE(driverTypes);
+
+    D3D_FEATURE_LEVEL featureLevels[] =
+    {
+        D3D_FEATURE_LEVEL_11_0,
+        D3D_FEATURE_LEVEL_10_1,
+        D3D_FEATURE_LEVEL_10_0,
+    };
+    UINT numFeatureLevels = ARRAYSIZE(featureLevels);
+
+    DXGI_SWAP_CHAIN_DESC sd;
+    ZeroMemory(&sd, sizeof(sd));
+    sd.BufferCount = 1;
+    sd.BufferDesc.Width = width;
+    sd.BufferDesc.Height = height;
+    sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    sd.BufferDesc.RefreshRate.Numerator = 60;
+    sd.BufferDesc.RefreshRate.Denominator = 1;
+    sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+    sd.OutputWindow = g_hWnd;
+    sd.SampleDesc.Count = 1;
+    sd.SampleDesc.Quality = 0;
+    sd.Windowed = TRUE;
+
+    for (UINT driverTypeIndex = 0; driverTypeIndex < numDriverTypes; driverTypeIndex++)
+    {
+        g_driverType = driverTypes[driverTypeIndex];
+        hr = D3D11CreateDeviceAndSwapChain(NULL, g_driverType, NULL, createDeviceFlags, featureLevels, numFeatureLevels,
+            D3D11_SDK_VERSION, &sd, &g_pSwapChain, &g_pd3dDevice, &g_featureLevel, &g_pImmediateContext);
+        if (SUCCEEDED(hr))
+            break;
+    }
+    if (FAILED(hr))
+        return hr;
+
+    // Create a render target view
+    ID3D11Texture2D* pBackBuffer = NULL;
+    hr = g_pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
+    if (FAILED(hr))
+        return hr;
+
+    hr = g_pd3dDevice->CreateRenderTargetView(pBackBuffer, NULL, &g_pRenderTargetView);
+    pBackBuffer->Release();
+    if (FAILED(hr))
+        return hr;
+
+    g_pImmediateContext->OMSetRenderTargets(1, &g_pRenderTargetView, NULL);
+
+    // Setup the viewport
+    D3D11_VIEWPORT vp;
+    vp.Width = (FLOAT)width;
+    vp.Height = (FLOAT)height;
+    vp.MinDepth = 0.0f;
+    vp.MaxDepth = 1.0f;
+    vp.TopLeftX = 0;
+    vp.TopLeftY = 0;
+    g_pImmediateContext->RSSetViewports(1, &vp);
+
+    return S_OK;
+}
+```
+- 디바이스 설정을 통해 화면에 그림을 그릴 준비를 하는 함수입니다. 
+- GPU 장치와 화면 출력 버퍼를 초기화합니다. 
+
+###  1. 렌더링 영역 크기 구하기, Rect 
+```cpp 
+HRESULT InitDevice()
+{
+    HRESULT hr = S_OK;
+
+    RECT rc;
+    GetClientRect(g_hWnd, &rc);
+    UINT width = rc.right - rc.left;
+    UINT height = rc.bottom - rc.top;
+```
+- 윈도우 핸들로부터 창 크기를 가져옵니다. 
+
+### 2. 드라이버, 다이렉트 버전 준비 
+```cpp
+    // 디버그 플래그 설정 
+    UINT createDeviceFlags = 0;
+#ifdef _DEBUG
+    createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
+#endif
+
+    D3D_DRIVER_TYPE driverTypes[] =
+    {
+        D3D_DRIVER_TYPE_HARDWARE,   // gpu
+        D3D_DRIVER_TYPE_WARP,       // cpu
+        D3D_DRIVER_TYPE_REFERENCE,  // test용
+    };
+    UINT numDriverTypes = ARRAYSIZE(driverTypes);
+
+    D3D_FEATURE_LEVEL featureLevels[] =
+    {
+        D3D_FEATURE_LEVEL_11_0,
+        D3D_FEATURE_LEVEL_10_1,
+        D3D_FEATURE_LEVEL_10_0,
+    };
+    UINT numFeatureLevels = ARRAYSIZE(featureLevels);
+```
+- 사용할 그래픽 드라이버 후보들과 다이렉트 버전 후보들을 준비합니다.
+- 나중에, 배열을 순회하며 해당 드라이버 타입을 사용해 실행을 시도합니다. 
+- 디버그 플래그를 통해 문제사항을 출력으로 받아보는 플래그도 존재합니다. 
+
+### 3. 스왑 체인, 그래픽 버퍼 설정 
+```cpp
+DXGI_SWAP_CHAIN_DESC sd;
+ZeroMemory(&sd, sizeof(sd));
+sd.BufferCount = 1;
+sd.BufferDesc.Width = width;
+sd.BufferDesc.Height = height;
+sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+sd.BufferDesc.RefreshRate.Numerator = 60;
+sd.BufferDesc.RefreshRate.Denominator = 1;
+sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+sd.OutputWindow = g_hWnd;
+sd.SampleDesc.Count = 1;
+sd.SampleDesc.Quality = 0;
+sd.Windowed = TRUE;
+```
+- 화면에 그림을 그리기 위한 버퍼 관리자를 설정합니다. 
+
+### 4. 그래픽 컨텍스트 생성 
+```cpp 
+for (UINT driverTypeIndex = 0; driverTypeIndex < numDriverTypes; driverTypeIndex++)
+{
+    g_driverType = driverTypes[driverTypeIndex];
+    hr = D3D11CreateDeviceAndSwapChain(NULL, g_driverType, NULL, createDeviceFlags, featureLevels, numFeatureLevels,
+        D3D11_SDK_VERSION, &sd, &g_pSwapChain, &g_pd3dDevice, &g_featureLevel, &g_pImmediateContext);
+    if (SUCCEEDED(hr))
+        break;
+}
+if (FAILED(hr))
+    return hr;
+```
+- 위에서 설정한 값들을 이용해 컨텍스트를 생성합니다. 
+
+### 5. 렌더 타겟 연결 
+```cpp
+ID3D11Texture2D* pBackBuffer = NULL;
+hr = g_pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
+if (FAILED(hr))
+    return hr;
+
+hr = g_pd3dDevice->CreateRenderTargetView(pBackBuffer, NULL, &g_pRenderTargetView);
+pBackBuffer->Release();
+if (FAILED(hr))
+    return hr;
+
+g_pImmediateContext->OMSetRenderTargets(1, &g_pRenderTargetView, NULL);
+```
+- 백버퍼를 가져온 후, 랜더 타겟 뷰를 생성합니다. 백 버퍼는 화면에 그림을 그리기 전, 데이터를 올리는 버퍼입니다. 
+- 렌더 타겟 뷰를 통해 화면에 그림을 그립니다. 
+
+### 6. 뷰포트 설정 
+```cpp 
+D3D11_VIEWPORT vp;
+vp.Width = (FLOAT)width;
+vp.Height = (FLOAT)height;
+vp.MinDepth = 0.0f;
+vp.MaxDepth = 1.0f;
+vp.TopLeftX = 0;
+vp.TopLeftY = 0;
+g_pImmediateContext->RSSetViewports(1, &vp);
+
+return S_OK;
+```
+- 실제 그래픽 렌더링 영역을 설정해줍니다. 렌더 타겟 중 실제로 출력할 픽셀 영역을 설정합니다.
+
+### 정리
+- 윈도우 Rect 크기 가져오기 -> 드라이버, 다이렉트 버전 준비 -> 스왑 체인 생성 -> 디바이스 컨텍스트 생성 -> 백버퍼 설정 -> 뷰포트 설정 
+
+## Render 함수 
+```cpp
+void Render()
+{
+    // Just clear the backbuffer
+    float ClearColor[4] = { 0.0f, 0.125f, 0.3f, 1.0f }; //red,green,blue,alpha
+    g_pImmediateContext->ClearRenderTargetView(g_pRenderTargetView, ClearColor);
+    g_pSwapChain->Present(0, 0);
+}
+``` 
+- 백버퍼, 메모리의 값을 단색으로 채웁니다. 
+- 이후 백버퍼를 화면에 표시합니다. 
+
+## CleanupDevice 함수 
+```cpp 
+void CleanupDevice()
+{
+    if (g_pImmediateContext) g_pImmediateContext->ClearState();
+
+    if (g_pRenderTargetView) g_pRenderTargetView->Release();
+    if (g_pSwapChain) g_pSwapChain->Release();
+    if (g_pImmediateContext) g_pImmediateContext->Release();
+    if (g_pd3dDevice) g_pd3dDevice->Release();
+}
+```
+- 자원 해제를 통해 프로그램을 종료할 준비를 합니다. 
+
+## 공식 문서 
+```txt
+Summary
+In this first tutorial, we will go through the elements necessary to create a minimal Direct3D 11 application. Every Direct3D 11 application must have these elements to function properly. The elements include setting up a window and a device object, and then displaying a color on the window.
+
+Source
+(SDK root)\Samples\C++\Direct3D11\Tutorials\Tutorial01
+
+Setting Up The Direct3D 11 Device
+The first steps of creating the window and message loop are identical in Direct3D 9, Direct3D 10, and Direct3D 11. See Direct3D 10 Tutorial 00: Win32 Basics for an introduction to this process. Now that we have a window that is displaying, we can continue to set up a Direct3D 11 device. Setup is necessary if we are going to render any 3D scene. The first thing to do is to create three objects: a device, an immediate context, and a swap chain. The immediate context is a new object in Direct3D 11.
+
+In Direct3D 10, the device object was used to perform both rendering and resource creation. In Direct3D 11, the immediate context is used by the application to perform rendering onto a buffer, and the device contains methods to create resources.
+
+The swap chain is responsible for taking the buffer to which the device renders, and displaying the content on the actual monitor screen. The swap chain contains two or more buffers, mainly the front and the back. These are textures to which the device renders in order to display on the monitor. The front buffer is what is being presented currently to the user. This buffer is read-only and cannot be modified. The back buffer is the render target to which the device will draw. Once it finishes the drawing operation, the swap chain will present the backbuffer by swapping the two buffers. The back buffer becomes the front buffer, and vice versa.
+
+To create the swap chain, we fill out a DXGI_SWAPCHAIN_DESC structure that describes the swap chain we are about to create. A few fields are worth mentioning. BackBufferUsage is a flag that tells the application how the back buffer will be used. In this case, we want to render to the back buffer, so we'll set BackBufferUsage to DXGI_USAGE_RENDER_TARGET_OUTPUT. The OutputWindow field represents the window that the swap chain will use to present images on the screen. SampleDesc is used to enable multi-sampling. Since this tutorial does not use multi-sampling, SampleDesc's Count is set to 1 and Quality to 0 to have multi-sampling disabled.
+
+Once the description has been filled out, we can call the D3D11CreateDeviceAndSwapChain function to create both the device and the swap chain for us. The following is the code to create a device and a swap chain:
+
+  
+    DXGI_SWAP_CHAIN_DESC sd;
+    ZeroMemory( &sd, sizeof(sd) );
+    sd.BufferCount = 1;
+    sd.BufferDesc.Width = 640;
+    sd.BufferDesc.Height = 480;
+    sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    sd.BufferDesc.RefreshRate.Numerator = 60;
+    sd.BufferDesc.RefreshRate.Denominator = 1;
+    sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+    sd.OutputWindow = g_hWnd;
+    sd.SampleDesc.Count = 1;
+    sd.SampleDesc.Quality = 0;
+    sd.Windowed = TRUE;
+
+    if( FAILED( D3D11CreateDeviceAndSwapChain( NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, 0, featureLevels, numFeatureLevels,
+                     D3D11_SDK_VERSION, &sd, &g_pSwapChain, &g_pd3dDevice, NULL, &g_pImmediateContext ) ) )
+    {
+        return FALSE;
+    }
+
+The next thing we need to do is to create a render target view. A render target view is a type of resource view in Direct3D 11. A resource view allows a resource to be bound to the graphics pipeline at a specific stage. Think of resource views as typecast in C. A chunk of raw memory in C can be cast to any data type. We can cast that chunk of memory to an array of integers, an array of floats, a structure, an array of structures, and so on. The raw memory itself is not very useful to us if we don't know its type. Direct3D 11 resource views act in a similar way. For instance, a 2D texture, analogous to the raw memory chunk, is the raw underlying resource. Once we have that resource we can create different resource views to bind that texture to different stages in the graphics pipeline with different formats: as a render target to which to render, as a depth stencil buffer that will receive depth information, or as a texture resource. Where C typecasts allow a memory chunk to be used in a different manner, so do Direct3D 11 resource views.
+
+We need to create a render target view because we would like to bind the back buffer of our swap chain as a render target. This enables Direct3D 11 to render onto it. We first call GetBuffer() to get the back buffer object. Optionally, we can fill in a D3D11_RENDERTARGETVIEW_DESC structure that describes the render target view to be created. This description is normally the second parameter to CreateRenderTargetView. However, for these tutorials, the default render target view will suffice. The default render target view can be obtained by passing NULL as the second parameter. Once we have created the render target view, we can call OMSetRenderTargets() on the immediate context to bind it to the pipeline. This ensures the output that the pipeline renders gets written to the back buffer. The code to create and set the render target view is as follows:
+
+  
+    // Create a render target view
+    ID3D11Texture2D *pBackBuffer;
+    if( FAILED( g_pSwapChain->GetBuffer( 0, __uuidof( ID3D11Texture2D ), (LPVOID*)&pBackBuffer ) ) )
+        return FALSE;
+    hr = g_pd3dDevice->CreateRenderTargetView( pBackBuffer, NULL, &g_pRenderTargetView );
+    pBackBuffer->Release();
+    if( FAILED( hr ) )
+        return FALSE;
+    g_pImmediateContext->OMSetRenderTargets( 1, &g_pRenderTargetView, NULL );
+
+The last thing we need to set up before Direct3D 11 can render is initialize the viewport. The viewport maps clip space coordinates, where X and Y range from -1 to 1 and Z ranges from 0 to 1, to render target space, sometimes known as pixel space. In Direct3D 9, if the application does not set up a viewport, a default viewport is set up to be the same size as the render target. In Direct3D 11, no viewport is set by default. Therefore, we must do so before we can see anything on the screen. Since we would like to use the entire render target for the output, we set the top left point to (0, 0) and width and height to be identical to the render target's size. To do this, use the following code:
+
+  
+    D3D11_VIEWPORT vp;
+    vp.Width = (FLOAT)width;
+    vp.Height = (FLOAT)height;
+    vp.MinDepth = 0.0f;
+    vp.MaxDepth = 1.0f;
+    vp.TopLeftX = 0;
+    vp.TopLeftY = 0;
+    g_pImmediateContext->RSSetViewports( 1, &vp );
+
+Modifying the Message Loop
+We have set up the window and Direct3D 11 device, and we are ready to render. However, there is still a problem with our message loop: it uses GetMessage() to get messages. The problem with GetMessage() is that if there is no message in the queue for the application window, GetMessage() blocks and does not return until a message is available. Thus, instead of doing something like rendering, our application is waiting within GetMessage() when the message queue is empty. We can solve this problem by using PeekMessage() instead of GetMessage(). PeekMessage() can retrieve a message like GetMessage() does, but when there is no message waiting, PeekMessage() returns immediately instead of blocking. We can then take this time to do some rendering. The modified message loop, which uses PeekMessage(), looks like this:
+
+    MSG msg = {0};
+    while( WM_QUIT != msg.message )
+    {
+        if( PeekMessage( &msg, NULL, 0, 0, PM_REMOVE ) )
+        {
+            TranslateMessage( &msg );
+            DispatchMessage( &msg );
+        }
+        else
+        {
+            Render();  // Do some rendering
+        }
+    }
+
+The Rendering Code
+Rendering is done in the Render() function. In this tutorial, we will render the simplest scene possible, which is to fill the screen with a single color. In Direct3D 11, an easy way to fill the render target with a single color is to use the immediate context's ClearRenderTargetView() method. First, we define an array of four floats that describe the color with which we would like to fill the screen. Then, we pass it to ClearRenderTargetView(). In this example, we choose a shade of blue. Once we fill our back buffer, we call the swap chain's Present() method to complete the rendering. Present() is responsible for displaying the swap chain's back buffer content onto the screen so that the user can see it. The Render() function looks like this:
+
+    void Render()
+    {
+        //
+        // Clear the backbuffer
+        //
+        float ClearColor[4] = { 0.0f, 0.125f, 0.6f, 1.0f }; // RGBA
+        g_pd3dDevice->ClearRenderTargetView( g_pRenderTargetView, ClearColor );
+    
+        g_pSwapChain->Present( 0, 0 );
+    }
+```
+
+
+# Hello, Triangle
+
+# DirectX SDK 설치시 에러 
+
+## s1023 에러
+```terminal
+MsiExec.exe /passive /X{F0C3E5D1-1ADE-321E-8167-68EF0DE699A5}
+MsiExec.exe /passive /X{1D8E6291-B0D5-35EC-8441-6616F567A0F7}
+```
+- [재배포 패키지 제거](https://learn.microsoft.com/ko-kr/previous-versions/troubleshoot/windows/win32/s1023-error-when-you-install-directx-sdk)
+
+## 프로젝트 설정 
+- 쉐이더 파일에 Property(속성) 들어가서 HLSL Compiler entrypoint name VS로 수정
+- 프로젝트 설정, VC++ Directories에서 
+- include directory에 `$(DXSDK_DIR)Include;$(IncludePath)`추가
+- library directory에 `$(DXSDK_DIR)Lib\x64;$(LibraryPath)`추가

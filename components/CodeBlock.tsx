@@ -62,13 +62,6 @@ const CodeBlock = ({
     let language = (props as any)["data-language"] || "";
     let title = (props as any)["data-title"] || (props as any)["title"] || "";
 
-    // 만약 언어명에 콜론이 포함되어 있다면 (예: "ts:main.ts") 분리 처리
-    if (language.includes(':')) {
-        const parts = language.split(':');
-        language = parts[0];
-        if (!title) title = parts[1]; // 타이틀이 따로 없을 때만 사용
-    }
-
     // 슬라이드 가중치에 따른 동적 높이 계산
     // 전달받은 weight(할당된 가중치)를 기반으로 높이 결정
     const dynamicMaxHeight = isSlide 

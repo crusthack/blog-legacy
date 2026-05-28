@@ -279,7 +279,7 @@ export default function SlideContent({ slides, category, slug, title, toc }: Sli
       </div>
 
       <div className="flex-1 overflow-y-auto flex flex-col items-center">
-        <div className="w-full max-w-[85vw] flex-1 flex flex-col justify-center markdown-body !bg-transparent py-8">
+        <div className="w-full max-w-[85vw] flex-1 flex flex-col justify-center markdown-body !bg-transparent p-0">
            <div className="text-lg md:text-xl lg:text-2xl leading-relaxed w-full">
             {currentSlide.renderedContent}
            </div>

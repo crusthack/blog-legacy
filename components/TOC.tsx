@@ -34,7 +34,7 @@ export default function TOC({ toc }: { toc: TocItem[] }) {
   };
 
   return (
-    <aside className="sticky top-20 h-fit max-h-[80vh] overflow-auto">
+    <aside className="sticky top-20 h-fit min-w-0 max-h-[80vh] overflow-auto">
       <h3 className="font-bold mb-4">목차</h3>
 
       <ul className="space-y-2">
@@ -50,7 +50,7 @@ export default function TOC({ toc }: { toc: TocItem[] }) {
             >
               <a
                 href={`#${item.id}`}
-                className={`text-sm hover:underline ${
+                className={`text-sm hover:underline break-words block ${
                   isActive
                     ? "font-bold text-blue-500"
                     : "text-gray-700"
