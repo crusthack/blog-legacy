@@ -7,10 +7,10 @@ import rehypeKatex from 'rehype-katex';
 import rehypeSlug from 'rehype-slug';
 import rehypePrettyCode from 'rehype-pretty-code';
 
-import CipherPlayground from '@/components/CipherPlayground';
+import CipherPlayground from '@/components/mdxComponents/CipherPlayground';
 import CodeBlock from '@/components/CodeBlock';
 import CategoryPostLinks from '@/components/CategoryPostLinks';
-import FancyShowcase from '@/components/FancyShowcase';
+import FancyShowcase from '@/components/mdxComponents/FancyShowcase';
 import { MdxImage } from '@/components/MdxImage';
 import { isLocalDev, repoName } from '@/lib/config';
 import { rehypeInjectTitle, remarkNormalizeCodeMeta } from '@/lib/codeMeta';
