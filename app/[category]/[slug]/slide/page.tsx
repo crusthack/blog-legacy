@@ -4,62 +4,11 @@ import { splitContentIntoSlides } from '@/lib/slides';
 import SlideContent from '@/components/SlideContent';
 import { notFound } from 'next/navigation';
 import { MDXRemote } from 'next-mdx-remote/rsc';
-import remarkGfm from "remark-gfm";
-import rehypeKatex from "rehype-katex";
-import rehypeSlug from "rehype-slug";
-import remarkToc from 'remark-toc';
-import rehypePrettyCode from "rehype-pretty-code";
-import remarkMath from 'remark-math';
-import CodeBlock from '@/components/CodeBlock';
-import { MdxImage } from '@/components/MdxImage';
 import { getTocFromMarkdown } from '@/lib/parseToc';
 import { Metadata } from 'next';
 import { isLocalDev, repoName } from '@/lib/config';
-import { visit } from 'unist-util-visit';
-
-function remarkNormalizeCodeMeta() {
-  return (tree: any) => {
-    visit(tree, 'code', (node: any) => {
-      if (typeof node.lang === 'string' && node.lang.includes(':')) {
-        const [lang, filename] = node.lang.split(':');
-
-        node.lang = lang;
-        node.meta = `${node.meta || ''} title="${filename}"`.trim();
-      }
-    });
-  };
-}
-
-function rehypeInjectTitle() {
-  return (tree: any) => {
-    visit(tree, "element", (node: any) => {
-      if (
-        node.tagName === "figure" &&
-        node.properties?.["data-rehype-pretty-code-figure"] !== undefined
-      ) {
-        const figcaption = node.children?.find(
-          (child: any) => child.tagName === "figcaption"
-        );
-
-        const pre = node.children?.find(
-          (child: any) => child.tagName === "pre"
-        );
-
-        const title = figcaption?.children?.[0]?.value;
-
-        if (title && pre) {
-          pre.properties = pre.properties || {};
-          pre.properties["data-title"] = title;
-        }
-      }
-    });
-  };
-}
-
-const prettyOptions = {
-    theme: "github-dark",
-    keepBackground: true,
-};
+import { createSlideMdxComponents, mdxOptions } from '@/lib/mdx';
+import { getPostBackgroundStyle } from '@/lib/background';
 
 export async function generateStaticParams() {
     const posts = getAllPostData();
@@ -96,6 +45,11 @@ export default async function SlidePage({ params }: { params: Promise<{ category
 
     const baseurl = isLocalDev ? '' : `https://crusthack.github.io/${repoName}`;
     const postUrl = `https://crusthack.github.io/${repoName}/${category}/${slug}`;
+    const backgroundStyle = getPostBackgroundStyle({
+        background: postData.background,
+        category,
+        slug,
+    });
 
     const titleSlide = {
         content: '',
@@ -149,42 +103,21 @@ export default async function SlidePage({ params }: { params: Promise<{ category
                 renderedContent: (
                     <MDXRemote
                         source={slide.content}
-                        components={{
-                            h1: (props) => <h1 className="text-7xl md:text-6xl text-[#204090] mb-8 tracking-tighter border-b-4 border-blue-500 pb-4 inline-block" {...props} />,
-                            pre: (props) => <CodeBlock {...props} isSlide={true} weight={allocatedWeight} />,
-                            img: (props) => <MdxImage category={category} slug={slug} isSlide={true} weight={allocatedWeight} {...props} />,
-                            ul: (props) => <ul className="list-disc space-y-4 ml-8 my-6 text-xl md:text-2xl" {...props} />,
-                            ol: (props) => <ol className="list-decimal space-y-4 ml-8 my-6 text-xl md:text-2xl" {...props} />,
-                            p: (props) => <p className="text-xl md:text-2xl leading-relaxed mb-6" {...props} />,
-                            table: (props) => (
-                                <div className="max-h-[600px] overflow-y-auto my-6 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
-                                    <table className="min-w-full border-collapse border border-gray-200" {...props} />
-                                </div>
-                            ),
-                        }}
-                        options={{
-                            mdxOptions: {
-                                remarkPlugins: [
-                                    remarkGfm,
-                                    remarkToc,
-                                    remarkMath,
-                                    remarkNormalizeCodeMeta,
-                                ],
-                                rehypePlugins: [
-                                    rehypeSlug,
-                                    rehypeKatex,
-                                    [rehypePrettyCode, prettyOptions],
-                                    rehypeInjectTitle
-                                ],
-                            },
-                        }}
+                        components={createSlideMdxComponents({
+                            category,
+                            slug,
+                            allocatedWeight,
+                        })}
+                        options={mdxOptions}
                     />
                 )
             };
         })
     );
 
-    const finalSlides = [titleSlide, ...slidesWithRenderedContent];
+    const finalSlides = postData.titleSlide === false
+        ? slidesWithRenderedContent
+        : [titleSlide, ...slidesWithRenderedContent];
 
     return (
         <SlideContent
@@ -192,6 +125,7 @@ export default async function SlidePage({ params }: { params: Promise<{ category
             category={category}
             slug={slug}
             title={postData.title}
+            backgroundStyle={backgroundStyle}
             toc={toc}
         />
     );

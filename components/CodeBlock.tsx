@@ -60,13 +60,18 @@ const CodeBlock = ({
 
     // rehype-pretty-code 등이 제공하는 정보 추출
     let language = (props as any)["data-language"] || "";
-    let title = (props as any)["data-title"] || (props as any)["title"] || "";
+    let title =
+        (props as any)["data-title"] ||
+        (props as any)["data-filename"] ||
+        (props as any)["data-file"] ||
+        (props as any)["title"] ||
+        "";
 
     // 슬라이드 가중치에 따른 동적 높이 계산
     // 전달받은 weight(할당된 가중치)를 기반으로 높이 결정
-    const dynamicMaxHeight = isSlide 
-        ? `${-20 + 50 * weight}px`
-        : 'none';
+    const dynamicMaxHeight = isSlide
+        ? `${Math.max(180, -20 + 50 * weight)}px`
+        : undefined;
  
     return (
         <div className="relative group my-4 rounded-lg overflow-hidden border border-white/10 shadow-xl print:border-none print:shadow-none print:!overflow-visible print:!max-h-none">
@@ -113,11 +118,11 @@ const CodeBlock = ({
             <pre 
                 ref={preRef} 
                 {...props} 
-                style={{ 
-                    ...props.style, 
-                    ...(isSlide ? { maxHeight: dynamicMaxHeight } : {}) 
+                style={{
+                    ...props.style,
+                    ...(dynamicMaxHeight ? { maxHeight: dynamicMaxHeight } : {})
                 }}
-                className={`${className} !text-[2rem] leading-snug !m-0 !rounded-t-none ${isSlide ? 'overflow-auto print:!max-h-none print:!overflow-visible' : ''} print:!max-h-none print:!overflow-visible print:whitespace-pre-wrap print:break-words scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent [&_code]:!text-[1rem] p-4`}
+                className={`${className} !text-[2rem] leading-snug !m-0 !rounded-t-none ${isSlide ? 'overflow-auto [&_code]:!text-[1.125rem] print:!max-h-none print:!overflow-visible' : '[&_code]:!text-[1rem]'} print:!max-h-none print:!overflow-visible print:whitespace-pre-wrap print:break-words scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent p-4`}
             >
                 {children}
             </pre>

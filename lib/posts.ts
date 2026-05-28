@@ -2,8 +2,10 @@
 import fs from 'fs'
 import path from 'path'
 import matter from 'gray-matter'
+import { normalizePostBackground, type PostBackground } from '@/lib/background'
  
 const postsDirectory = path.join(process.cwd(), 'content/posts')
+const postFilePattern = /\.(mdx|md)$/i
  
 export interface Post {
   category: string
@@ -11,6 +13,8 @@ export interface Post {
   title: string
   date: string
   description: string
+  titleSlide?: boolean
+  background?: PostBackground
  
   content: string
 }
@@ -33,7 +37,7 @@ function walkDir(dir: string, fileList: string[] = []) {
  
     if (fs.statSync(fullPath).isDirectory()) {
       walkDir(fullPath, fileList);
-    } else if (file.endsWith(".mdx")) {
+    } else if (postFilePattern.test(file)) {
       fileList.push(fullPath);
     }
   });
@@ -43,6 +47,11 @@ function walkDir(dir: string, fileList: string[] = []) {
  
 const cachedPostsData: Map<string, Post[]> = new Map();
 let isCacheLoaded = false;
+
+function getDateTime(value: string) {
+  const time = new Date(value).getTime();
+  return Number.isFinite(time) ? time : 0;
+}
  
 function loadPosts(): void {
   if (isCacheLoaded) return;
@@ -53,18 +62,27 @@ function loadPosts(): void {
  
   for (const fullPath of filePaths) {
     const fileContents = fs.readFileSync(fullPath, "utf8");
+    if (fileContents.trim().length === 0) {
+      continue;
+    }
+
     const { data, content } = matter(fileContents);
+    if (content.trim().length === 0) {
+      continue;
+    }
  
-    const slug = path.basename(fullPath).replace(/\.mdx$/, "");
+    const slug = path.basename(fullPath).replace(postFilePattern, "");
     const category = path.basename(path.dirname(fullPath)) === "posts" ?
       "" : path.basename(path.dirname(fullPath));
  
     const post: Post = {
       category,
       slug,
-      title: data.title,
-      date: data.date,
-      description: data.description,
+      title: data.title ?? slug,
+      date: data.date ?? "",
+      description: data.description ?? "",
+      titleSlide: data.titleSlide !== false,
+      background: normalizePostBackground(data.background),
       content: content
     };
  
@@ -79,7 +97,7 @@ function loadPosts(): void {
   for (const [category, posts] of cachedPostsData) {
     posts.sort(
       (a, b) =>
-        new Date(b.date).getTime() - new Date(a.date).getTime()
+        getDateTime(b.date) - getDateTime(a.date)
     );
   }
  
@@ -106,7 +124,7 @@ export function getAllPostData(): Omit<Post, "content">[] {
     };
   }).filter(Boolean) as Omit<Post, "content">[];
  
-  return allPostsData.sort((a, b) => (a.date < b.date ? 1 : -1));
+  return allPostsData.sort((a, b) => getDateTime(b.date) - getDateTime(a.date));
 }
  
 // 카테고리 기반 글 메타데이터 불러오기

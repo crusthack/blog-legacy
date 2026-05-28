@@ -1,7 +1,7 @@
 // components/SlideContent.tsx
 'use client'
 
-import { useState, useEffect, ReactNode } from 'react';
+import { useState, useEffect, useRef, ReactNode, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { isLocalDev } from '@/lib/config';
 
@@ -29,6 +29,7 @@ interface SlideContentProps {
   category: string;
   slug: string;
   title: string;
+  backgroundStyle?: CSSProperties;
   toc: {
     level: number;
     text: string;
@@ -36,13 +37,43 @@ interface SlideContentProps {
   }[];
 }
 
-export default function SlideContent({ slides, category, slug, title, toc }: SlideContentProps) {
+export default function SlideContent({ slides, category, slug, title, backgroundStyle, toc }: SlideContentProps) {
   const [currentIdx, setCurrentIdx] = useState(0);
+  const [isSlideIndexReady, setIsSlideIndexReady] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isFullscreenChromeVisible, setIsFullscreenChromeVisible] = useState(false);
   const [isTocOpen, setIsTocOpen] = useState(false);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
   const [currentTime, setCurrentTime] = useState<string>('');
+  const [slideScale, setSlideScale] = useState(1);
+  const [isDrawingMode, setIsDrawingMode] = useState(false);
+  const [penColor, setPenColor] = useState('#ef4444');
+  const [penSize, setPenSize] = useState(4);
+  const fullscreenChromeTimerRef = useRef<number | null>(null);
+  const slideViewportRef = useRef<HTMLDivElement>(null);
+  const slideContentRef = useRef<HTMLDivElement>(null);
+  const drawingCanvasRef = useRef<HTMLCanvasElement>(null);
+  const isDrawingRef = useRef(false);
+  const lastPointRef = useRef<{ x: number; y: number } | null>(null);
   const router = useRouter();
+  const slideStorageKey = `slide-progress:${category}/${slug}`;
+
+  const getValidSlideIndex = (value: string | null) => {
+    if (value === null) return null;
+
+    const parsed = Number.parseInt(value, 10);
+    if (!Number.isFinite(parsed)) return null;
+
+    const index = parsed - 1;
+    if (index < 0 || index >= slides.length) return null;
+
+    return index;
+  };
+
+  const getHashSlideIndex = () => {
+    const match = window.location.hash.match(/^#slide-(\d+)$/);
+    return getValidSlideIndex(match?.[1] ?? null);
+  };
 
   // 현재 시각 업데이트 로직
   useEffect(() => {
@@ -58,6 +89,45 @@ export default function SlideContent({ slides, category, slug, title, toc }: Sli
     const timer = setInterval(updateTime, 1000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    const hashIndex = getHashSlideIndex();
+    const storedIndex = getValidSlideIndex(localStorage.getItem(slideStorageKey));
+    const restoredIndex = hashIndex ?? storedIndex;
+
+    if (restoredIndex !== null) {
+      setCurrentIdx(restoredIndex);
+    }
+
+    setIsSlideIndexReady(true);
+  }, [slideStorageKey, slides.length]);
+
+  useEffect(() => {
+    if (!isSlideIndexReady) return;
+
+    localStorage.setItem(slideStorageKey, String(currentIdx + 1));
+
+    const nextHash = `#slide-${currentIdx + 1}`;
+    if (window.location.hash !== nextHash) {
+      window.history.replaceState(
+        null,
+        '',
+        `${window.location.pathname}${window.location.search}${nextHash}`
+      );
+    }
+  }, [currentIdx, isSlideIndexReady, slideStorageKey]);
+
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hashIndex = getHashSlideIndex();
+      if (hashIndex !== null) {
+        setCurrentIdx(hashIndex);
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, [slides.length]);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -87,7 +157,9 @@ export default function SlideContent({ slides, category, slug, title, toc }: Sli
 
   useEffect(() => {
     const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
+      const nextIsFullscreen = !!document.fullscreenElement;
+      setIsFullscreen(nextIsFullscreen);
+      setIsFullscreenChromeVisible(false);
     };
 
     document.addEventListener('fullscreenchange', handleFullscreenChange);
@@ -95,7 +167,110 @@ export default function SlideContent({ slides, category, slug, title, toc }: Sli
   }, []);
 
   useEffect(() => {
+    return () => {
+      if (fullscreenChromeTimerRef.current !== null) {
+        window.clearTimeout(fullscreenChromeTimerRef.current);
+      }
+    };
+  }, []);
+
+  const revealFullscreenChrome = () => {
+    if (!isFullscreen) return;
+
+    setIsFullscreenChromeVisible(true);
+
+    if (fullscreenChromeTimerRef.current !== null) {
+      window.clearTimeout(fullscreenChromeTimerRef.current);
+    }
+
+    fullscreenChromeTimerRef.current = window.setTimeout(() => {
+      setIsFullscreenChromeVisible(false);
+      fullscreenChromeTimerRef.current = null;
+    }, 1800);
+  };
+
+  const resizeDrawingCanvas = () => {
+    const canvas = drawingCanvasRef.current;
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.max(1, Math.floor(rect.width * dpr));
+    canvas.height = Math.max(1, Math.floor(rect.height * dpr));
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+  };
+
+  const clearDrawing = () => {
+    const canvas = drawingCanvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  };
+
+  const getCanvasPoint = (e: ReactPointerEvent<HTMLCanvasElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    return {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    };
+  };
+
+  const startDrawing = (e: ReactPointerEvent<HTMLCanvasElement>) => {
+    if (!isDrawingMode) return;
+
+    e.currentTarget.setPointerCapture(e.pointerId);
+    isDrawingRef.current = true;
+    lastPointRef.current = getCanvasPoint(e);
+  };
+
+  const draw = (e: ReactPointerEvent<HTMLCanvasElement>) => {
+    if (!isDrawingMode || !isDrawingRef.current || !lastPointRef.current) return;
+
+    const canvas = drawingCanvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!ctx) return;
+
+    const nextPoint = getCanvasPoint(e);
+    ctx.strokeStyle = penColor;
+    ctx.lineWidth = penSize;
+    ctx.beginPath();
+    ctx.moveTo(lastPointRef.current.x, lastPointRef.current.y);
+    ctx.lineTo(nextPoint.x, nextPoint.y);
+    ctx.stroke();
+
+    lastPointRef.current = nextPoint;
+  };
+
+  const stopDrawing = () => {
+    isDrawingRef.current = false;
+    lastPointRef.current = null;
+  };
+
+  useEffect(() => {
+    resizeDrawingCanvas();
+
+    window.addEventListener('resize', resizeDrawingCanvas);
+    return () => window.removeEventListener('resize', resizeDrawingCanvas);
+  }, []);
+
+  useEffect(() => {
+    clearDrawing();
+    stopDrawing();
+  }, [currentIdx]);
+
+  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (isDrawingMode && (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'ArrowLeft')) {
+        return;
+      }
+
       if (e.key === 'ArrowRight' || e.key === ' ') {
         setCurrentIdx((prev) => Math.min(prev + 1, slides.length - 1));
       } else if (e.key === 'ArrowLeft') {
@@ -122,6 +297,10 @@ export default function SlideContent({ slides, category, slug, title, toc }: Sli
         setIsTocOpen(prev => !prev);
       } else if (e.key === 'p') {
         window.print();
+      } else if (e.key === 'd') {
+        setIsDrawingMode(prev => !prev);
+      } else if (e.key === 'c' && isDrawingMode) {
+        clearDrawing();
       } else if (e.key === 'Escape') {
         if (isTocOpen) {
           setIsTocOpen(false);
@@ -135,10 +314,49 @@ export default function SlideContent({ slides, category, slug, title, toc }: Sli
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [slides.length, category, slug, router, isTocOpen, currentIdx, slides]);
+  }, [slides.length, category, slug, router, isTocOpen, currentIdx, slides, isDrawingMode]);
+
+  useEffect(() => {
+    const viewport = slideViewportRef.current;
+    const content = slideContentRef.current;
+    if (!viewport || !content) return;
+
+    const updateSlideScale = () => {
+      const viewportWidth = viewport.clientWidth;
+      const viewportHeight = viewport.clientHeight;
+      const contentWidth = content.scrollWidth;
+      const contentHeight = content.scrollHeight;
+
+      if (!viewportWidth || !viewportHeight || !contentWidth || !contentHeight) {
+        setSlideScale(1);
+        return;
+      }
+
+      const nextScale = Math.min(
+        1,
+        viewportWidth / contentWidth,
+        viewportHeight / contentHeight
+      );
+
+      setSlideScale(Number(nextScale.toFixed(4)));
+    };
+
+    updateSlideScale();
+
+    const resizeObserver = new ResizeObserver(updateSlideScale);
+    resizeObserver.observe(viewport);
+    resizeObserver.observe(content);
+    window.addEventListener('resize', updateSlideScale);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', updateSlideScale);
+    };
+  }, [currentIdx, isFullscreen, isFullscreenChromeVisible, isTocOpen]);
 
   const currentSlide = slides[currentIdx];
   const currentFocusHeader = currentSlide.h3 || currentSlide.h2 || currentSlide.h1 || title;
+  const isChromeVisible = !isFullscreen || isFullscreenChromeVisible || isTocOpen || isDrawingMode;
 
   const hierarchicalToc = toc.reduce((acc: any[], item) => {
     if (item.level === 1) {
@@ -151,7 +369,11 @@ export default function SlideContent({ slides, category, slug, title, toc }: Sli
 
   return (
     <>
-    <div className="fixed inset-0 bg-white z-50 flex flex-col overflow-hidden text-gray-900 print:hidden">
+    <div
+      className={`fixed inset-0 bg-white z-50 flex flex-col overflow-hidden text-gray-900 print:hidden ${isFullscreen && !isChromeVisible ? 'cursor-none' : ''}`}
+      style={backgroundStyle}
+      onMouseMove={revealFullscreenChrome}
+    >
       
       {/* TOC 사이드바 */}
       {isTocOpen && (
@@ -193,7 +415,23 @@ export default function SlideContent({ slides, category, slug, title, toc }: Sli
       )}
 
       {/* 상단바 */}
-      <div className="relative flex justify-between items-center p-4 bg-gray-50 border-b border-gray-200 h-14 shrink-0">
+      <canvas
+        ref={drawingCanvasRef}
+        className={`absolute inset-0 z-[54] h-full w-full touch-none print:hidden ${
+          isDrawingMode ? 'pointer-events-auto cursor-crosshair' : 'pointer-events-none'
+        }`}
+        onPointerDown={startDrawing}
+        onPointerMove={draw}
+        onPointerUp={stopDrawing}
+        onPointerCancel={stopDrawing}
+        onPointerLeave={stopDrawing}
+      />
+
+      <div className={`relative z-[55] flex justify-between items-center p-4 bg-gray-50 border-b border-gray-200 h-14 shrink-0 transition-all duration-300 ${
+        isFullscreen
+          ? `absolute top-0 left-0 right-0 z-[55] shadow-sm ${isChromeVisible ? 'translate-y-0 opacity-100 pointer-events-auto' : '-translate-y-full opacity-0 pointer-events-none'}`
+          : ''
+      }`}>
         {/* 왼쪽: TOC 버튼 및 현재 시각 */}
         <div className="z-10 flex items-center gap-4 w-60">
           <button onClick={() => setIsTocOpen(prev => !prev)} className="flex items-center justify-center w-10 h-10 bg-white hover:bg-gray-100 border border-gray-300 rounded-md transition-colors cursor-pointer text-gray-700" title="목차 (t)">
@@ -259,6 +497,39 @@ export default function SlideContent({ slides, category, slug, title, toc }: Sli
             </div>
           )}
           <div className="text-sm font-medium text-gray-500 mr-2">{currentIdx + 1} / {slides.length}</div>
+
+          {isDrawingMode && (
+            <div className="flex items-center gap-1 mr-1">
+              {['#ef4444', '#f59e0b', '#22c55e', '#3b82f6', '#111827'].map(color => (
+                <button
+                  key={color}
+                  onClick={() => setPenColor(color)}
+                  className={`w-6 h-6 rounded-full border-2 transition-transform ${penColor === color ? 'border-gray-900 scale-110' : 'border-white shadow-sm'}`}
+                  style={{ backgroundColor: color }}
+                  title="펜 색상"
+                />
+              ))}
+              <input
+                type="range"
+                min="2"
+                max="14"
+                value={penSize}
+                onChange={(e) => setPenSize(Number(e.target.value))}
+                className="w-20"
+                title="펜 굵기"
+              />
+              <button onClick={clearDrawing} className="px-2 h-10 bg-white hover:bg-gray-100 border border-gray-300 rounded-md transition-colors cursor-pointer text-xs font-bold text-gray-700" title="그림 지우기 (c)">
+                Clear
+              </button>
+            </div>
+          )}
+
+          <button onClick={() => setIsDrawingMode(prev => !prev)} className={`flex items-center justify-center w-10 h-10 border border-gray-300 rounded-md transition-colors cursor-pointer text-gray-700 ${isDrawingMode ? 'bg-red-50 hover:bg-red-100 text-red-600 border-red-200' : 'bg-white hover:bg-gray-100'}`} title={isDrawingMode ? '그리기 끄기 (d)' : '그리기 켜기 (d)'}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 20h9"/>
+              <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+            </svg>
+          </button>
           
           <button onClick={() => window.print()} className="flex items-center justify-center w-10 h-10 bg-white hover:bg-gray-100 border border-gray-300 rounded-md transition-colors cursor-pointer text-gray-700" title="PDF 저장 / 프린트 (p)">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
@@ -278,15 +549,26 @@ export default function SlideContent({ slides, category, slug, title, toc }: Sli
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto flex flex-col items-center">
-        <div className="w-full max-w-[85vw] flex-1 flex flex-col justify-center markdown-body !bg-transparent p-0">
+      <div ref={slideViewportRef} className="relative flex-1 min-h-0 overflow-hidden">
+        <div
+          ref={slideContentRef}
+          className="absolute left-1/2 top-1/2 w-[85vw] markdown-body !bg-transparent p-0"
+          style={{
+            transform: `translate(-50%, -50%) scale(${slideScale})`,
+            transformOrigin: 'center center',
+          }}
+        >
            <div className="text-lg md:text-xl lg:text-2xl leading-relaxed w-full">
             {currentSlide.renderedContent}
            </div>
         </div>
       </div>
 
-      <div className="p-4 bg-gray-50 border-t border-gray-200 grid grid-cols-3 items-center shrink-0 min-h-[70px]">
+      <div className={`p-4 bg-gray-50 border-t border-gray-200 grid grid-cols-3 items-center shrink-0 min-h-[70px] transition-all duration-300 ${
+        isFullscreen
+          ? `absolute bottom-0 left-0 right-0 z-[55] shadow-sm ${isChromeVisible ? 'translate-y-0 opacity-100 pointer-events-auto' : 'translate-y-full opacity-0 pointer-events-none'}`
+          : ''
+      }`}>
         <div className="text-left flex flex-col gap-0.5">
           <div className="text-[10px] text-gray-400 font-bold truncate uppercase tracking-wider">{title}</div>
           <div className="text-sm font-bold text-gray-600 truncate">{currentSlide.h1 || ''}</div>
