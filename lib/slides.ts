@@ -251,3 +251,214 @@ export function splitContentIntoSlides(content: string): Slide[] {
 
   return slides;
 }
+
+function splitByManualSlideSeparator(content: string): string[] {
+  const lines = content.trim().split('\n');
+  const slideContents: string[] = [];
+  let currentLines: string[] = [];
+  let isInCodeBlock = false;
+  let isInMathBlock = false;
+
+  for (const line of lines) {
+    if (line.startsWith('```')) {
+      isInCodeBlock = !isInCodeBlock;
+      currentLines.push(line);
+      continue;
+    }
+
+    if (!isInCodeBlock && line.startsWith('$$')) {
+      isInMathBlock = !isInMathBlock;
+      currentLines.push(line);
+      continue;
+    }
+
+    if (!isInCodeBlock && !isInMathBlock && line.trim() === '---') {
+      const slideContent = currentLines.join('\n').trim();
+      if (slideContent.length > 0) slideContents.push(slideContent);
+      currentLines = [];
+      continue;
+    }
+
+    currentLines.push(line);
+  }
+
+  const lastSlideContent = currentLines.join('\n').trim();
+  if (lastSlideContent.length > 0) slideContents.push(lastSlideContent);
+
+  return slideContents;
+}
+
+function analyzeManualSlideContent(content: string): ContentElement[] {
+  const lines = content.trim().split('\n');
+  const elements: ContentElement[] = [];
+  let isInCodeBlock = false;
+  let isInMathBlock = false;
+  let isInTable = false;
+  let currentBlockLines: string[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    if (line.startsWith('```')) {
+      if (!isInCodeBlock) {
+        isInCodeBlock = true;
+        currentBlockLines = [line];
+      } else {
+        currentBlockLines.push(line);
+        elements.push({ type: 'code', content: currentBlockLines.join('\n'), lines: currentBlockLines.length, weight: WEIGHT_CODE });
+        isInCodeBlock = false;
+        currentBlockLines = [];
+      }
+      continue;
+    }
+    if (isInCodeBlock) {
+      currentBlockLines.push(line);
+      continue;
+    }
+
+    if (line.startsWith('$$')) {
+      if (!isInMathBlock) {
+        isInMathBlock = true;
+        currentBlockLines = [line];
+      } else {
+        currentBlockLines.push(line);
+        elements.push({ type: 'math', content: currentBlockLines.join('\n'), lines: currentBlockLines.length, weight: WEIGHT_MATH_FIXED });
+        isInMathBlock = false;
+        currentBlockLines = [];
+      }
+      continue;
+    }
+    if (isInMathBlock) {
+      currentBlockLines.push(line);
+      continue;
+    }
+
+    if (line.match(/!\[.*\]\(.*\)/)) {
+      elements.push({ type: 'image', content: line, lines: 1, weight: WEIGHT_IMAGE });
+      continue;
+    }
+
+    if (line.startsWith('|')) {
+      if (!isInTable) {
+        isInTable = true;
+        currentBlockLines = [line];
+      } else {
+        currentBlockLines.push(line);
+      }
+
+      if (i + 1 === lines.length || !lines[i + 1].trim().startsWith('|')) {
+        const tableWeight = Math.max(WEIGHT_TABLE_MIN, Math.ceil(currentBlockLines.length * WEIGHT_TABLE_ROW_UNIT));
+        elements.push({ type: 'table', content: currentBlockLines.join('\n'), lines: currentBlockLines.length, weight: tableWeight });
+        isInTable = false;
+        currentBlockLines = [];
+      }
+      continue;
+    }
+
+    const w = line.trim() === '' ? 0 : WEIGHT_SIMPLE;
+    elements.push({ type: 'simple', content: line, lines: 1, weight: w });
+  }
+
+  return elements;
+}
+
+function updateManualHeadings(
+  content: string,
+  headings: { h1: string; h2: string; h3: string }
+) {
+  let isInCodeBlock = false;
+  let isInMathBlock = false;
+
+  for (const line of content.split('\n')) {
+    if (line.startsWith('```')) {
+      isInCodeBlock = !isInCodeBlock;
+      continue;
+    }
+
+    if (!isInCodeBlock && line.startsWith('$$')) {
+      isInMathBlock = !isInMathBlock;
+      continue;
+    }
+
+    if (isInCodeBlock || isInMathBlock) continue;
+
+    const headerMatch = line.match(/^(#{1,7})\s+(.*)/);
+    if (!headerMatch) continue;
+
+    const level = headerMatch[1].length;
+    const title = headerMatch[2].trim();
+
+    if (level === 1) {
+      headings.h1 = title;
+      headings.h2 = '';
+      headings.h3 = '';
+    } else if (level === 2) {
+      headings.h2 = title;
+      headings.h3 = '';
+    } else if (level >= 3) {
+      headings.h3 = title;
+    }
+  }
+}
+
+function applyComplexWeights(elements: ContentElement[]) {
+  let complexCount = 0;
+  let baseWeight = 0;
+
+  for (const el of elements) {
+    if (['code', 'image'].includes(el.type)) complexCount++;
+    else baseWeight += el.weight;
+  }
+
+  const allocatedWeight = complexCount > 0 ? (MAX_WEIGHT_PER_SLIDE - baseWeight) / complexCount : 0;
+
+  if (complexCount > 0) {
+    for (const el of elements) {
+      if (['code', 'image'].includes(el.type)) {
+        el.weight = allocatedWeight;
+      }
+    }
+  }
+
+  return {
+    totalWeight: complexCount > 0 ? MAX_WEIGHT_PER_SLIDE : baseWeight,
+    complexCount,
+    remainingWeight: Math.max(0, MAX_WEIGHT_PER_SLIDE - baseWeight),
+  };
+}
+
+function setSlideNextTitles(slides: Slide[]) {
+  for (let i = 0; i < slides.length - 1; i++) {
+    const cur = slides[i].h3 || slides[i].h2 || slides[i].h1;
+    for (let j = i + 1; j < slides.length; j++) {
+      const nxt = slides[j].h3 || slides[j].h2 || slides[j].h1;
+      if (nxt && nxt !== cur) { slides[i].nextTitle = nxt; break; }
+    }
+  }
+}
+
+export function splitContentIntoManualSlides(content: string): Slide[] {
+  const slideContents = splitByManualSlideSeparator(content);
+  const slides: Slide[] = [];
+  const headings = { h1: '', h2: '', h3: '' };
+
+  for (const slideContent of slideContents) {
+    updateManualHeadings(slideContent, headings);
+    const elements = analyzeManualSlideContent(slideContent);
+    const weights = applyComplexWeights(elements);
+
+    slides.push({
+      content: slideContent,
+      elements,
+      h1: headings.h1,
+      h2: headings.h2,
+      h3: headings.h3,
+      level: headings.h3 ? 3 : (headings.h2 ? 2 : 1),
+      nextTitle: '',
+      ...weights,
+    });
+  }
+
+  setSlideNextTitles(slides);
+  return slides;
+}

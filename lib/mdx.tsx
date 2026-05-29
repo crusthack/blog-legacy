@@ -11,6 +11,8 @@ import CipherPlayground from '@/components/mdxComponents/CipherPlayground';
 import CodeBlock from '@/components/CodeBlock';
 import CategoryPostLinks from '@/components/CategoryPostLinks';
 import FancyShowcase from '@/components/mdxComponents/FancyShowcase';
+import JavaScriptPlayground from '@/components/mdxComponents/JavaScriptPlayground';
+import PythonPlayground from '@/components/mdxComponents/PythonPlayground';
 import SeminarInfo from '@/components/mdxComponents/SeminarInfo';
 import { MdxImage } from '@/components/MdxImage';
 import { isLocalDev, repoName } from '@/lib/config';
@@ -58,6 +60,8 @@ export const mdxOptions: MDXRemoteProps['options'] = {
 const interactiveMdxComponents = {
   CipherPlayground,
   FancyShowcase,
+  JavaScriptPlayground,
+  PythonPlayground,
   SeminarInfo
 };
 

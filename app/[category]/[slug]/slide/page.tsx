@@ -1,6 +1,6 @@
 // app/[category]/[slug]/slide/page.tsx
 import { getPostData, getAllPostData } from '@/lib/posts';
-import { splitContentIntoSlides } from '@/lib/slides';
+import { splitContentIntoManualSlides, splitContentIntoSlides } from '@/lib/slides';
 import SlideContent from '@/components/SlideContent';
 import { notFound } from 'next/navigation';
 import { MDXRemote } from 'next-mdx-remote/rsc';
@@ -41,7 +41,9 @@ export default async function SlidePage({ params }: { params: Promise<{ category
     }
 
     const toc = getTocFromMarkdown(postData.content);
-    const bodySlides = splitContentIntoSlides(postData.content);
+    const bodySlides = postData.manualSlides
+        ? splitContentIntoManualSlides(postData.content)
+        : splitContentIntoSlides(postData.content);
 
     const baseurl = isLocalDev ? '' : `https://crusthack.github.io/${repoName}`;
     const postUrl = `https://crusthack.github.io/${repoName}/${category}/${slug}`;
@@ -96,7 +98,9 @@ export default async function SlidePage({ params }: { params: Promise<{ category
 
     const slidesWithRenderedContent = await Promise.all(
         bodySlides.map(async (slide) => {
-            const allocatedWeight = slide.complexCount > 0 ? slide.remainingWeight / slide.complexCount : 0;
+            const allocatedWeight = slide.complexCount > 0
+                ? Math.max(1, slide.remainingWeight / slide.complexCount)
+                : 0;
 
             return {
                 ...slide,

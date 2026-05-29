@@ -110,6 +110,8 @@ titleSlide: false
 const interactiveMdxComponents = {
   CipherPlayground,
   FancyShowcase,
+  JavaScriptPlayground,
+  PythonPlayground,
 };
 ```
 
@@ -157,7 +159,25 @@ const interactiveMdxComponents = {
 
 <CipherPlayground />
 
-# 8. 코드블럭 개선
+# 8. 코드 실행 테스트 컴포넌트
+- `JavaScriptPlayground`는 MDX 문서 안에서 JS 코드를 직접 수정하고 실행하는 컴포넌트다.
+- `console.log`, `console.warn`, `console.error`, `return` 값을 출력 패널에서 확인할 수 있다.
+- `PythonPlayground`는 Pyodide를 이용해 브라우저에서 Python 코드를 실행한다.
+- Python 런타임은 첫 실행 때 내려받으므로 첫 실행은 시간이 조금 걸릴 수 있다.
+
+```mdx title="JavaScriptPlayground 사용"
+<JavaScriptPlayground />
+```
+
+<JavaScriptPlayground />
+
+```mdx title="PythonPlayground 사용"
+<PythonPlayground />
+```
+
+<PythonPlayground />
+
+# 9. 코드블럭 개선
 ## Visual Studio 계열 테마
 - 코드 하이라이트 테마를 `dark-plus`로 변경했다.
 - Visual Studio / VS Code 기본 다크 테마에 가까운 색상이다.
@@ -214,7 +234,7 @@ export function SampleButton() {
 }
 ```
 
-# 9. 슬라이드 배경 지정
+# 10. 슬라이드 배경 지정
 - gray-matter의 `background` 필드로 슬라이드 뷰의 배경을 지정할 수 있다.
 - 일반 포스트 화면에는 적용하지 않고, `/slide` 경로에서만 적용된다.
 - 이 문서는 `rgb(236, 253, 245)` 색상을 지정했으므로 슬라이드 뷰에서 옅은 민트색 배경이 보여야 한다.
@@ -244,7 +264,7 @@ background:
 ---
 ```
 
-# 10. 슬라이드 뷰 기능
+# 11. 슬라이드 뷰 기능
 ## 현재 슬라이드 유지
 - 슬라이드 이동 시 URL hash가 `#slide-3`처럼 갱신된다.
 - 새로고침해도 마지막 슬라이드를 유지한다.
@@ -277,7 +297,7 @@ background:
 - 긴 코드가 있어도 슬라이드 전체를 강제로 늘리지 않는다.
 - 슬라이드에서는 코드 폰트를 일반 포스트보다 살짝 크게 표시한다.
 
-# 11. 테이블 테스트
+# 12. 테이블 테스트
 
 | 기능 | 일반 포스트 | 슬라이드 |
 |---|---:|---:|

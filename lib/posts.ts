@@ -14,6 +14,7 @@ export interface Post {
   date: string
   description: string
   titleSlide?: boolean
+  manualSlides?: boolean
   background?: PostBackground
  
   content: string
@@ -82,6 +83,7 @@ function loadPosts(): void {
       date: data.date ?? "",
       description: data.description ?? "",
       titleSlide: data.titleSlide !== false,
+      manualSlides: data.manualSlides === true,
       background: normalizePostBackground(data.background),
       content: content
     };
