@@ -1,8 +1,7 @@
 {
   "Blog Post Frontmatter": {
-    "scope": "markdown,mdx",
-    "prefix": ["post", "frontmatter", "graymatter"],
-    "description": "Create blog post gray-matter frontmatter",
+    "scope": "markdown",
+    "prefix": ["---", "post", "frontmatter", "graymatter"],
     "body": [
       "---",
       "title: '${1:${TM_FILENAME_BASE}}'",
@@ -16,16 +15,19 @@
       "$0"
     ]
   },
-  "Minimal Blog Post Frontmatter": {
-    "scope": "markdown,mdx",
-    "prefix": ["post-min", "frontmatter-min"],
-    "description": "Create minimal blog post gray-matter frontmatter",
+
+  "Blog Post Frontmatter MDX": {
+    "scope": "mdx",
+    "prefix": ["---", "post", "frontmatter", "graymatter"],
     "body": [
       "---",
       "title: '${1:${TM_FILENAME_BASE}}'",
       "date: '${CURRENT_YEAR}-${CURRENT_MONTH}-${CURRENT_DATE}'",
       "description: '${2}'",
+      "titleSlide: ${3|true,false|}",
       "---",
+      "",
+      "# ${1:${TM_FILENAME_BASE}}",
       "",
       "$0"
     ]

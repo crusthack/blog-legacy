@@ -76,6 +76,16 @@ export default function SlideContent({ slides, category, slug, title, background
     return getValidSlideIndex(match?.[1] ?? null);
   };
 
+  const clearSlideHash = () => {
+    if (!window.location.hash.match(/^#slide-\d+$/)) return;
+
+    window.history.replaceState(
+      null,
+      '',
+      `${window.location.pathname}${window.location.search}`
+    );
+  };
+
   // 현재 시각 업데이트 로직
   useEffect(() => {
     const updateTime = () => {
@@ -143,6 +153,7 @@ export default function SlideContent({ slides, category, slug, title, background
   const leaveSlideView = () => {
     const shouldLeave = window.confirm('슬라이드 뷰를 종료하고 포스트로 돌아갈까요?');
     if (shouldLeave) {
+      clearSlideHash();
       router.push(`/${category}/${slug}`);
     }
   };
@@ -348,19 +359,16 @@ export default function SlideContent({ slides, category, slug, title, background
 
     const updateSlideScale = () => {
       const viewportWidth = viewport.clientWidth;
-      const viewportHeight = viewport.clientHeight;
       const contentWidth = content.scrollWidth;
-      const contentHeight = content.scrollHeight;
 
-      if (!viewportWidth || !viewportHeight || !contentWidth || !contentHeight) {
+      if (!viewportWidth || !contentWidth) {
         setSlideScale(1);
         return;
       }
 
       const nextScale = Math.min(
         1,
-        viewportWidth / contentWidth,
-        viewportHeight / contentHeight
+        viewportWidth / contentWidth
       );
 
       setSlideScale(Number(nextScale.toFixed(4)));
@@ -669,7 +677,7 @@ export default function SlideContent({ slides, category, slug, title, background
         <div ref={slideViewportRef} className="relative flex-1 min-h-0 overflow-hidden">
           <div
             ref={slideContentRef}
-            className="absolute left-1/2 top-1/2 w-[85vw] markdown-body !bg-transparent p-0"
+            className="absolute left-1/2 top-1/2 w-[90vw] markdown-body !bg-transparent p-0"
             style={{
               transform: `translate(-50%, -50%) scale(${slideScale})`,
               transformOrigin: 'center center',
@@ -715,7 +723,7 @@ export default function SlideContent({ slides, category, slug, title, background
             }}
           >
             <div className="markdown-body !bg-transparent w-full">
-              <div className="text-3xl leading-relaxed w-full">
+              <div className="text-lg md:text-xl lg:text-2xl leading-relaxed w-full">
                 {slide.renderedContent}
               </div>
             </div>

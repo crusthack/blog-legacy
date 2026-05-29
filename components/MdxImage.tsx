@@ -44,13 +44,13 @@ export const MdxImage = ({
     // 슬라이드 가중치에 따른 동적 높이 계산 (이미지용)
     // 전달받은 weight를 기반으로 높이 결정
     const dynamicMaxHeight = isSlide 
-        ? `${-20 + 100 * weight}px`
+        ? `${-20 + 80 * weight}px`
         : '45vh'; // 일반 포스트 뷰 기본값
 
  
     return (
         <span 
-            className="relative block w-full aspect-[16/9] my-4 print:max-h-none print:h-auto"
+            className="mdx-image-frame relative block w-full aspect-[16/9] my-4"
             style={{ maxHeight: dynamicMaxHeight }}
         >
             <Image
@@ -60,7 +60,7 @@ export const MdxImage = ({
                 fill
                 priority
                 loading="eager"
-                className="object-contain print:relative print:h-auto"
+                className="object-contain"
                 {...rest}
             />
         </span>

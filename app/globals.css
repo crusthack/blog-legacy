@@ -62,20 +62,55 @@ body {
     justify-content: center;
     align-items: center;
     width: 100vw;
+    height: 100vh;
     min-height: 100vh;
     padding: 5% !important;
     box-sizing: border-box;
     position: relative;
-    overflow: visible !important;
+    overflow: hidden !important;
     background: white !important;
     border: none !important;
     margin: 0 !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 
   .print-slide .markdown-body {
     width: 100%;
     max-width: none;
     background: transparent !important;
+  }
+
+  .print-slide .mdx-image-frame {
+    display: block !important;
+    position: relative !important;
+    width: 100% !important;
+    aspect-ratio: 16 / 9 !important;
+    overflow: hidden !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  .print-slide .mdx-image-frame img {
+    object-fit: contain !important;
+  }
+
+  .print-slide .mdx-table-frame {
+    max-width: 100% !important;
+    overflow: hidden !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  .print-slide .mdx-table-frame table {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  .print-slide .mdx-table-frame th,
+  .print-slide .mdx-table-frame td {
+    vertical-align: top !important;
   }
 
   /* 인쇄 시 불필요한 스크롤바 제거 */

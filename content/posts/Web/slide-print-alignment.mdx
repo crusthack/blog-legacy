@@ -1,0 +1,184 @@
+---
+title: '슬라이드뷰와 PDF 프린트 정합성 개선'
+date: '2026-05-29'
+description: '슬라이드 화면과 PDF 출력 결과가 달라지는 원인, 이미지와 테이블 출력 처리, 남은 제약을 정리한다.'
+titleSlide: false
+---
+
+# 개요
+- 슬라이드뷰의 화면 표시와 PDF 프린트 결과가 서로 다르게 보이는 문제를 개선했다.
+- 특히 이미지가 다음 슬라이드 영역으로 밀려 들어가거나, 테이블이 PDF에서 과하게 줄어드는 현상을 줄이는 것이 목표다.
+- 이번 수정은 PDF 출력만 따로 예쁘게 만드는 방식이 아니라, 화면 슬라이드와 PDF 출력 DOM의 레이아웃 차이를 줄이는 방향으로 진행했다.
+
+# 문제 원인
+슬라이드뷰는 화면용 DOM과 PDF 프린트용 DOM을 따로 렌더링한다.
+
+```txt title="슬라이드 렌더링 구조"
+화면 표시용 슬라이드
+  - 현재 보고 있는 슬라이드만 표시
+  - 상단바, 하단바, 그림판 캔버스 포함
+  - overflow-hidden 기반으로 화면 안에 표시
+
+PDF 프린트용 슬라이드
+  - 모든 슬라이드를 한 번에 렌더링
+  - print media에서만 보임
+  - 각 슬라이드를 page-break로 분리
+```
+
+이 구조 때문에 print 전용 CSS가 화면용 CSS와 많이 달라지면 다음 문제가 생길 수 있다.
+
+- 화면에서는 한 슬라이드 안에 있던 이미지가 PDF에서는 다음 페이지 영역으로 밀림
+- 화면에서는 적당히 보이던 테이블이 PDF에서는 강제로 찌그러짐
+- PDF 전용 글자 크기, 이미지 높이, 테이블 레이아웃이 화면과 달라져 슬라이드 구성이 어긋남
+
+# 수정 방향
+## 1. PDF 슬라이드를 한 페이지 높이로 고정
+PDF 출력용 슬라이드는 한 장이 한 페이지가 되도록 고정했다.
+
+```css title="app/globals.css"
+.print-slide {
+  width: 100vw;
+  height: 100vh;
+  min-height: 100vh;
+  overflow: hidden;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+```
+
+이렇게 하면 큰 이미지나 테이블이 다음 PDF 슬라이드 영역으로 흘러 들어가는 현상을 막을 수 있다.
+
+## 2. 화면과 PDF의 기본 텍스트 크기 맞춤
+기존 PDF 프린트 DOM은 화면 슬라이드와 다른 기본 텍스트 크기를 사용하고 있었다.
+
+```tsx title="이전"
+<div className="text-3xl leading-relaxed w-full">
+  {slide.renderedContent}
+</div>
+```
+
+이를 화면 슬라이드와 같은 계열로 맞췄다.
+
+```tsx title="현재"
+<div className="text-lg md:text-xl lg:text-2xl leading-relaxed w-full">
+  {slide.renderedContent}
+</div>
+```
+
+## 3. 이미지의 print 전용 변형 제거
+이미지는 화면 슬라이드에서 사용하는 `aspect-[16/9]`와 가중치 기반 `maxHeight`를 유지하도록 했다.
+
+```tsx title="components/MdxImage.tsx"
+<span
+  className="mdx-image-frame relative block w-full aspect-[16/9] my-4"
+  style={{ maxHeight: dynamicMaxHeight }}
+>
+  <Image
+    unoptimized
+    src={resolvedSrc}
+    alt={alt ?? ""}
+    fill
+    priority
+    loading="eager"
+    className="object-contain"
+    {...rest}
+  />
+</span>
+```
+
+이전처럼 print에서만 `h-auto`, `relative`, `max-h-[70vh]`를 강제로 넣으면 화면과 PDF의 이미지 배치가 달라질 수 있다.
+
+## 4. 테이블의 print 전용 강제 축소 제거
+테이블은 PDF에서만 `table-fixed`, `9pt`, 강제 padding 축소를 적용하면 화면과 다르게 찌그러질 수 있었다.
+
+현재는 화면과 같은 기본 테이블 구조를 유지한다.
+
+```tsx title="lib/mdx.tsx"
+table: ({ className, ...props }) => (
+  <div className="mdx-table-frame my-6 max-w-full overflow-auto">
+    <table
+      className={joinClassNames(
+        'w-full min-w-full table-auto border-collapse border border-gray-200',
+        className
+      )}
+      {...props}
+    />
+  </div>
+)
+```
+
+# 이미지 테스트
+아래 이미지는 슬라이드뷰와 PDF에서 같은 슬라이드 안에 들어와야 한다.
+
+```md title="이미지 작성 예시"
+![이미지 설명](example.png)
+```
+
+이미지가 너무 큰 경우에도 다음 슬라이드로 넘어가지는 않고, 해당 슬라이드 영역 안에서 잘리거나 제한된다.
+
+# 테이블 테스트
+아래 표는 PDF에서 강제로 9pt로 찌그러지지 않고, 화면 슬라이드와 같은 테이블 규칙을 따른다.
+
+| 항목 | 화면 슬라이드 | PDF 프린트 | 처리 방식 |
+|---|---|---|---|
+| 기본 크기 | 화면용 MDX 컴포넌트 기준 | 같은 MDX 컴포넌트 기준 | print 전용 과도한 변형 제거 |
+| 이미지 | `aspect-[16/9]` 유지 | `aspect-[16/9]` 유지 | 같은 wrapper 사용 |
+| 테이블 | `table-auto` 유지 | `table-auto` 유지 | 강제 `table-fixed` 제거 |
+| 페이지 넘침 | 화면 밖은 숨김 | 페이지 밖은 숨김 | `overflow: hidden` |
+
+# 남은 제약
+- 한 슬라이드에 물리적으로 들어갈 수 있는 정보량은 제한되어 있다.
+- 너무 긴 표나 너무 많은 문단은 PDF에서도 잘릴 수 있다.
+- PDF에서 잘리지 않게 하려면 슬라이드를 나누거나, 표를 요약하거나, 이미지/테이블의 가중치 계산을 조정해야 한다.
+- 현재 방향은 "PDF에서 모든 것을 억지로 축소"가 아니라 "화면 슬라이드와 PDF 결과를 최대한 일치"시키는 것이다.
+
+# 슬라이드 종료 시 주소 정리
+슬라이드뷰는 현재 보고 있는 슬라이드를 URL hash로 기록한다.
+
+```txt title="슬라이드 진행 주소"
+/Web/example/slide#slide-3
+```
+
+이 값은 새로고침 후에도 같은 슬라이드를 다시 보여주기 위해 사용한다. 다만 슬라이드뷰를 종료한 뒤 브라우저 뒤로가기를 눌렀을 때 `#slide-3` 같은 값이 남아 있으면, 사용자가 명시적으로 지정하지 않은 슬라이드 번호가 주소에 계속 보일 수 있다.
+
+이를 막기 위해 슬라이드뷰를 벗어날 때 현재 history entry의 hash를 먼저 제거한다.
+
+```tsx title="components/SlideContent.tsx"
+const clearSlideHash = () => {
+  if (!window.location.hash.match(/^#slide-\d+$/)) return;
+
+  window.history.replaceState(
+    null,
+    '',
+    `${window.location.pathname}${window.location.search}`
+  );
+};
+```
+
+종료 버튼이나 `Esc`로 슬라이드뷰를 나갈 때는 아래 순서로 동작한다.
+
+```txt title="종료 순서"
+1. 종료 확인 팝업 표시
+2. 현재 주소의 #slide-N 제거
+3. 원래 포스트 주소로 이동
+```
+
+```tsx title="종료 처리"
+const leaveSlideView = () => {
+  const shouldLeave = window.confirm('슬라이드 뷰를 종료하고 포스트로 돌아갈까요?');
+  if (shouldLeave) {
+    clearSlideHash();
+    router.push(`/${category}/${slug}`);
+  }
+};
+```
+
+이렇게 하면 새로고침 복원 기능은 유지하면서도, 슬라이드뷰를 벗어난 뒤에는 브라우저 히스토리에 `#slide-N`이 붙은 주소가 남지 않는다.
+
+# 체크리스트
+- `/Web/slide-print-alignment/slide`에서 이 문서가 슬라이드로 열린다.
+- PDF 프린트 시 각 슬라이드가 한 페이지 단위로 분리된다.
+- 이미지가 다음 슬라이드 영역으로 밀려 들어가지 않는다.
+- 테이블이 PDF에서 과하게 찌그러지지 않는다.
+- 화면 슬라이드와 PDF 프린트의 텍스트 크기 차이가 줄어든다.
+- 슬라이드뷰를 종료한 뒤 뒤로가기를 눌러도 `#slide-N` 주소가 남지 않는다.
