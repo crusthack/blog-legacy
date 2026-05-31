@@ -4,6 +4,7 @@
 import { useState, useEffect, useRef, ReactNode, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { isLocalDev } from '@/lib/config';
+import { getPostHref } from '@/lib/postPaths';
 
 interface ContentElement {
   type: 'simple' | 'complex' | 'html' | 'image' | 'code' | 'math' | 'table';
@@ -154,7 +155,7 @@ export default function SlideContent({ slides, category, slug, title, background
     const shouldLeave = window.confirm('슬라이드 뷰를 종료하고 포스트로 돌아갈까요?');
     if (shouldLeave) {
       clearSlideHash();
-      router.push(`/${category}/${slug}`);
+      router.push(getPostHref(category, slug));
     }
   };
 
@@ -359,16 +360,20 @@ export default function SlideContent({ slides, category, slug, title, background
 
     const updateSlideScale = () => {
       const viewportWidth = viewport.clientWidth;
+      const viewportHeight = viewport.clientHeight;
       const contentWidth = content.scrollWidth;
+      const contentHeight = content.scrollHeight;
 
-      if (!viewportWidth || !contentWidth) {
+      if (!viewportWidth || !viewportHeight || !contentWidth || !contentHeight) {
         setSlideScale(1);
         return;
       }
 
+      const viewportPadding = 0.96;
       const nextScale = Math.min(
         1,
-        viewportWidth / contentWidth
+        (viewportWidth * viewportPadding) / contentWidth,
+        (viewportHeight * viewportPadding) / contentHeight
       );
 
       setSlideScale(Number(nextScale.toFixed(4)));

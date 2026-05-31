@@ -6,6 +6,12 @@ import { normalizePostBackground, type PostBackground } from '@/lib/background'
  
 const postsDirectory = path.join(process.cwd(), 'content/posts')
 const postFilePattern = /\.(mdx|md)$/i
+
+function toPathCategory(dir: string) {
+  const relativeDir = path.relative(postsDirectory, dir);
+  if (!relativeDir || relativeDir === ".") return "";
+  return relativeDir.split(path.sep).join("/");
+}
  
 export interface Post {
   category: string
@@ -19,8 +25,10 @@ export interface Post {
  
   content: string
 }
+
+export type PostMeta = Omit<Post, "content">
  
-function walkDir(dir: string, fileList: string[] = []) {
+function collectPostFilePaths(dir: string, fileList: string[] = []) {
   const parent = path.dirname(dir);
   const targetName = path.basename(dir);
  
@@ -37,7 +45,7 @@ function walkDir(dir: string, fileList: string[] = []) {
     const fullPath = path.join(realDir, file);
  
     if (fs.statSync(fullPath).isDirectory()) {
-      walkDir(fullPath, fileList);
+      collectPostFilePaths(fullPath, fileList);
     } else if (postFilePattern.test(file)) {
       fileList.push(fullPath);
     }
@@ -54,12 +62,12 @@ function getDateTime(value: string) {
   return Number.isFinite(time) ? time : 0;
 }
  
-function loadPosts(): void {
+function ensurePostsLoaded(): void {
   if (isCacheLoaded) return;
   if (!fs.existsSync(postsDirectory)) return;
   cachedPostsData.clear();
  
-  const filePaths = walkDir(postsDirectory);
+  const filePaths = collectPostFilePaths(postsDirectory);
  
   for (const fullPath of filePaths) {
     const fileContents = fs.readFileSync(fullPath, "utf8");
@@ -73,8 +81,7 @@ function loadPosts(): void {
     }
  
     const slug = path.basename(fullPath).replace(postFilePattern, "");
-    const category = path.basename(path.dirname(fullPath)) === "posts" ?
-      "" : path.basename(path.dirname(fullPath));
+    const category = toPathCategory(path.dirname(fullPath));
  
     const post: Post = {
       category,
@@ -106,33 +113,23 @@ function loadPosts(): void {
   isCacheLoaded = process.env.NODE_ENV === 'production';
 }
  
-export function getAllPostData(): Omit<Post, "content">[] {
+export function getAllPostData(): PostMeta[] {
   if(!isCacheLoaded) {
-    loadPosts();
+    ensurePostsLoaded();
   }
  
-  const allPostsData = Array.from(cachedPostsData.values()).flat().map((post) => {
-    const slug = post.slug;
-    const category = post.category; // 바로 상위 폴더 이름
-    
-    if(category === "") return; // posts 폴더 직속 파일 무시
-    
-    return {
-      category: category, // 상위 폴더명을 카테고리로 사용
-      slug,               // 파일명
-      title: post.title,  // 포스트 제목
-      date: post.date,    // 작성일
-      description: post.description, // 포스트 설명
-    };
-  }).filter(Boolean) as Omit<Post, "content">[];
+  const allPostsData = Array.from(cachedPostsData.values())
+    .flat()
+    .filter((post) => post.category !== "")
+    .map(toPostMeta);
  
   return allPostsData.sort((a, b) => getDateTime(b.date) - getDateTime(a.date));
 }
  
 // 카테고리 기반 글 메타데이터 불러오기
-export function getPostsByCategory(category: string): Omit<Post, "content">[] {
+export function getPostsByCategory(category: string): PostMeta[] {
   if(!isCacheLoaded) {
-    loadPosts();
+    ensurePostsLoaded();
   }
  
   const postsInCategory = cachedPostsData.get(category);
@@ -140,13 +137,13 @@ export function getPostsByCategory(category: string): Omit<Post, "content">[] {
     return [];
   }
  
-  return postsInCategory;
+  return postsInCategory.map(toPostMeta);
 }
  
 // 파일명 기반으로 content/{slug}.mdx 파일 가져오기
 export function getPostData(category: string, slug: string): Post | null {
   if(!isCacheLoaded) {
-    loadPosts();
+    ensurePostsLoaded();
   }
   const postsInCategory = cachedPostsData.get(category);
   if (!postsInCategory) {
@@ -158,4 +155,9 @@ export function getPostData(category: string, slug: string): Post | null {
   }
  
   return post;
+}
+
+function toPostMeta(post: Post): PostMeta {
+  const { content: _content, ...meta } = post;
+  return meta;
 }

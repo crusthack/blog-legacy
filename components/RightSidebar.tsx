@@ -1,6 +1,7 @@
 // /components/RightSidebar.tsx
 import Link from "next/link";
 import { getAllPostData as getAllPostsData } from "@/lib/posts";
+import { getPostHref } from "@/lib/postPaths";
 import { usefulLinks } from "@/lib/config";
  
 export default function RightSidebar() {
@@ -17,7 +18,7 @@ export default function RightSidebar() {
           {recentProjectPosts.map((post) => (
             <li key={`project-${post.slug}`}>
               <Link
-                href={`/${encodeURIComponent(post.category!)}/${encodeURIComponent(post.slug)}`}
+                href={getPostHref(post.category!, post.slug)}
                 className="block hover:text-blue-600"
               >
                 {post.title ?? post.slug}

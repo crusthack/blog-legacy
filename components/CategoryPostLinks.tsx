@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { getPostsByCategory } from '@/lib/posts';
+import { getCategoryLabel, getPostHref } from '@/lib/postPaths';
 
 interface CategoryPostLinksProps {
   category: string;
@@ -36,7 +37,7 @@ export default function CategoryPostLinks({
       <div className="flex items-baseline justify-between gap-4 border-b border-gray-200 bg-white px-3">
         <h2 className="m-0 text-lg font-bold text-gray-800 leading-none">{title}</h2>
         <span className="shrink-0 rounded-full bg-gray-100 px-2.5 py-1 text-[15px] font-mono font-bold text-gray-500">
-          category: {category} count: {posts.length}
+          category: {getCategoryLabel(category)} count: {posts.length}
         </span>
       </div>
 
@@ -47,7 +48,7 @@ export default function CategoryPostLinks({
             className="w-full group relative bg-white/60 transition hover:bg-white !py-0 !mt-1 !mb-0"
           >
             <Link
-              href={`/${encodeURIComponent(post.category)}/${encodeURIComponent(post.slug)}`}
+              href={getPostHref(post.category, post.slug)}
               className="block px-4 py-2 no-underline"
             >
               <span className="absolute left-0 top-0 h-full w-1 bg-transparent transition group-hover:bg-blue-500" />

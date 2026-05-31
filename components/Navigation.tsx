@@ -1,7 +1,8 @@
 // /components/Navigation.tsx
 "use client";
 
-import { getPostsByCategory, Post } from "@/lib/posts";
+import type { Post } from "@/lib/posts";
+import { getCategoryHref, getCategoryLabel, getPostHref } from "@/lib/postPaths";
 import { Menu } from "@/lib/config";
 import Link from "next/link";
 import { useState } from "react";
@@ -66,7 +67,7 @@ export default function Navi({ posts }: NaviProps) {
                 onPointerLeave={() => close(item.label)}
               >
                 <Link
-                  href={`/${item.categories[0]}`}
+                  href={getCategoryHref(item.categories[0])}
                   className="block px-2 py-2 hover:bg-gray-200 rounded transition whitespace-nowrap"
                 >
                   {item.label}
@@ -80,10 +81,10 @@ export default function Navi({ posts }: NaviProps) {
                           return (
                             <Link
                               key={ct}
-                              href={`/${encodeURIComponent(ct)}`}
+                              href={getCategoryHref(ct)}
                               className="block px-3 py-2 hover:bg-gray-100 rounded whitespace-nowrap"
                             >
-                              {ct}
+                              {getCategoryLabel(ct)}
                             </Link>
                           )
                         })
@@ -98,7 +99,7 @@ export default function Navi({ posts }: NaviProps) {
                           .map(post => (
                             <Link
                               key={post.slug}
-                              href={`/${post.category}/${encodeURIComponent(post.slug)}`}
+                              href={getPostHref(post.category, post.slug)}
                               className="block px-3 py-2 hover:bg-gray-100 rounded whitespace-nowrap"
                             >
                               {post.title}

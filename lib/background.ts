@@ -42,7 +42,12 @@ export function resolvePostBackgroundImage({
   }
 
   const baseurl = isLocalDev ? '' : `/${repoName}`;
-  return `${baseurl}/images/${encodeURIComponent(category)}/${encodeURIComponent(slug)}/${image}`;
+  const encodedCategory = category
+    .split('/')
+    .filter(Boolean)
+    .map((segment) => encodeURIComponent(segment))
+    .join('/');
+  return `${baseurl}/images/${encodedCategory}/${encodeURIComponent(slug)}/${image}`;
 }
 
 export function getPostBackgroundStyle({

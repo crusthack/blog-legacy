@@ -84,7 +84,7 @@ const CodeBlock = ({
             ">
                 <div className="flex items-center gap-3">
                     {language && (
-                        <div className="text-[12px] font-mono text-blue-400 tracking-widest font-black border-r border-white/10 pr-3 print:text-blue-600">
+                        <div className="text-[1.4rem] font-mono text-blue-400 tracking-widest font-black border-r border-white/10 pr-3 print:text-blue-600">
                             {language}
                         </div>
                     )}
@@ -122,7 +122,7 @@ const CodeBlock = ({
                     ...props.style,
                     ...(dynamicMaxHeight ? { maxHeight: dynamicMaxHeight } : {})
                 }}
-                className={`${className} !text-[2rem] leading-snug !m-0 !rounded-t-none ${isSlide ? 'overflow-auto [&_code]:!text-[1.125rem] print:!max-h-none print:!overflow-visible' : '[&_code]:!text-[1rem]'} print:!max-h-none print:!overflow-visible print:whitespace-pre-wrap print:break-words scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent p-4`}
+                className={`${className} !text-[2rem] leading-snug !m-0 !rounded-t-none ${isSlide ? 'overflow-auto [&_code]:!text-[1.8rem] print:!max-h-none print:!overflow-visible' : '[&_code]:!text-[.9rem]'} print:!max-h-none print:!overflow-visible print:whitespace-pre-wrap print:break-words scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent p-4`}
             >
                 {children}
             </pre>

@@ -10,11 +10,11 @@ export interface MenuItem {
  
 export const Menu: MenuItem[] = [
   {
-    categories: ["ComputerScience", "Network", "Language", "Algorithm", "Web"],
+    categories: ["Theory/ComputerScience", "Theory/Network", "Theory/Language", "Theory/Algorithm", "Theory/Web"],
     label: "문서",
   },
   {
-    categories: ["UnrealEngine", "Unity", "Windows", "DirectX", ".Net"],
+    categories: ["Practice/UnrealEngine", "Practice/Unity", "Practice/Windows", "Practice/DirectX", "Practice/.Net", "Practice/ASP.Net"],
     label: "기술",
   },
   {

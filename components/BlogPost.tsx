@@ -1,5 +1,6 @@
 // components/BlogPost.tsx
 import type { Post } from '@/lib/posts';
+import { getPostSlideHref } from '@/lib/postPaths';
 import { MDXRemote } from 'next-mdx-remote/rsc';
 import { createPostMdxComponents, mdxOptions } from '@/lib/mdx';
 import Link from 'next/link';
@@ -13,7 +14,7 @@ export default function BlogPost({
   post,
   showSlideButton = false,
 }: BlogPostProps) {
-  const slideUrl = `/${post.category}/${post.slug}/slide`;
+  const slideUrl = getPostSlideHref(post.category, post.slug);
   const mdxComponents = createPostMdxComponents({
     category: post.category,
     slug: post.slug,

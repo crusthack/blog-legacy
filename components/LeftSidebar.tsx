@@ -1,6 +1,7 @@
 // /components/LeftSidebar.tsx
 import Link from "next/link";
 import { getAllPostData } from "@/lib/posts";
+import { getCategoryHref, getCategoryLabel, getPostHref } from "@/lib/postPaths";
 import { excludeCategories, Menu } from "@/lib/config";
  
 export default function LeftSidebar() {
@@ -23,7 +24,7 @@ export default function LeftSidebar() {
           {recentPosts.map((post) => (
             <li key={`${post.category}-${post.slug}`}>
               <Link
-                href={`/${encodeURIComponent(post.category!)}/${encodeURIComponent(post.slug)}`}
+                href={getPostHref(post.category!, post.slug)}
                 className="block hover:text-blue-600 truncate"
                 title={post.title ?? post.slug}
               >
@@ -40,10 +41,10 @@ export default function LeftSidebar() {
           {categories.map((cat) => (
             <li key={cat}>
               <Link
-                href={`/${encodeURIComponent(cat)}`}
+                href={getCategoryHref(cat)}
                 className="flex items-center justify-between hover:text-blue-600 whitespace-normal break-words"
               >
-                <span>{cat} ({counts[cat] ?? 0})</span>
+                <span>{getCategoryLabel(cat)} ({counts[cat] ?? 0})</span>
               </Link>
             </li>
           ))}

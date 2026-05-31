@@ -14,7 +14,12 @@ const resolveImagePath = (category: string, slug: string, value: string | undefi
         return v;
     }
     const baseurl = isLocalDev ? '' : `/${repoName}`;
-    return `${baseurl}/images/${encodeURIComponent(category)}/${encodeURIComponent(slug)}/${v}`;
+    const encodedCategory = category
+        .split("/")
+        .filter(Boolean)
+        .map((segment) => encodeURIComponent(segment))
+        .join("/");
+    return `${baseurl}/images/${encodedCategory}/${encodeURIComponent(slug)}/${v}`;
 };
  
 interface MdxImageProps extends ImgHTMLAttributes<HTMLImageElement> {
