@@ -20,7 +20,7 @@ export default async function AboutPage() {
     }
  
     return (
-        <div className="grid grid-cols-[1fr_1000px_1fr] gap-8 w-full">
+        <div className="blog-page grid grid-cols-[1fr_1000px_1fr] gap-8 w-full">
  
             {/* 왼쪽 사이드 컨텐츠 */}
             <div className="flex justify-end">

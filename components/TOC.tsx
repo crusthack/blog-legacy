@@ -34,8 +34,8 @@ export default function TOC({ toc }: { toc: TocItem[] }) {
   };
 
   return (
-    <aside className="sticky top-20 h-fit min-w-0 max-h-[80vh] overflow-auto">
-      <h3 className="font-bold mb-4">목차</h3>
+    <aside className="post-toc sticky top-20 h-fit min-w-0 max-h-[80vh] overflow-auto">
+      <h3 className="post-toc-title font-bold mb-4">목차</h3>
 
       <ul className="space-y-2">
         {toc.map(item => {
@@ -50,10 +50,10 @@ export default function TOC({ toc }: { toc: TocItem[] }) {
             >
               <a
                 href={`#${item.id}`}
-                className={`text-sm hover:underline break-words block ${
+                className={`post-toc-link text-sm hover:underline break-words block ${
                   isActive
-                    ? "font-bold text-blue-500"
-                    : "text-gray-700"
+                    ? "post-toc-link-active font-bold text-blue-500"
+                    : "post-toc-link-idle text-gray-700"
                 }`}
               >
                 {item.text}

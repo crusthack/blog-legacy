@@ -48,7 +48,7 @@ export default async function Post({ params }: { params: Promise<{ category: str
     }
     const toc = getTocFromMarkdown(postData.content);
     return (
-        <div className="grid grid-cols-[1fr_1000px_1fr] gap-8 w-full">
+        <div className="blog-page grid grid-cols-[1fr_1000px_1fr] gap-8 w-full">
             <div className="flex justify-end min-w-0">
                 <CategorySidebar currentCategory={category} />
             </div>

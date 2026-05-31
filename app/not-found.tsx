@@ -12,7 +12,7 @@ export default function NotFound() {
     toc = getTocFromMarkdown(postData!.content);
  
     return (
-        <div className="grid grid-cols-[1fr_1000px_1fr] gap-8 w-full">
+        <div className="blog-page grid grid-cols-[1fr_1000px_1fr] gap-8 w-full">
             <div className="flex justify-end">
                 <LeftSidebar />
             </div>
