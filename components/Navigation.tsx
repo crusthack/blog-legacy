@@ -37,7 +37,7 @@ export default function Navi({ posts }: NaviProps) {
             Main
           </Link>
           <Link href="/game" className="flex items-center text-l font-bold hover:opacity-70 transition whitespace-nowrap">
-            공룡게임
+            웹게임
           </Link>
           <Link href="https://crusthack.github.io/catbattle/" target="_blank" className="flex items-center text-l font-bold hover:opacity-70 transition whitespace-nowrap">
             냥코DB

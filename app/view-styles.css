@@ -139,11 +139,11 @@
   .post-view {
     --post-view-bg: #151515;
     --post-view-text: #e6edf3;
-    --post-view-heading: #e2e916;
+    --post-view-heading: #ffff00;
     --post-view-muted: #8b949e;
     --post-view-markdown-bg: #0d1117;
     --post-view-border: #d2dbe6;  
-    --post-view-link: #2b6c25;
+    --post-view-link: #80ffff;
     --post-view-code-bg: rgba(110, 118, 129, 0.4);
     --post-view-blockquote: #8b949e;
   }
@@ -159,9 +159,9 @@
   .slide-view {
     --slide-view-bg: #000000;
     --slide-view-text: #ffffff;
-    --slide-view-heading: #ffe355;
-    --slide-view-heading-border: #fde047;
-    --slide-view-link: #2b6c25;
+    --slide-view-heading: #ffff00;
+    --slide-view-heading-border: #ffff00;
+    --slide-view-link: #80ffff;
   }
 
   .post-view,

@@ -10,7 +10,7 @@
       "titleSlide: ${3|true,false|}",
       "---",
       "",
-      "# ${1:${TM_FILENAME_BASE}}",
+      "# ${1:${TM_FILENAME_BASE}} 개요",
       "",
       "$0"
     ]
@@ -27,7 +27,7 @@
       "titleSlide: ${3|true,false|}",
       "---",
       "",
-      "# ${1:${TM_FILENAME_BASE}}",
+      "# ${1:${TM_FILENAME_BASE}} 개요",
       "",
       "$0"
     ]

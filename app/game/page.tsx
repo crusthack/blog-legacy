@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { memo, useEffect, useRef, useState, useCallback } from 'react';
 
 const drawRoundedRect = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) => {
   ctx.beginPath();
@@ -16,6 +16,589 @@ const drawRoundedRect = (ctx: CanvasRenderingContext2D, x: number, y: number, w:
   ctx.closePath();
   ctx.fill();
 };
+
+type BaseballResult = { strikes: number; balls: number };
+type BaseballGuess = { digits: string; result: BaseballResult };
+type GameSound = 'open' | 'flag' | 'chord' | 'win' | 'lose' | 'input' | 'back' | 'submit' | 'reset' | 'start';
+
+const BASEBALL_LENGTH = 4;
+const MAX_BASEBALL_GUESSES = 10;
+
+const createSecretDigits = () => {
+  const digits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+  for (let i = digits.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [digits[i], digits[j]] = [digits[j], digits[i]];
+  }
+  return digits.slice(0, BASEBALL_LENGTH).join('');
+};
+
+const evaluateBaseballGuess = (guess: string, secret: string): BaseballResult => {
+  let strikes = 0;
+  let balls = 0;
+
+  for (let i = 0; i < BASEBALL_LENGTH; i += 1) {
+    if (guess[i] === secret[i]) {
+      strikes += 1;
+    } else if (secret.includes(guess[i])) {
+      balls += 1;
+    }
+  }
+
+  return { strikes, balls };
+};
+
+type MineCell = {
+  isMine: boolean;
+  isRevealed: boolean;
+  isFlagged: boolean;
+  adjacent: number;
+};
+
+const MINE_ROWS = 16;
+const MINE_COLS = 30;
+const MINE_COUNT = 99;
+
+let sharedAudioContext: AudioContext | null = null;
+
+const playGameSound = (type: GameSound) => {
+  try {
+    if (!sharedAudioContext) {
+      sharedAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
+
+    const ctx = sharedAudioContext;
+    if (ctx.state === 'suspended') void ctx.resume();
+
+    const now = ctx.currentTime;
+    const gain = ctx.createGain();
+    gain.connect(ctx.destination);
+
+    const playTone = (
+      frequency: number,
+      duration: number,
+      oscillatorType: OscillatorType = 'sine',
+      delay = 0,
+    ) => {
+      const osc = ctx.createOscillator();
+      osc.type = oscillatorType;
+      osc.frequency.setValueAtTime(frequency, now + delay);
+      osc.connect(gain);
+      osc.start(now + delay);
+      osc.stop(now + delay + duration);
+    };
+
+    gain.gain.setValueAtTime(0.0001, now);
+
+    switch (type) {
+      case 'open':
+        gain.gain.exponentialRampToValueAtTime(0.07, now + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.08);
+        playTone(520, 0.08, 'triangle');
+        break;
+      case 'flag':
+        gain.gain.exponentialRampToValueAtTime(0.08, now + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.07);
+        playTone(320, 0.07, 'square');
+        break;
+      case 'chord':
+        gain.gain.exponentialRampToValueAtTime(0.08, now + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.16);
+        playTone(440, 0.07, 'triangle');
+        playTone(660, 0.07, 'triangle', 0.07);
+        break;
+      case 'win':
+        gain.gain.exponentialRampToValueAtTime(0.09, now + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.28);
+        playTone(523, 0.08, 'triangle');
+        playTone(659, 0.08, 'triangle', 0.08);
+        playTone(784, 0.11, 'triangle', 0.17);
+        break;
+      case 'lose':
+        gain.gain.exponentialRampToValueAtTime(0.13, now + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.28);
+        playTone(180, 0.28, 'sawtooth');
+        break;
+      case 'input':
+        gain.gain.exponentialRampToValueAtTime(0.05, now + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.05);
+        playTone(760, 0.05, 'sine');
+        break;
+      case 'back':
+        gain.gain.exponentialRampToValueAtTime(0.05, now + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.06);
+        playTone(360, 0.06, 'triangle');
+        break;
+      case 'submit':
+        gain.gain.exponentialRampToValueAtTime(0.07, now + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.11);
+        playTone(620, 0.05, 'triangle');
+        playTone(820, 0.05, 'triangle', 0.05);
+        break;
+      case 'reset':
+      case 'start':
+        gain.gain.exponentialRampToValueAtTime(0.07, now + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);
+        playTone(type === 'start' ? 700 : 420, 0.12, 'triangle');
+        break;
+    }
+  } catch {
+    // Audio can be unavailable in some browser privacy modes.
+  }
+};
+
+const createEmptyMineBoard = (): MineCell[][] =>
+  Array.from({ length: MINE_ROWS }, () =>
+    Array.from({ length: MINE_COLS }, () => ({
+      isMine: false,
+      isRevealed: false,
+      isFlagged: false,
+      adjacent: 0,
+    }))
+  );
+
+const getMineNeighbors = (row: number, col: number) => {
+  const neighbors: Array<[number, number]> = [];
+  for (let dr = -1; dr <= 1; dr += 1) {
+    for (let dc = -1; dc <= 1; dc += 1) {
+      if (dr === 0 && dc === 0) continue;
+      const nr = row + dr;
+      const nc = col + dc;
+      if (nr >= 0 && nr < MINE_ROWS && nc >= 0 && nc < MINE_COLS) {
+        neighbors.push([nr, nc]);
+      }
+    }
+  }
+  return neighbors;
+};
+
+const createMineBoard = (safeRow: number, safeCol: number): MineCell[][] => {
+  const board = createEmptyMineBoard();
+  const blocked = new Set([`${safeRow},${safeCol}`, ...getMineNeighbors(safeRow, safeCol).map(([r, c]) => `${r},${c}`)]);
+  const candidates: Array<[number, number]> = [];
+
+  for (let row = 0; row < MINE_ROWS; row += 1) {
+    for (let col = 0; col < MINE_COLS; col += 1) {
+      if (!blocked.has(`${row},${col}`)) candidates.push([row, col]);
+    }
+  }
+
+  for (let i = candidates.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
+  }
+
+  candidates.slice(0, MINE_COUNT).forEach(([row, col]) => {
+    board[row][col].isMine = true;
+  });
+
+  for (let row = 0; row < MINE_ROWS; row += 1) {
+    for (let col = 0; col < MINE_COLS; col += 1) {
+      if (board[row][col].isMine) continue;
+      board[row][col].adjacent = getMineNeighbors(row, col)
+        .filter(([nr, nc]) => board[nr][nc].isMine)
+        .length;
+    }
+  }
+
+  return board;
+};
+
+const MinesweeperGame = memo(function MinesweeperGame() {
+  const [board, setBoard] = useState<MineCell[][]>(() => createEmptyMineBoard());
+  const [isStarted, setIsStarted] = useState(false);
+  const [status, setStatus] = useState<'playing' | 'won' | 'lost'>('playing');
+  const [flags, setFlags] = useState(0);
+  const [pressedCell, setPressedCell] = useState<[number, number] | null>(null);
+
+  const reset = () => {
+    playGameSound('reset');
+    setBoard(createEmptyMineBoard());
+    setIsStarted(false);
+    setStatus('playing');
+    setFlags(0);
+    setPressedCell(null);
+  };
+
+  const revealBoard = (source: MineCell[][], startRow: number, startCol: number) => {
+    const next = source.map((row) => row.map((cell) => ({ ...cell })));
+    const queue: Array<[number, number]> = [[startRow, startCol]];
+
+    while (queue.length > 0) {
+      const [row, col] = queue.shift()!;
+      const cell = next[row][col];
+      if (cell.isRevealed || cell.isFlagged) continue;
+
+      cell.isRevealed = true;
+      if (cell.adjacent !== 0 || cell.isMine) continue;
+
+      getMineNeighbors(row, col).forEach(([nr, nc]) => {
+        if (!next[nr][nc].isRevealed && !next[nr][nc].isFlagged) {
+          queue.push([nr, nc]);
+        }
+      });
+    }
+
+    return next;
+  };
+
+  const revealManyCells = (source: MineCell[][], cells: Array<[number, number]>) => {
+    let next = source;
+    for (const [row, col] of cells) {
+      const cell = next[row][col];
+      if (!cell.isRevealed && !cell.isFlagged && !cell.isMine) {
+        next = revealBoard(next, row, col);
+      }
+    }
+    return next;
+  };
+
+  const revealAllMines = (source: MineCell[][]) =>
+    source.map((row) => row.map((cell) => ({ ...cell, isRevealed: cell.isRevealed || cell.isMine })));
+
+  const hasWon = (source: MineCell[][]) =>
+    source.every((row) => row.every((cell) => cell.isMine || cell.isRevealed));
+
+  const revealCell = (row: number, col: number) => {
+    if (status !== 'playing') return;
+    setPressedCell(null);
+
+    const activeBoard = isStarted ? board : createMineBoard(row, col);
+    const cell = activeBoard[row][col];
+    if (cell.isFlagged) return;
+
+    if (cell.isRevealed) {
+      if (cell.adjacent === 0) return;
+
+      const neighbors = getMineNeighbors(row, col);
+      const flaggedCount = neighbors.filter(([nr, nc]) => activeBoard[nr][nc].isFlagged).length;
+      if (flaggedCount !== cell.adjacent) return;
+
+      const hiddenUnflagged = neighbors.filter(([nr, nc]) => {
+        const neighbor = activeBoard[nr][nc];
+        return !neighbor.isRevealed && !neighbor.isFlagged;
+      });
+      const hitMine = hiddenUnflagged.some(([nr, nc]) => activeBoard[nr][nc].isMine);
+      if (hitMine) {
+        playGameSound('lose');
+        setBoard(revealAllMines(activeBoard));
+        setStatus('lost');
+        return;
+      }
+
+      const next = revealManyCells(activeBoard, hiddenUnflagged);
+      setBoard(next);
+      if (hasWon(next)) {
+        playGameSound('win');
+        setStatus('won');
+      } else {
+        playGameSound('chord');
+      }
+      return;
+    }
+
+    if (cell.isMine) {
+      playGameSound('lose');
+      setBoard(revealAllMines(activeBoard));
+      setStatus('lost');
+      setIsStarted(true);
+      return;
+    }
+
+    const next = revealBoard(activeBoard, row, col);
+    setBoard(next);
+    setIsStarted(true);
+    if (hasWon(next)) {
+      playGameSound('win');
+      setStatus('won');
+    } else {
+      playGameSound('open');
+    }
+  };
+
+  const toggleFlag = (row: number, col: number) => {
+    if (status !== 'playing') return;
+
+    setBoard((prev) => {
+      const cell = prev[row][col];
+      const currentFlags = prev.flat().filter((item) => item.isFlagged).length;
+      if (cell.isRevealed || (!cell.isFlagged && currentFlags >= MINE_COUNT)) return prev;
+
+      setPressedCell(null);
+
+      const next = prev.map((r) => r.map((c) => ({ ...c })));
+      next[row][col].isFlagged = !next[row][col].isFlagged;
+      setFlags(currentFlags + (next[row][col].isFlagged ? 1 : -1));
+      playGameSound('flag');
+      return next;
+    });
+  };
+
+  const isPressedPreviewCell = (row: number, col: number) => {
+    if (!pressedCell) return false;
+
+    const [pressedRow, pressedCol] = pressedCell;
+    const sourceCell = board[pressedRow]?.[pressedCol];
+    if (!sourceCell?.isRevealed || sourceCell.adjacent === 0) return false;
+
+    const targetCell = board[row][col];
+    if (targetCell.isRevealed || targetCell.isFlagged) return false;
+
+    return getMineNeighbors(pressedRow, pressedCol).some(([nr, nc]) => nr === row && nc === col);
+  };
+
+  const numberColor = (value: number) => {
+    if (value === 1) return 'text-blue-400';
+    if (value === 2) return 'text-emerald-400';
+    if (value === 3) return 'text-red-400';
+    if (value === 4) return 'text-violet-400';
+    return 'text-amber-300';
+  };
+
+  return (
+    <section className="w-full max-w-6xl rounded-[2rem] border border-slate-800 bg-slate-950 p-6 shadow-2xl">
+      <div className="flex flex-wrap items-end justify-between gap-4 border-b border-slate-800 pb-5">
+        <div>
+          <h2 className="text-3xl font-black tracking-tight text-slate-100">MINESWEEPER</h2>
+          <p className="mt-2 max-w-2xl text-sm font-medium leading-relaxed text-slate-400">
+            Reveal every safe cell. Left click opens a cell, right click places a flag. The first click is safe.
+          </p>
+        </div>
+        <div className="text-right font-mono text-sm font-black text-emerald-400">
+          {MINE_COUNT - flags} mines left
+        </div>
+      </div>
+
+      <div className="mt-6 flex flex-col items-center gap-5">
+        <div className="flex w-full flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-800 bg-black/30 p-4">
+          <div className="rounded-lg border border-slate-800 bg-slate-950 px-4 py-3 text-sm font-bold text-slate-300">
+            {status === 'playing' && (isStarted ? 'Use the numbers to locate the mines.' : 'Pick any cell to start.')}
+            {status === 'won' && 'Clear. Every safe cell is open.'}
+            {status === 'lost' && 'Mine triggered. Try another field.'}
+          </div>
+          <button
+            onClick={reset}
+            className="rounded-lg bg-emerald-500 px-5 py-3 text-sm font-black text-slate-950 transition hover:bg-emerald-400"
+          >
+            NEW FIELD
+          </button>
+        </div>
+
+        <div className="w-full rounded-xl border border-slate-800 bg-black/40 p-2">
+          <div className="grid grid-cols-[repeat(30,minmax(0,1fr))] gap-0.5" onMouseLeave={() => setPressedCell(null)}>
+            {board.map((row, rowIndex) =>
+              row.map((cell, colIndex) => {
+                const content = cell.isFlagged && !cell.isRevealed
+                  ? '⚑'
+                  : cell.isMine && cell.isRevealed
+                    ? '✹'
+                    : cell.isRevealed && cell.adjacent > 0
+                      ? cell.adjacent
+                      : '';
+                const isPressedPreview = isPressedPreviewCell(rowIndex, colIndex);
+
+                return (
+                  <button
+                  key={`${rowIndex}-${colIndex}`}
+                  onClick={() => revealCell(rowIndex, colIndex)}
+                  onMouseDown={(event) => {
+                    if (event.button === 2) {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      toggleFlag(rowIndex, colIndex);
+                    }
+                    if (event.button === 0 && cell.isRevealed && cell.adjacent > 0) {
+                      setPressedCell([rowIndex, colIndex]);
+                    }
+                  }}
+                  onMouseUp={() => setPressedCell(null)}
+                  onContextMenu={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                  }}
+                    className={`flex aspect-square w-full min-w-0 select-none items-center justify-center rounded border text-[clamp(0.45rem,0.9vw,0.75rem)] font-black transition ${
+                      cell.isRevealed
+                        ? cell.isMine
+                          ? 'border-red-500 bg-red-950 text-red-300'
+                          : 'border-slate-700 bg-slate-900 text-slate-200'
+                        : isPressedPreview
+                          ? 'translate-y-px border-slate-700 bg-slate-900 text-slate-500 shadow-none'
+                          : 'border-slate-600 bg-slate-700 text-amber-300 shadow-[inset_0_-2px_0_rgba(0,0,0,0.35)] hover:border-emerald-400 hover:bg-slate-600'
+                    } ${cell.isRevealed && !cell.isMine ? numberColor(cell.adjacent) : ''}`}
+                    aria-label={`row ${rowIndex + 1}, column ${colIndex + 1}`}
+                  >
+                    {content}
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+});
+
+const NumberBaseballGame = memo(function NumberBaseballGame() {
+  const [secret, setSecret] = useState(() => createSecretDigits());
+  const [current, setCurrent] = useState('');
+  const [guesses, setGuesses] = useState<BaseballGuess[]>([]);
+  const [status, setStatus] = useState<'playing' | 'won' | 'lost'>('playing');
+
+  const reset = () => {
+    playGameSound('reset');
+    setSecret(createSecretDigits());
+    setCurrent('');
+    setGuesses([]);
+    setStatus('playing');
+  };
+
+  const addDigit = (digit: string) => {
+    if (status !== 'playing' || current.length >= BASEBALL_LENGTH || current.includes(digit)) return;
+    playGameSound('input');
+    setCurrent((prev) => `${prev}${digit}`);
+  };
+
+  const removeLast = () => {
+    if (status !== 'playing' || current.length === 0) return;
+    playGameSound('back');
+    setCurrent((prev) => prev.slice(0, -1));
+  };
+
+  const submitGuess = () => {
+    if (status !== 'playing' || current.length !== BASEBALL_LENGTH) return;
+
+    const result = evaluateBaseballGuess(current, secret);
+    const nextGuesses = [...guesses, { digits: current, result }];
+    setGuesses(nextGuesses);
+    setCurrent('');
+
+    if (result.strikes === BASEBALL_LENGTH) {
+      playGameSound('win');
+      setStatus('won');
+    } else if (nextGuesses.length >= MAX_BASEBALL_GUESSES) {
+      playGameSound('lose');
+      setStatus('lost');
+    } else {
+      playGameSound('submit');
+    }
+  };
+
+  return (
+    <section className="w-full max-w-6xl rounded-[2rem] border border-slate-800 bg-slate-950 p-6 shadow-2xl">
+      <div className="flex flex-wrap items-end justify-between gap-4 border-b border-slate-800 pb-5">
+        <div>
+          <h2 className="text-3xl font-black tracking-tight text-slate-100">NUMBER BASEBALL</h2>
+          <p className="mt-2 max-w-2xl text-sm font-medium leading-relaxed text-slate-400">
+            Find the hidden 4-digit number. Strike means right digit and position. Ball means right digit in another position.
+          </p>
+        </div>
+        <div className="text-right font-mono text-sm font-black text-emerald-400">
+          {guesses.length} / {MAX_BASEBALL_GUESSES}
+        </div>
+      </div>
+
+      <div className="grid gap-6 pt-6 lg:grid-cols-[1fr_320px]">
+        <div className="space-y-3">
+          {Array.from({ length: MAX_BASEBALL_GUESSES }).map((_, index) => {
+            const guess = guesses[index];
+            const isCurrent = index === guesses.length && status === 'playing';
+            const rowDigits = guess?.digits ?? (isCurrent ? current : '');
+
+            return (
+              <div
+                key={index}
+                className={`grid grid-cols-[1fr_150px] items-center gap-4 rounded-lg border px-4 py-3 ${
+                  isCurrent ? 'border-emerald-500 bg-emerald-500/10' : 'border-slate-800 bg-slate-900'
+                }`}
+              >
+                <div className="flex gap-2">
+                  {Array.from({ length: BASEBALL_LENGTH }).map((__, slot) => {
+                    const digit = rowDigits[slot];
+                    return (
+                      <div
+                        key={slot}
+                        className={`flex h-10 w-10 items-center justify-center rounded-md border text-lg font-black ${
+                          digit ? 'border-emerald-400 bg-slate-950 text-emerald-300' : 'border-white/10 bg-slate-800 text-slate-600'
+                        }`}
+                      >
+                        {digit ?? ''}
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="text-right font-mono text-xs font-black uppercase tracking-wider text-slate-400">
+                  {guess ? (
+                    <>
+                      <span className="text-emerald-400">{guess.result.strikes} strike</span>
+                      <span className="mx-2 text-slate-600">/</span>
+                      <span className="text-amber-300">{guess.result.balls} ball</span>
+                    </>
+                  ) : isCurrent ? (
+                    'current'
+                  ) : (
+                    'locked'
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="rounded-xl border border-slate-800 bg-black/30 p-4">
+          <div className="grid grid-cols-5 gap-2">
+            {Array.from({ length: 10 }).map((_, digit) => (
+              <button
+                key={digit}
+                onClick={() => addDigit(String(digit))}
+                disabled={status !== 'playing' || current.length >= BASEBALL_LENGTH || current.includes(String(digit))}
+                className="h-14 rounded-lg border border-slate-700 bg-slate-900 text-lg font-black text-slate-100 transition hover:scale-[1.03] hover:border-emerald-400 hover:text-emerald-300 disabled:cursor-not-allowed disabled:opacity-30"
+              >
+                {digit}
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <button
+              onClick={removeLast}
+              className="rounded-lg border border-slate-700 px-4 py-3 text-sm font-black text-slate-200 transition hover:bg-slate-800"
+            >
+              BACK
+            </button>
+            <button
+              onClick={submitGuess}
+              disabled={current.length !== BASEBALL_LENGTH || status !== 'playing'}
+              className="rounded-lg bg-emerald-500 px-4 py-3 text-sm font-black text-slate-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
+            >
+              CHECK
+            </button>
+          </div>
+
+          <div className="mt-4 rounded-lg border border-slate-800 bg-slate-950 p-4 text-sm font-bold text-slate-300">
+            {status === 'playing' && 'Enter 4 different digits, then check the strike/ball feedback.'}
+            {status === 'won' && `Solved in ${guesses.length} tries.`}
+            {status === 'lost' && (
+              <div className="space-y-3">
+                <p>Out of guesses. The answer was:</p>
+                <div className="font-mono text-3xl font-black tracking-[0.4em] text-emerald-300">
+                  {secret}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={reset}
+            className="mt-4 w-full rounded-lg border border-slate-700 px-4 py-3 text-sm font-black text-slate-200 transition hover:bg-slate-800"
+          >
+            NEW NUMBER
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+});
 
 export default function DinoGame() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -36,6 +619,7 @@ export default function DinoGame() {
   const isPlayingRef = useRef(false);
   const isGameOverRef = useRef(false);
   const scoreRef = useRef(0);
+  const lastScoreRenderRef = useRef(0);
   const dino = useRef({ x: 80, y: GROUND_Y, width: DINO_SIZE, height: DINO_SIZE, vy: 0, isDucking: false });
   const gameState = useRef({
     speed: 7, baseSpeed: 7, speedVariation: 0,
@@ -102,6 +686,7 @@ export default function DinoGame() {
     isGameOverRef.current = true; setIsGameOver(true);
     isPlayingRef.current = false; setIsPlaying(false);
     shakeRef.current = 20; playSound('crash');
+    setScore(scoreRef.current);
     const d = dino.current;
     createParticle(d.x + d.width/2, d.y + d.height/2, '#ef4444', 'piece');
     setHighScore(prev => {
@@ -163,7 +748,10 @@ export default function DinoGame() {
 
       state.distance += state.speed * 0.1;
       scoreRef.current = Math.floor(state.distance);
-      setScore(scoreRef.current);
+      if (time - lastScoreRenderRef.current > 80) {
+        lastScoreRenderRef.current = time;
+        setScore(scoreRef.current);
+      }
 
       if (isHell && Math.random() < 0.2) createParticle(Math.random() * CANVAS_WIDTH, GROUND_LINE, '#ef4444', 'ember');
       if (isHeaven && Math.random() < 0.1) createParticle(Math.random() * CANVAS_WIDTH, GROUND_LINE, '#ffffff', 'feather');
@@ -239,9 +827,11 @@ export default function DinoGame() {
 
   const startGame = () => {
     if (!gameState.current.audioCtx) gameState.current.audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    playGameSound('start');
     gameState.current = { ...gameState.current, speed: 7, baseSpeed: 7, speedVariation: 0, obstacles: [], particles: [], distance: 0, nextSpawnTime: performance.now()+500, lastCheckPoint: 0 };
     dino.current = { x: 80, y: GROUND_Y, width: DINO_SIZE, height: DINO_SIZE, vy: 0, isDucking: false };
     isPlayingRef.current = true; isGameOverRef.current = false; scoreRef.current = 0;
+    lastScoreRenderRef.current = 0;
     setScore(0); setIsGameOver(false); setIsPlaying(true); setIsNight(false);
   };
 
@@ -273,14 +863,14 @@ export default function DinoGame() {
   const jumpTo = (s: number) => {
     if (!isPlayingRef.current) startGame();
     gameState.current.distance = s; gameState.current.lastCheckPoint = Math.floor(s/1000);
-    scoreRef.current = s; setScore(s);
+    scoreRef.current = s; lastScoreRenderRef.current = performance.now(); setScore(s);
   };
 
   const modeName = score > 35000 ? 'CYBER' : score > 30000 ? 'SPACE' : score > 25000 ? 'HEAVEN' : score > 20000 ? 'HELL' : 'BLOCK';
   const modeColor = score > 35000 ? 'text-green-500' : score > 30000 ? 'text-yellow-400' : score > 25000 ? 'text-blue-400' : score > 20000 ? 'text-red-500' : 'text-indigo-500';
 
   return (
-    <div className={`flex flex-col items-center justify-center min-h-screen transition-all duration-1000 ${score > 35000 ? 'bg-black' : score > 30000 ? 'bg-slate-950' : score > 25000 ? 'bg-blue-50' : score > 20000 ? 'bg-red-950' : (isNight ? 'bg-slate-950' : 'bg-slate-300')} p-4 overflow-hidden font-sans`}>
+    <div className={`flex flex-col items-center justify-center min-h-screen gap-8 transition-all duration-1000 ${score > 35000 ? 'bg-black' : score > 30000 ? 'bg-slate-950' : score > 25000 ? 'bg-blue-50' : score > 20000 ? 'bg-red-950' : (isNight ? 'bg-slate-950' : 'bg-slate-300')} p-4 py-8 overflow-y-auto font-sans`}>
       <div className="fixed bottom-4 right-4 flex gap-2 opacity-20 hover:opacity-100 transition-opacity z-50">
         <button onClick={() => jumpTo(20001)} className="bg-black/50 text-[10px] text-white px-2 py-1 rounded border border-white/20 uppercase font-black">20K</button>
         <button onClick={() => jumpTo(25001)} className="bg-black/50 text-[10px] text-white px-2 py-1 rounded border border-white/20 uppercase font-black">25K</button>
@@ -346,6 +936,8 @@ export default function DinoGame() {
           </div>
         </div>
       </div>
+      <NumberBaseballGame />
+      <MinesweeperGame />
     </div>
   );
 }

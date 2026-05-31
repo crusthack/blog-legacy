@@ -1,0 +1,489 @@
+---
+title: '1. C# 프로젝트 기본 세팅'
+date: '2026-06-01'
+description: ''
+titleSlide: true
+---
+
+# C# 프로젝트 설정 개요
+- 기본적인 C# 프로젝트의 환경을 구성해 프로젝트를 관리하는 법을 정리합니다. 
+
+# 프로젝트 생성 및 세팅 
+- `dotnet new console` 명령어를 통해 C# 콘솔 프로젝트를 생성합니다.
+- 이번 포스트에서의 실습을 위해 패키지 설치와 Main함수를 작성합니다.
+
+## dotnet Package 설치
+- `dotnet add package Microsoft.Extensions.Configuration`
+- `dotnet add package Microsoft.Extensions.Hosting`
+
+
+## 실습을 위한 Main함수 
+```c#
+using System.Text;
+using Microsoft.Extensions.Configuration;
+
+namespace CSharpBasics
+{
+    internal static class Program
+    {
+        static int Main(string[] args)
+        {
+            Console.InputEncoding = Encoding.UTF8;
+            Console.OutputEncoding = Encoding.UTF8;
+
+            Console.WriteLine("hello, dotnet!!");
+
+            string environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") ?? "IDontKnow ";
+            Console.WriteLine($"현재 실행 환경: {environment}");
+
+            IConfiguration config = new ConfigurationBuilder()
+                .SetBasePath(AppContext.BaseDirectory)
+                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                .AddJsonFile($"appsettings.{environment}.json", optional: true, reloadOnChange: true)
+                .AddEnvironmentVariables()
+                .AddCommandLine(args)
+                .Build();
+
+            Console.WriteLine(config["Custom:message"]);
+
+            return 0;
+        }
+    }
+
+    public static class Mod
+    {
+        public static int fn()
+        {
+            return 1;
+        }
+    }
+}
+```
+
+# 실행 프로필 설정(launchSettings)
+- 로컬 개발 환경에서 프로젝트 실행 환경을 관리하기 위해 `Properties/launchSettings.json`파일을 설정해줍니다.
+- 로컬 환경에서 프로젝트 실행시, 환경 변수 값들을 미리 정의한 프로파일을 작성할 수 있습니다. 
+
+```json:Properties\launchSettings.json
+{
+  "profiles": {
+    "dev": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      }
+    },
+    "prod": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Production"
+      }
+    }
+  }
+}
+```
+
+## 프로파일 선택하여 실행 
+- `dotnet run --launch-profile <프로파일명>`: 프로파일 명을 특정하여 실행합니다. 비울 시, 맨 위의 프로파일로 자동 선택됩니다. 
+
+## 실행 결과 
+- Main함수에서 작성한 `Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")`의 값이 프로파일에 따라  
+`Development/Production` 둘 중 하나로 바뀌어 출력됩니다. 
+
+## 환경변수 종류 
+```cmd
+COMPUTERNAME = HOST-ANONYMOUS
+MSBuildLoadMicrosoftTargetsReadOnly = true
+DOTNET_LAUNCH_PROFILE = prod
+SystemDrive = C:
+_MSBUILDTLENABLED = 1
+EFC_5228_1592913036 = 1
+PROCESSOR_IDENTIFIER = AMD64 Family 25 Model 117 Stepping 2, AuthenticAMD
+PROCESSOR_ARCHITECTURE = AMD64
+PROCESSOR_REVISION = 7502
+LANG = en_US.UTF-8
+VSCODE_GIT_IPC_HANDLE = \\.\pipe\vscode-git-anonymous-sock
+PROMPT = $P$G
+USERPROFILE = C:\Users\ANONYMOUS_USER
+DOTNET_ROOT_X64 = C:\Program Files\dotnet
+TMP = C:\Users\ANONYMOUS_USER\AppData\Local\Temp
+ALLUSERSPROFILE = C:\ProgramData
+HOMEDRIVE = C:
+windir = C:\WINDOWS
+CommonProgramFiles = C:\Program Files\Common Files
+EFC_5228_3789132940 = 1
+APPDATA = C:\Users\ANONYMOUS_USER\AppData\Roaming
+MSBUILDFAILONDRIVEENUMERATINGWILDCARD = 1
+ProgramData = C:\ProgramData
+NUMBER_OF_PROCESSORS = 16
+CommonProgramFiles(x86) = C:\Program Files (x86)\Common Files
+COLORTERM = truecolor
+VSCODE_GIT_ASKPASS_NODE = C:\Program Files\Microsoft VS Code\Code.exe
+USERDOMAIN = HOST-ANONYMOUS
+SESSIONNAME = Console
+SystemRoot = C:\WINDOWS
+USERDOMAIN_ROAMINGPROFILE = HOST-ANONYMOUS
+TERM_PROGRAM = vscode
+ComSpec = C:\WINDOWS\system32\cmd.exe
+DXSDK_DIR = C:\Program Files (x86)\Microsoft DirectX SDK (June 2010)\
+USERNAME = ANONYMOUS_USER
+ProgramW6432 = C:\Program Files
+Path = C:\Program Files\dotnet\;C:\Program Files\Git\cmd;C:\Windows\System32;... (일부 시스템 경로 생략)
+OS = Windows_NT
+VSCODE_NONCE = [REDACTED_NONCE]
+PUBLIC = C:\Users\Public
+ProgramFiles(x86) = C:\Program Files (x86)
+LOCALAPPDATA = C:\Users\ANONYMOUS_USER\AppData\Local
+TERM_PROGRAM_VERSION = 1.122.1
+DOTNET_ENVIRONMENT = Production
+FPS_BROWSER_USER_PROFILE_STRING = Default
+TEMP = C:\Users\ANONYMOUS_USER\AppData\Local\Temp
+HOMEPATH = \Users\ANONYMOUS_USER
+EFC_5228_2775293581 = 1
+CHROME_CRASHPAD_PIPE_NAME = \\.\pipe\crashpad_anonymous_pipe
+LOGONSERVER = \\HOST-ANONYMOUS
+GIT_ASKPASS = C:\Users\ANONYMOUS_USER\AppData\Roaming\Code\User\globalStorage\vscode.git\askpass\askpass.sh
+VSCODE_GIT_ASKPASS_MAIN = C:\Users\ANONYMOUS_USER\AppData\Roaming\Code\User\globalStorage\vscode.git\askpass\askpass-main.js
+CommonProgramW6432 = C:\Program Files\Common Files
+PATHEXT = .COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC
+DriverData = C:\Windows\System32\Drivers\DriverData
+ProgramFiles = C:\Program Files
+EFC_5228_4126798990 = 1
+FPS_BROWSER_APP_PROFILE_STRING = Internet Explorer
+PSModulePath = C:\Program Files\WindowsPowerShell\Modules;C:\WINDOWS\system32\WindowsPowerShell\v1.0\Modules
+OneDrive = C:\Users\ANONYMOUS_USER\OneDrive
+__COMPAT_LAYER = DetectorsAppHealth
+EFC_5228_2283032206 = 1
+PROCESSOR_LEVEL = 25
+EFC_5228_1262719628 = 1
+```
+
+# 환경변수(Environment Variable)
+- appsettings.json은 애플리케이션 설정(Configuration)을 저장하는 파일입니다. 실제 배포시에 같이 올라갑니다.
+- 실행 환경(Production/Development)에 따라 appsettings.{env}.json이 기존 appsettings.json을 오버라이딩 합니다. 
+
+## 프로젝트 파일 수정 
+- appsettings 파일은 프로젝트 빌드 파일과 같이 배포돼야 하기 때문에, 프로젝트 설정 파일을 변경하여 appsettings파일도 같이 배포되도록 합니다. 
+```console.csproj
+  <ItemGroup>
+    <None Update="appsettings*.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+```
+
+## appsettings.json
+- 일반 환경, 전체 환경에 대한 환경변수 설정입니다. 
+```appsettings.json
+{
+    "Custom": {
+        "message": "hello, appsettings!!"
+    }
+}
+```
+
+## appsettings.Production.json
+- 배포환경에 대한 환경변수 설정 파일입니다. 
+```appsettings.Production.json
+{
+    "Custom": {
+        "message": "hello, production!!"
+    }
+}
+```
+
+## main 함수 실행 결과 
+- `Console.WriteLine(config["Custom:message"]);` 실행시 일반(개발)환경에서는 `hello, appsettings!!`가,   
+배포환경에서는 `hello, production!!`이 출력됩니다. 
+
+## 실제 환경 변수 활용
+- [msdn](https://learn.microsoft.com/en-us/dotnet/core/extensions/configuration)
+- 환경 변수를 사용할 때 개발 환경에서는 launch profile을 통해, 배포 환경에서는 appsettings을 통해 기본적인 관리를 합니다. 
+- 추가적인 환경변수 관리 방법으로는, 명령줄 인수와 쉘을 통한 환경변수 주입이 있습니다. 
+
+## 명령줄 인수 
+- `dotnet run SecretKey="Secret key from command line"`와 같은 형태로 프로그램을 실행할 때 같이 넣어줍니다. 
+
+## 환경변수 주입 
+- 프로그램을 실행하기 전, 쉘에서 미리 각 값을 준비할 수 있습니다. 
+- **Windiws**: `set CUSTOM__MESSAGE="bye, appsetting"` set 명령어를 통한 환경변수 설정 
+- **linux**: `export CUSTOM__MESSAGE="bye, appsetting"` export 명령어
+
+## CI/CD 배포 환경에서의 사용 
+- 위의 환경변수 주입을 활용하여 자동 배포시에 쉘 스크립트를 미리 작성하여 (비밀값과 같이) 여러가지 설정을 통한 배포(실행)이 가능합니다. 
+
+
+
+# 유닛 테스트(xUnit)
+- 작성한 함수/프로그램이 의도와 맞게 정상 동작하는지 확인하기 위해 유닛 테스트 함수를 작성한 후 확인을 합니다. 
+- 보통 테스트할 대상 프로젝트를 참조 추가한 후 테스트 함수를 작성하여 검사합니다. 이 포스트에서는 단순한 테스트만 진행합니다. 
+
+## xUnit 프로젝트 생성
+```cmd
+- `dotnet new xunit -o Test`
+```
+- 유닛 테스트를 위한 xUnit 템플릿 프로젝트를 생성합니다. 
+
+## 테스트 코드 작성 
+```cs
+namespace Tests;
+
+public class UnitTest1
+{
+    [Fact]
+    public void Test1()
+    {
+        Assert.Equal(1, 1);
+    }
+
+    [Fact]
+    public void Test2()
+    {
+        Assert.NotEqual(1, 2);
+    }
+}
+```
+
+## 테스트 실행 
+- `dotent test`를 통해 유닛테스트 프로젝트를 실행합니다. 
+- 결과: `Test summary: total: 2, failed: 0, succeeded: 2, skipped: 0, duration: 4.6s`
+
+
+# 벤치마킹(Benchmark)
+- 프로그램 성능(속도, 메모리 사용량)을 확인하고 개선하기 위해 벤치마킹을 수행합니다.
+- 벤치마킹 또한 실제 프로젝트 참조 없이 간단한 알고리즘 성능 검사만 수행합니다.
+
+## 벤치마킹 프로젝트 생성 
+- `dotnet new console -n Benchmark`
+- `cd Benchmark`
+- `dotnet add package BenchmarkDotNet`
+- `dotnet run -c Release`
+
+## Main함수 예제
+```cs
+using BenchmarkDotNet.Attributes;
+using BenchmarkDotNet.Diagnosers;
+using BenchmarkDotNet.Running;
+using System.Text;
+
+
+internal static class Program
+{
+    public static void Main(string[] args)
+    {
+        // BenchmarkRunner.Run<StringBench>();
+        // BenchmarkRunner.Run<DataStructor>();
+        // BenchmarkRunner.Run<BoxingBench>();
+        BenchmarkRunner.Run<SearchProblemBench>();
+    }
+}
+
+[MemoryDiagnoser]
+public class StringBench
+{
+    [Benchmark]
+    public string Concat()
+    {
+        string s = "";
+
+        for (int i = 0; i < 1000; i++)
+            s += i;
+
+        return s;
+    }
+
+    [Benchmark]
+    public string Builder()
+    {
+        var sb = new StringBuilder();
+
+        for (int i = 0; i < 1000; i++)
+            sb.Append(i);
+
+        return sb.ToString();
+    }
+}
+
+[MemoryDiagnoser]
+public class DataStructor
+{
+    private List<int> _list = null!;
+    private HashSet<int> _hashSet = null!;
+
+    [GlobalSetup]
+    public void Setup()
+    {
+        _list = Enumerable.Range(0, 100000).ToList();
+        _hashSet = Enumerable.Range(0, 100000).ToHashSet();
+    }
+
+    [Benchmark]
+    public bool ListContains()
+    {
+        return _list.Contains(99999);
+    }
+
+    [Benchmark]
+    public bool HashSetContains()
+    {
+        return _hashSet.Contains(99999);
+    }
+}
+
+[MemoryDiagnoser]
+public class Search
+{
+    private int[] _data = null!;
+
+    [GlobalSetup]
+    public void Setup()
+    {
+        _data = Enumerable.Range(0, 100000).ToArray();
+    }
+
+    [Benchmark]
+    public int LinearSearch()
+    {
+        for (int i = 0; i < _data.Length; i++)
+            if (_data[i] == 99999)
+                return i;
+
+        return -1;
+    }
+
+    [Benchmark]
+    public int BinarySearch()
+    {
+        return Array.BinarySearch(_data, 99999);
+    }
+}
+
+[MemoryDiagnoser]
+public class BoxingBench
+{
+    [Params(100, 1000, 10000, 100000)]
+    public int Size;
+
+    [Benchmark]
+    public object[] Boxing()
+    {
+        object[] arr = new object[Size];
+
+        for (int i = 0; i < Size; i++)
+            arr[i] = i;
+
+        return arr;
+    }
+    [Benchmark]
+    public int[] NoBoxing()
+    {
+        int[] arr = new int[Size];
+
+        for (int i = 0; i < Size; i++)
+            arr[i] = i;
+
+        return arr;
+    }
+}
+
+
+[MemoryDiagnoser]
+[ShortRunJob]
+public class SearchProblemBench
+{
+    [Params(100, 10_000, 100_000)]
+    public int Size;
+
+    private int[] _numbers = null!;
+    private int[] _queries = null!;
+    private HashSet<int> _hashSet = null!;
+
+    [GlobalSetup]
+    public void Setup()
+    {
+        _numbers = Enumerable.Range(0, Size).ToArray();
+
+        _queries = new int[]
+        {
+            0,
+            Size / 2,
+            Size - 1,
+            -1,
+            Size + 1
+        };
+
+        _hashSet = _numbers.ToHashSet();
+    }
+
+    [Benchmark]
+    public int LinearSearch()
+    {
+        int found = 0;
+
+        foreach (int query in _queries)
+        {
+            for (int i = 0; i < _numbers.Length; i++)
+            {
+                if (_numbers[i] == query)
+                {
+                    found++;
+                    break;
+                }
+            }
+        }
+
+        return found;
+    }
+
+    [Benchmark]
+    public int BinarySearch()
+    {
+        int found = 0;
+
+        foreach (int query in _queries)
+        {
+            if (Array.BinarySearch(_numbers, query) >= 0)
+                found++;
+        }
+
+        return found;
+    }
+
+    [Benchmark]
+    public int HashSetSearch()
+    {
+        int found = 0;
+
+        foreach (int query in _queries)
+        {
+            if (_hashSet.Contains(query))
+                found++;
+        }
+
+        return found;
+    }
+}
+```
+
+## 실행 결과 
+```cmd
+:: string concat vs string builder
+| Method  | Mean       | Error      | StdDev     | Gen0     | Gen1   | Allocated  |
+|-------- |-----------:|-----------:|-----------:|---------:|-------:|-----------:|
+| Concat  | 106.345 us | 248.775 us | 13.6362 us | 339.5996 | 4.6387 | 2773.88 KB |
+| Builder |   3.046 us |   2.752 us |  0.1508 us |   1.7586 | 0.0572 |   14.37 KB |
+:: LinearSearch vs BinarySearch vs HashSet
+| Method        | Size   | Mean          | Error         | StdDev       | Allocated |
+|-------------- |------- |--------------:|--------------:|-------------:|----------:|
+| LinearSearch  | 100    |     117.81 ns |     19.856 ns |     1.088 ns |         - |
+| BinarySearch  | 100    |      38.29 ns |      3.294 ns |     0.181 ns |         - |
+| HashSetSearch | 100    |      10.52 ns |      6.997 ns |     0.384 ns |         - |
+| LinearSearch  | 10000  |  14,962.40 ns |  1,540.753 ns |    84.454 ns |         - |
+| BinarySearch  | 10000  |      70.37 ns |      5.570 ns |     0.305 ns |         - |
+| HashSetSearch | 10000  |      10.12 ns |      1.073 ns |     0.059 ns |         - |
+| LinearSearch  | 100000 | 149,978.26 ns | 22,126.076 ns | 1,212.805 ns |         - |
+| BinarySearch  | 100000 |      79.13 ns |      4.313 ns |     0.236 ns |         - |
+| HashSetSearch | 100000 |      11.15 ns |      6.267 ns |     0.343 ns |         - |
+```

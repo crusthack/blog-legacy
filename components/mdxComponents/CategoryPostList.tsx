@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { getPostsByCategory } from '@/lib/posts';
 import { getCategoryLabel, getPostHref } from '@/lib/postPaths';
 
-interface CategoryPostLinksProps {
+interface CategoryPostListProps {
   category: string;
   currentSlug?: string;
   excludeIndex?: boolean;
@@ -11,14 +11,14 @@ interface CategoryPostLinksProps {
   limit?: number;
 }
 
-export default function CategoryPostLinks({
+export default function CategoryPostList({
   category,
   currentSlug,
   excludeIndex = true,
   showDescription = true,
   title = '카테고리 글 목록',
   limit,
-}: CategoryPostLinksProps) {
+}: CategoryPostListProps) {
   const posts = getPostsByCategory(category)
     .filter((post) => !excludeIndex || post.slug !== 'index')
     .filter((post) => post.slug !== currentSlug)
@@ -36,8 +36,8 @@ export default function CategoryPostLinks({
     <section className="my-8 overflow-hidden rounded-md border border-gray-200 bg-[#f6f8fa]">
       <div className="flex items-baseline justify-between gap-4 border-b border-gray-200 bg-white px-3">
         <h2 className="m-0 text-lg font-bold text-gray-800 leading-none">{title}</h2>
-        <span className="shrink-0 rounded-full bg-gray-100 px-2.5 py-1 text-[15px] font-mono font-bold text-gray-500">
-          category: {getCategoryLabel(category)} count: {posts.length}
+        <span className="shrink-0 rounded-full bg-gray-100 px-2.5 py-1 text-[15px] font-mono font-bold text-blue-500">
+          카테고리: {getCategoryLabel(category)} &nbsp; 포스트 개수: {posts.length}
         </span>
       </div>
 

@@ -5,7 +5,7 @@ import { evaluate } from "@mdx-js/mdx";
 import * as runtime from "react/jsx-runtime";
 import remarkGfm from "remark-gfm";
 
-import CategoryPostLinks from "@/components/CategoryPostLinks";
+import CategoryPostList from "@/components/mdxComponents/CategoryPostList";
 import CodeBlock from "@/components/CodeBlock";
 import { MdxImage } from "@/components/MdxImage";
 import CipherPlayground from "@/components/mdxComponents/CipherPlayground";
@@ -213,7 +213,7 @@ export default function MdxHistoryViewer({
       <td {...props} className="border border-slate-200 px-3 py-2 align-top" />
     ),
     CipherPlayground,
-    CategoryPostLinks,
+    CategoryPostLinks: CategoryPostList,
     FancyShowcase,
     JavaScriptPlayground,
     MdxHistoryViewer: () => (

@@ -9,7 +9,7 @@ import rehypePrettyCode from 'rehype-pretty-code';
 
 import CipherPlayground from '@/components/mdxComponents/CipherPlayground';
 import CodeBlock from '@/components/CodeBlock';
-import CategoryPostLinks from '@/components/CategoryPostLinks';
+import CategoryPostList from '@/components/mdxComponents/CategoryPostList';
 import FancyShowcase from '@/components/mdxComponents/FancyShowcase';
 import JavaScriptPlayground from '@/components/mdxComponents/JavaScriptPlayground';
 import MdxHistoryViewer from '@/components/mdxComponents/MdxHistoryViewer';
@@ -65,6 +65,7 @@ const interactiveMdxComponents = {
   // MdxHistoryViewer,
   PythonPlayground,
   SeminarInfo,
+  
 };
 
 function resolveLink(href: string): string {
@@ -106,8 +107,8 @@ export function createPostMdxComponents({
 
       return <a {...props} href={url} />;
     },
-    CategoryPostLinks: (props: any) => (
-      <CategoryPostLinks category={category} currentSlug={slug} {...props} />
+    CategoryPostList: (props: any) => (
+      <CategoryPostList category={category} currentSlug={slug} {...props} />
     ),
     ...interactiveMdxComponents,
   };
@@ -203,8 +204,8 @@ export function createSlideMdxComponents({
         {...props}
       />
     ),
-    CategoryPostLinks: (props: any) => (
-      <CategoryPostLinks category={category} currentSlug={slug} {...props} />
+    CategoryPostList: (props: any) => (
+      <CategoryPostList category={category} currentSlug={slug} {...props} />
     ),
     ...interactiveMdxComponents,
   };

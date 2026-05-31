@@ -126,18 +126,18 @@ const interactiveMdxComponents = {
 - 현재 글과 `index` 글은 기본적으로 제외한다.
 
 ```mdx title="index.mdx"
-<CategoryPostLinks />
+<CategoryPostList />
 ```
 
 ## 옵션 예시
 
 ```mdx
-<CategoryPostLinks title="Web 글 목록" showDescription={false} limit={5} />
+<CategoryPostList title="Web 글 목록" showDescription={false} limit={5} />
 ```
 
 ## 실제 렌더링 테스트
 
-<CategoryPostLinks title="현재 Web 카테고리 글 목록" limit={6} />
+<CategoryPostList title="현재 Web 카테고리 글 목록" limit={6} />
 
 # 6. React 컴포넌트 삽입
 - MDX 문서 안에서 등록된 React 컴포넌트를 JSX처럼 사용할 수 있다.
@@ -310,7 +310,7 @@ background:
 # 체크리스트
 - 이 문서가 일반 포스트에서 정상 렌더링된다.
 - `/Web/blog-feature-summary/slide`에서 제목 슬라이드 없이 본문부터 시작한다.
-- `CategoryPostLinks`가 현재 Web 카테고리 글 목록을 보여준다.
+- `CategoryPostList`가 현재 Web 카테고리 글 목록을 보여준다.
 - `FancyShowcase` 탭과 슬라이더가 동작한다.
 - `CipherPlayground`에서 카이사르/비즈네르 결과가 바뀐다.
 - 코드블럭 파일명이 표시된다.
