@@ -20,7 +20,7 @@ export default function BlogPost({
   });
 
   return (
-    <article className="w-full bg-gray-100 p-4 rounded-md min-h-screen relative">
+    <article className="post-view w-full bg-gray-100 p-4 rounded-md min-h-screen relative">
       {showSlideButton && (
         <div className="absolute top-4 right-4 z-10">
           <Link
@@ -52,14 +52,14 @@ export default function BlogPost({
         <h1 className="text-3xl font-bold mb-2">{post.title}</h1>
         <time className="text-gray-500">{post.date}</time>
 
-        <p className="mt-3 text-lg text-gray-600 leading-relaxed max-w-prose">
+        <p className="post-view-muted mt-3 text-lg text-gray-600 leading-relaxed max-w-prose">
           {post.description}
         </p>
       </header>
 
       <div className="bg-gray-100">
-        <div className="!bg-gray-100 p-6 rounded-md">
-          <div className="markdown-body !bg-gray-100">
+        <div className="post-view-markdown !bg-gray-100 p-6 rounded-md">
+          <div className="content-markdown markdown-body !bg-gray-100">
             <MDXRemote
               source={post.content}
               components={mdxComponents}

@@ -14,7 +14,7 @@ export const Menu: MenuItem[] = [
     label: "문서",
   },
   {
-    categories: ["UnrealEngine", "Unity", "Windows", "DirectX"],
+    categories: ["UnrealEngine", "Unity", "Windows", "DirectX", ".Net"],
     label: "기술",
   },
   {

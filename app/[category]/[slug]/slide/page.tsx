@@ -67,17 +67,17 @@ export default async function SlidePage({ params }: { params: Promise<{ category
         renderedContent: (
             <div className="flex flex-col items-center justify-center text-center space-y-8 py-20 relative min-h-[60vh]">
                 <div className="space-y-4">
-                    <h1 className="text-6xl md:text-7xl lg:text-8xl font-black text-gray-900 leading-tight tracking-tighter">
+                    <h1 className="slide-title-heading text-6xl md:text-7xl lg:text-8xl font-black leading-tight tracking-tighter">
                         {postData.title}
                     </h1>
                 </div>
                 {postData.description && (
-                    <p className="text-2xl md:text-3xl text-gray-600 max-w-4xl mx-auto leading-relaxed whitespace-pre-line font-medium">
+                    <p className="slide-title-text text-2xl md:text-3xl max-w-4xl mx-auto leading-relaxed whitespace-pre-line font-medium">
                         {postData.description}
                     </p>
                 )}
                 {postData.date && (
-                    <div className="pt-12 text-gray-400 font-bold text-lg tracking-widest">
+                    <div className="slide-title-meta pt-12 font-bold text-lg tracking-widest">
                         {postData.date}
                     </div>
                 )}

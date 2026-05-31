@@ -403,7 +403,8 @@ export default function SlideContent({ slides, category, slug, title, background
   return (
     <>
       <div
-        className={`fixed inset-0 bg-white z-50 flex flex-col overflow-hidden text-gray-900 print:hidden ${isFullscreen && !isChromeVisible ? 'cursor-none' : ''}`}
+        data-view="slide"
+        className={`slide-view fixed inset-0 z-50 flex flex-col overflow-hidden print:hidden ${isFullscreen && !isChromeVisible ? 'cursor-none' : ''}`}
         style={backgroundStyle}
         onMouseMove={revealFullscreenChrome}
       >
@@ -677,7 +678,7 @@ export default function SlideContent({ slides, category, slug, title, background
         <div ref={slideViewportRef} className="relative flex-1 min-h-0 overflow-hidden">
           <div
             ref={slideContentRef}
-            className="absolute left-1/2 top-1/2 w-[90vw] markdown-body !bg-transparent p-0"
+            className="slide-content content-markdown absolute left-1/2 top-1/2 w-[90vw] markdown-body !bg-transparent p-0"
             style={{
               transform: `translate(-50%, -50%) scale(${slideScale})`,
               transformOrigin: 'center center',
@@ -712,7 +713,7 @@ export default function SlideContent({ slides, category, slug, title, background
       </div>
 
       {/* 프린트용 전체 슬라이드 뷰 */}
-      <div className="absolute top-0 left-0 w-full bg-white z-[9999] opacity-0 pointer-events-none h-0 overflow-hidden print:h-auto print:opacity-100 print:pointer-events-auto print:relative print:block">
+      <div data-view="slide" className="slide-view absolute top-0 left-0 w-full z-[9999] opacity-0 pointer-events-none h-0 overflow-hidden print:h-auto print:opacity-100 print:pointer-events-auto print:relative print:block">
         {slides.map((slide, idx, filteredArray) => (
           <div
             key={idx}
@@ -722,7 +723,7 @@ export default function SlideContent({ slides, category, slug, title, background
               breakAfter: idx === filteredArray.length - 1 ? 'auto' : 'page',
             }}
           >
-            <div className="markdown-body !bg-transparent w-full">
+            <div className="slide-content content-markdown markdown-body !bg-transparent w-full">
               <div className="text-lg md:text-xl lg:text-2xl leading-relaxed w-full">
                 {slide.renderedContent}
               </div>

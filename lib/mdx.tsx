@@ -12,6 +12,7 @@ import CodeBlock from '@/components/CodeBlock';
 import CategoryPostLinks from '@/components/CategoryPostLinks';
 import FancyShowcase from '@/components/mdxComponents/FancyShowcase';
 import JavaScriptPlayground from '@/components/mdxComponents/JavaScriptPlayground';
+import MdxHistoryViewer from '@/components/mdxComponents/MdxHistoryViewer';
 import PythonPlayground from '@/components/mdxComponents/PythonPlayground';
 import SeminarInfo from '@/components/mdxComponents/SeminarInfo';
 import { MdxImage } from '@/components/MdxImage';
@@ -61,8 +62,9 @@ const interactiveMdxComponents = {
   CipherPlayground,
   FancyShowcase,
   JavaScriptPlayground,
+  // MdxHistoryViewer,
   PythonPlayground,
-  SeminarInfo
+  SeminarInfo,
 };
 
 function resolveLink(href: string): string {
@@ -123,7 +125,7 @@ export function createSlideMdxComponents({
   return {
     h1: (props: ComponentProps<'h1'>) => (
       <h1
-        className="!text-7xl md:text-9xl text-[#204090] mb-8 tracking-tighter border-b-4 border-blue-500 pb-4 inline-block"
+        className="!text-7xl md:text-9xl mb-8 tracking-tighter border-b-4 pb-4 inline-block"
         {...props}
       />
     ),
