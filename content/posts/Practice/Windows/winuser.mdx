@@ -1,0 +1,221 @@
+---
+title: 'winuser'
+date: '2026-06-01'
+description: 'winuser.h 정리'
+titleSlide: true
+---
+
+# winuser.h 개요
+- Win32 API의 기본적인 함수 모음 헤더 
+- 윈도우 생성부터 메시지 처리같은 필수 함수들 콜렉션
+- [winuser MSDN](https://learn.microsoft.com/en-us/windows/win32/api/winuser/)
+
+# 1. 윈도우 생성 / 제거
+
+- `RegisterClass`
+- `RegisterClassEx`
+- `UnregisterClass`
+- `CreateWindow`
+- `CreateWindowEx`
+- `CreateMDIWindow`
+- `DestroyWindow`
+- `CloseWindow`
+- `EndTask`
+
+# 2. 윈도우 표시 / 활성화 / 포커스
+
+- `ShowWindow`
+- `ShowWindowAsync`
+- `AnimateWindow`
+- `OpenIcon`
+- `BringWindowToTop`
+- `SetForegroundWindow`
+- `GetForegroundWindow`
+- `AllowSetForegroundWindow`
+- `LockSetForegroundWindow`
+- `SwitchToThisWindow`
+
+# 3. 윈도우 위치 / 크기 / Z-Order
+
+- `MoveWindow`
+- `SetWindowPos`
+- `GetWindowRect`
+- `GetClientRect`
+- `AdjustWindowRect`
+- `AdjustWindowRectEx`
+- `GetWindowPlacement`
+- `SetWindowPlacement`
+- `BeginDeferWindowPos`
+- `DeferWindowPos`
+- `EndDeferWindowPos`
+- `CascadeWindows`
+- `TileWindows`
+- `ArrangeIconicWindows`
+
+# 4. 메시지 루프 / 메시지 처리
+
+- `GetMessage`
+- `PeekMessage`
+- `TranslateMessage`
+- `DispatchMessage`
+- `PostMessage`
+- `PostThreadMessage`
+- `PostQuitMessage`
+- `SendMessage`
+- `SendMessageTimeout`
+- `SendNotifyMessage`
+- `ReplyMessage`
+- `WaitMessage`
+- `GetQueueStatus`
+- `GetInputState`
+
+# 5. 기본 윈도우 프로시저 / 콜백
+
+- `WinMain`
+- `WNDPROC`
+- `DefWindowProc`
+- `CallWindowProc`
+- `DefFrameProc`
+- `DefMDIChildProc`
+- `HOOKPROC`
+- `TIMERPROC`
+- `SENDASYNCPROC`
+
+# 6. 윈도우 검색 / 열거
+
+- `FindWindow`
+- `FindWindowEx`
+- `EnumWindows`
+- `EnumChildWindows`
+- `EnumThreadWindows`
+- `WindowFromPoint`
+- `WindowFromPhysicalPoint`
+- `ChildWindowFromPoint`
+- `ChildWindowFromPointEx`
+- `RealChildWindowFromPoint`
+
+# 7. 윈도우 관계 / 계층 구조
+
+- `GetParent`
+- `SetParent`
+- `GetAncestor`
+- `GetWindow`
+- `GetTopWindow`
+- `GetNextWindow`
+- `IsChild`
+- `GetDesktopWindow`
+- `GetShellWindow`
+
+# 8. 윈도우 상태 확인
+
+- `IsWindow`
+- `IsWindowVisible`
+- `IsWindowUnicode`
+- `IsIconic`
+- `IsZoomed`
+- `IsHungAppWindow`
+- `IsWindowArranged`
+- `AnyPopup`
+
+# 9. 윈도우 정보 조회 / 변경
+
+- `GetWindowLong`
+- `GetWindowLongPtr`
+- `SetWindowLong`
+- `SetWindowLongPtr`
+- `GetWindowInfo`
+- `GetWindowText`
+- `SetWindowText`
+- `GetWindowTextLength`
+- `GetWindowThreadProcessId`
+- `GetWindowModuleFileName`
+
+# 10. 윈도우 클래스 정보
+
+- `GetClassInfo`
+- `GetClassInfoEx`
+- `GetClassLong`
+- `GetClassLongPtr`
+- `SetClassLong`
+- `SetClassLongPtr`
+- `GetClassName`
+- `RealGetWindowClass`
+- `GetClassWord`
+- `SetClassWord`
+
+# 11. 훅 / 메시지 필터
+
+- `SetWindowsHookEx`
+- `UnhookWindowsHookEx`
+- `CallNextHookEx`
+- `CallMsgFilter`
+- `ChangeWindowMessageFilter`
+- `ChangeWindowMessageFilterEx`
+- `RegisterWindowMessage`
+- `RegisterShellHookWindow`
+- `DeregisterShellHookWindow`
+
+# 12. 타이머
+
+- `SetTimer`
+- `SetCoalescableTimer`
+- `KillTimer`
+
+# 13. 윈도우 속성 / 사용자 데이터
+
+- `SetProp`
+- `GetProp`
+- `RemoveProp`
+- `EnumProps`
+- `EnumPropsEx`
+
+# 14. 좌표 / LPARAM 유틸리티
+
+- `GET_X_LPARAM`
+- `GET_Y_LPARAM`
+- `MAKELPARAM`
+- `MAKEWPARAM`
+- `MAKELRESULT`
+- `LogicalToPhysicalPoint`
+- `PhysicalToLogicalPoint`
+
+# 15. 시스템 설정 / 색상 / DPI
+
+- `GetSystemMetrics`
+- `SystemParametersInfo`
+- `GetSysColor`
+- `SetSysColors`
+- `IsProcessDPIAware`
+- `SetProcessDPIAware`
+- `GetProcessDefaultLayout`
+- `SetProcessDefaultLayout`
+
+# 16. Layered Window / 투명도 / 보안 표시
+
+- `SetLayeredWindowAttributes`
+- `GetLayeredWindowAttributes`
+- `UpdateLayeredWindow`
+- `SetWindowDisplayAffinity`
+- `GetWindowDisplayAffinity`
+
+# 17. MDI 관련
+
+- `CreateMDIWindow`
+- `DefFrameProc`
+- `DefMDIChildProc`
+- `TranslateMDISysAccel`
+
+# 18. 주요 구조체
+
+- `WNDCLASS`
+- `WNDCLASSEX`
+- `MSG`
+- `CREATESTRUCT`
+- `WINDOWINFO`
+- `WINDOWPLACEMENT`
+- `WINDOWPOS`
+- `MINMAXINFO`
+- `NCCALCSIZE_PARAMS`
+- `TITLEBARINFO`
+- `GUITHREADINFO`
+- `STYLESTRUCT`

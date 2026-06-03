@@ -31,5 +31,13 @@
       "",
       "$0"
     ]
+  },
+
+  "CategoryPostList": {
+    "scope": "mdx",
+    "prefix": ["<CategoryPostList/>", "CategoryPostList"],
+    "body": [
+      "<CategoryPostList/>"
+    ]
   }
 }

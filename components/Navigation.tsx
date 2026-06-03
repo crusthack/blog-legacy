@@ -21,7 +21,7 @@ export default function Navi({ posts }: NaviProps) {
     setOpenMenu(prev => ({ ...prev, [key]: false }));
 
   return (
-    <nav className="relative w-full h-16 bg-transparent grid grid-cols-[1fr_1000px_1fr]">
+    <nav className="site-nav relative w-full h-16 bg-transparent grid grid-cols-[1fr_1000px_1fr]">
       <div />
 
       {/* 가운데 네비 */}
@@ -51,7 +51,7 @@ export default function Navi({ posts }: NaviProps) {
         <div className="flex items-center justify-end gap-.5 px-6">
           <Link
             href="/about"
-            className="px-3 py-2 hover:bg-gray-200 rounded transition whitespace-nowrap"
+            className="site-nav-link px-3 py-2 hover:bg-gray-200 rounded transition whitespace-nowrap"
           >
             개발자 소개
           </Link>
@@ -68,13 +68,13 @@ export default function Navi({ posts }: NaviProps) {
               >
                 <Link
                   href={getCategoryHref(item.categories[0])}
-                  className="block px-2 py-2 hover:bg-gray-200 rounded transition whitespace-nowrap"
+                  className="site-nav-link block px-2 py-2 hover:bg-gray-200 rounded transition whitespace-nowrap"
                 >
                   {item.label}
                 </Link>
 
                 {openMenu[item.label] && (
-                  <div className="absolute left-0 min-w-[12rem] bg-white shadow-lg rounded-md border p-2 z-50">
+                  <div className="site-nav-dropdown absolute left-0 min-w-[12rem] bg-white shadow-lg rounded-md border p-2 z-50">
                     {
                       isSpecial ?
                         item.categories.map(ct => {
@@ -82,7 +82,7 @@ export default function Navi({ posts }: NaviProps) {
                             <Link
                               key={ct}
                               href={getCategoryHref(ct)}
-                              className="block px-3 py-2 hover:bg-gray-100 rounded whitespace-nowrap"
+                              className="site-nav-dropdown-link block px-3 py-2 hover:bg-gray-100 rounded whitespace-nowrap"
                             >
                               {getCategoryLabel(ct)}
                             </Link>
@@ -100,7 +100,7 @@ export default function Navi({ posts }: NaviProps) {
                             <Link
                               key={post.slug}
                               href={getPostHref(post.category, post.slug)}
-                              className="block px-3 py-2 hover:bg-gray-100 rounded whitespace-nowrap"
+                              className="site-nav-dropdown-link block px-3 py-2 hover:bg-gray-100 rounded whitespace-nowrap"
                             >
                               {post.title}
                             </Link>

@@ -9,7 +9,8 @@ export default function LeftSidebar() {
   const recentPosts = allPosts.filter(post=> (post.category !== "Common") && (post.category !== "Temp")).slice(0, 4);
   const categories: string[] = Array.from(
     new Set(allPosts.map((post) => post.category).filter((cat): cat is string => Boolean(cat)))
-  ).filter(ct => !excludeCategories.some(item => item===ct)) .sort();
+  ).filter(ct => !excludeCategories.some(item => item===ct)).sort((a, b) => getCategoryLabel(a).localeCompare(getCategoryLabel(b)));
+  
   const counts = allPosts.reduce<Record<string, number>>((acc, p) => {
     const cat = p.category ?? "";
     acc[cat] = (acc[cat] ?? 0) + 1;

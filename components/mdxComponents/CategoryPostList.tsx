@@ -22,7 +22,8 @@ export default function CategoryPostList({
   const posts = getPostsByCategory(category)
     .filter((post) => !excludeIndex || post.slug !== 'index')
     .filter((post) => post.slug !== currentSlug)
-    .slice(0, limit ?? undefined);
+    .slice(0, limit ?? undefined)
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   if (posts.length === 0) {
     return (
@@ -31,7 +32,6 @@ export default function CategoryPostList({
       </section>
     );
   }
-
   return (
     <section className="my-8 overflow-hidden rounded-md border border-gray-200 bg-[#f6f8fa]">
       <div className="flex items-baseline justify-between gap-4 border-b border-gray-200 bg-white px-3">

@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import { isLocalDev } from '@/lib/config';
 import { getPostHref } from '@/lib/postPaths';
 
+type SlideTheme = 'system' | 'light' | 'dark';
+
 interface ContentElement {
   type: 'simple' | 'complex' | 'html' | 'image' | 'code' | 'math' | 'table';
   content: string;
@@ -59,6 +61,18 @@ export default function SlideContent({ slides, category, slug, title, background
   const router = useRouter();
   const slideStorageKey = `slide-progress:${category}/${slug}`;
   const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const slideThemeStorageKey = `slide-theme:${category}/${slug}`;
+  const [slideTheme, setSlideTheme] = useState<SlideTheme>('system');
+  const [isSlideThemeReady, setIsSlideThemeReady] = useState(false);
+  const effectiveSlideTheme = slideTheme === 'system' ? undefined : slideTheme;
+  const themedBackgroundStyle = slideTheme === 'system' ? backgroundStyle : undefined;
+  const themeLabel = slideTheme === 'system' ? 'Auto' : slideTheme === 'light' ? 'Light' : 'Dark';
+
+  const cycleSlideTheme = () => {
+    setSlideTheme((current) => (
+      current === 'system' ? 'dark' : current === 'dark' ? 'light' : 'system'
+    ));
+  };
 
   const getValidSlideIndex = (value: string | null) => {
     if (value === null) return null;
@@ -128,6 +142,19 @@ export default function SlideContent({ slides, category, slug, title, background
       );
     }
   }, [currentIdx, isSlideIndexReady, slideStorageKey]);
+
+  useEffect(() => {
+    const storedTheme = localStorage.getItem(slideThemeStorageKey);
+    if (storedTheme === 'system' || storedTheme === 'light' || storedTheme === 'dark') {
+      setSlideTheme(storedTheme);
+    }
+    setIsSlideThemeReady(true);
+  }, [slideThemeStorageKey]);
+
+  useEffect(() => {
+    if (!isSlideThemeReady) return;
+    localStorage.setItem(slideThemeStorageKey, slideTheme);
+  }, [isSlideThemeReady, slideTheme, slideThemeStorageKey]);
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -409,8 +436,9 @@ export default function SlideContent({ slides, category, slug, title, background
     <>
       <div
         data-view="slide"
+        data-slide-theme={effectiveSlideTheme}
         className={`slide-view fixed inset-0 z-50 flex flex-col overflow-hidden print:hidden ${isFullscreen && !isChromeVisible ? 'cursor-none' : ''}`}
-        style={backgroundStyle}
+        style={themedBackgroundStyle}
         onMouseMove={revealFullscreenChrome}
       >
 
@@ -629,6 +657,14 @@ export default function SlideContent({ slides, category, slug, title, background
             )}
             <div className="text-sm font-medium text-gray-500 mr-2">{currentIdx + 1} / {slides.length}</div>
 
+            <button
+              onClick={cycleSlideTheme}
+              className="slide-theme-toggle h-10 rounded-md border border-gray-300 bg-white px-3 text-xs font-bold text-gray-700 transition-colors hover:bg-gray-100"
+              title="Slide theme"
+            >
+              {themeLabel}
+            </button>
+
             {isDrawingMode && (
               <div className="flex items-center gap-1 mr-1">
                 {['#ef4444', '#f59e0b', '#22c55e', '#3b82f6', '#111827'].map(color => (
@@ -718,7 +754,12 @@ export default function SlideContent({ slides, category, slug, title, background
       </div>
 
       {/* 프린트용 전체 슬라이드 뷰 */}
-      <div data-view="slide" className="slide-view absolute top-0 left-0 w-full z-[9999] opacity-0 pointer-events-none h-0 overflow-hidden print:h-auto print:opacity-100 print:pointer-events-auto print:relative print:block">
+      <div
+        data-view="slide"
+        data-slide-theme={effectiveSlideTheme}
+        className="slide-view absolute top-0 left-0 w-full z-[9999] opacity-0 pointer-events-none h-0 overflow-hidden print:h-auto print:opacity-100 print:pointer-events-auto print:relative print:block"
+        style={themedBackgroundStyle}
+      >
         {slides.map((slide, idx, filteredArray) => (
           <div
             key={idx}

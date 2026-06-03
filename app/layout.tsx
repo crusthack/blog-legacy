@@ -6,6 +6,7 @@ import "./globals.css";
 import "./view-styles.css";
 import Navi from "@/components/Navigation";
 import Footer from "@/components/Footer";
+import PrintColorScheme from "@/components/PrintColorScheme";
 import { getAllPostData } from "@/lib/posts";
  
 const geistSans = Geist({
@@ -38,6 +39,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <PrintColorScheme />
         <div className="print:hidden">
           <Navi posts={postsData} />
         </div>
