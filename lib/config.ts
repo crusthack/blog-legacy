@@ -14,7 +14,7 @@ export const Menu: MenuItem[] = [
     label: "문서",
   },
   {
-    categories: ["Practice/Windows", "Practice/DirectX", "Practice/.Net", "Practice/UnrealEngine", "Practice/Unity", ],
+    categories: ["Practice/Windows", "Practice/DirectX", "Practice/.Net", ],
     label: "기술",
   },
   {
