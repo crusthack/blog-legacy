@@ -3,6 +3,12 @@
 import type { ComponentProps, DragEvent, ReactNode } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { MDXRemote, type MDXRemoteSerializeResult } from 'next-mdx-remote';
+import rehypeKatex from 'rehype-katex';
+import rehypePrettyCode from 'rehype-pretty-code';
+import rehypeSlug from 'rehype-slug';
+import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import remarkToc from 'remark-toc';
 
 import CodeBlock from '@/components/CodeBlock';
 import SlideContent from '@/components/SlideContent';
@@ -11,10 +17,30 @@ import FancyShowcase from '@/components/mdxComponents/FancyShowcase';
 import JavaScriptPlayground from '@/components/mdxComponents/JavaScriptPlayground';
 import PythonPlayground from '@/components/mdxComponents/PythonPlayground';
 import SeminarInfo from '@/components/mdxComponents/SeminarInfo';
-import type { TocItem } from '@/lib/parseToc';
+import { rehypeInjectTitle, remarkNormalizeCodeMeta } from '@/lib/codeMeta';
+import { getTocFromMarkdown, type TocItem } from '@/lib/parseToc';
+import { splitContentIntoManualSlides, splitContentIntoSlides } from '@/lib/slides';
 
 type ViewMode = 'post' | 'slide';
 type AssetMap = Record<string, string>;
+
+const MAX_SOURCE_LENGTH = 500_000;
+
+const prettyOptions = {
+  theme: 'dark-plus',
+  keepBackground: true,
+  defaultLang: {
+    block: 'tsx',
+  },
+  langAlias: {
+    js: 'javascript',
+    ts: 'typescript',
+    cs: 'csharp',
+    py: 'python',
+    sh: 'bash',
+    shell: 'bash',
+  },
+};
 
 interface PreviewMeta {
   category: string;
@@ -50,6 +76,125 @@ interface PreviewResponse {
   slides: PreviewSlide[];
   toc: TocItem[];
   meta: PreviewMeta;
+}
+
+type FrontmatterValue = string | boolean;
+
+function stripScalarQuotes(value: string) {
+  const trimmed = value.trim();
+  if (
+    (trimmed.startsWith("'") && trimmed.endsWith("'")) ||
+    (trimmed.startsWith('"') && trimmed.endsWith('"'))
+  ) {
+    return trimmed.slice(1, -1);
+  }
+
+  return trimmed;
+}
+
+function parseFrontmatter(source: string) {
+  const match = source.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/);
+  const data: Record<string, FrontmatterValue> = {};
+
+  if (!match) {
+    return { data, content: source };
+  }
+
+  for (const line of match[1].split(/\r?\n/)) {
+    const scalarMatch = line.match(/^([A-Za-z0-9_-]+):\s*(.*)$/);
+    if (!scalarMatch) continue;
+
+    const key = scalarMatch[1];
+    const value = stripScalarQuotes(scalarMatch[2]);
+    if (value === 'true') {
+      data[key] = true;
+    } else if (value === 'false') {
+      data[key] = false;
+    } else {
+      data[key] = value;
+    }
+  }
+
+  return {
+    data,
+    content: source.slice(match[0].length),
+  };
+}
+
+function getFirstHeading(content: string) {
+  return content.match(/^#\s+(.+)$/m)?.[1]?.trim();
+}
+
+async function compileMdxSource(source: string) {
+  const { serialize } = await import('next-mdx-remote/serialize');
+
+  return serialize(source, {
+    mdxOptions: {
+      remarkPlugins: [
+        remarkGfm,
+        remarkToc,
+        remarkMath,
+        remarkNormalizeCodeMeta,
+      ],
+      rehypePlugins: [
+        rehypeSlug,
+        rehypeKatex,
+        [rehypePrettyCode, prettyOptions],
+        rehypeInjectTitle,
+      ],
+    },
+    parseFrontmatter: false,
+    blockJS: false,
+    blockDangerousJS: true,
+  });
+}
+
+async function createPreview(source: string, fileName: string): Promise<PreviewResponse> {
+  if (!source.trim()) {
+    throw new Error('MD/MDX content is empty.');
+  }
+
+  if (source.length > MAX_SOURCE_LENGTH) {
+    throw new Error(`MD/MDX content is too large. Limit is ${MAX_SOURCE_LENGTH} characters.`);
+  }
+
+  const parsed = parseFrontmatter(source);
+  const content = parsed.content;
+  const frontmatter = parsed.data;
+  const slug = fileName.replace(/\.(mdx|md)$/i, '') || 'uploaded';
+  const title = String(frontmatter.title ?? getFirstHeading(content) ?? slug);
+  const description = String(frontmatter.description ?? '');
+  const date = String(frontmatter.date ?? '');
+  const manualSlides = frontmatter.manualSlides === true;
+  const titleSlide = frontmatter.titleSlide !== false;
+  const bodySlides = manualSlides
+    ? splitContentIntoManualSlides(content)
+    : splitContentIntoSlides(content);
+
+  const [post, slides] = await Promise.all([
+    compileMdxSource(content),
+    Promise.all(
+      bodySlides.map(async (slide) => ({
+        ...slide,
+        mdx: await compileMdxSource(slide.content),
+      }))
+    ),
+  ]);
+
+  return {
+    post,
+    slides,
+    toc: getTocFromMarkdown(content),
+    meta: {
+      category: 'upload',
+      slug,
+      title,
+      description,
+      date,
+      titleSlide,
+      manualSlides,
+    },
+  };
 }
 
 function joinClassNames(...classNames: Array<string | undefined>) {
@@ -224,18 +369,8 @@ export default function UploadPreview() {
       setError('');
 
       try {
-        const response = await fetch('/api/mdx-preview', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ source, fileName }),
-          signal: abortController.signal,
-        });
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data?.error ?? 'MDX compile failed.');
-        }
-
+        const data = await createPreview(source, fileName);
+        if (abortController.signal.aborted) return;
         setPreview(data);
       } catch (compileError) {
         if (abortController.signal.aborted) return;
