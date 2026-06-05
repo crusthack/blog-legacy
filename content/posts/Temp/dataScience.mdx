@@ -224,3 +224,651 @@ B 3번 사용했을 때 스탯이 0 상승할 확률
 이런 것들 데이터 종류가 어떻게 되는지
 평균이나 합계를 구한다면 어떤 데이터들의 가능한지
 
+
+
+# 데이터과학입문 기말 시험 준비
+
+현재 디렉토리의 자료 기준 범위:
+
+- W9L1, W9L2: Testing Hypothesis
+- W10L1: Map Visualization
+- W11L1: Why the Mean Matters?
+- W12L1: Estimation
+- W12L2: Linear Regression
+
+---
+
+## 1. 가설검정
+
+### 핵심 흐름
+
+가설검정은 관측된 데이터가 어떤 확률 모델로 설명 가능한지 판단하는 절차다.
+
+1. 귀무가설(null hypothesis)을 명확한 확률 모델로 세운다.
+2. 대립가설(alternative hypothesis)을 세운다.
+3. 두 가설을 구분할 검정통계량(test statistic)을 정한다.
+4. 귀무가설이 참이라고 가정하고 데이터를 반복 시뮬레이션한다.
+5. 시뮬레이션된 통계량 분포와 관측 통계량을 비교한다.
+6. p-value 또는 관측값의 위치를 보고 귀무가설을 기각할지 판단한다.
+
+### 귀무가설과 대립가설
+
+- 귀무가설: 차이/편향/효과가 없고, 관측된 차이는 우연으로 설명된다는 모델
+- 대립가설: 우연만으로 설명하기 어렵고, 실제 차이/편향/효과가 있다는 주장
+- 귀무가설은 반드시 시뮬레이션 가능한 형태여야 한다.
+
+예시:
+
+- Jury selection
+  - Null: 배심원 패널은 적격 인구에서 무작위로 뽑혔다.
+  - Alternative: 특정 집단이 배제되는 편향이 있다.
+- Section score
+  - Null: 특정 section의 평균 점수는 전체 수업에서 무작위 표본을 뽑았을 때 나올 수 있다.
+  - Alternative: 해당 section 평균은 우연만으로 보기 어렵게 낮다.
+
+### p-value
+
+p-value는 귀무가설이 참일 때, 관측 통계량만큼 또는 대립가설 방향으로 더 극단적인 결과가 나올 확률이다.
+
+- p-value가 작다: 귀무가설 아래에서 관측 결과가 드물다.
+- p-value가 유의수준보다 작다: 귀무가설 기각
+- p-value가 유의수준보다 크다: 귀무가설을 기각할 근거 부족
+
+주의:
+
+- p-value는 귀무가설이 참일 확률이 아니다.
+- 귀무가설을 기각하지 못했다고 귀무가설이 참이라고 증명된 것은 아니다.
+
+### Categorical distribution과 sample_proportions
+
+카테고리별 확률이 주어진 모집단에서 표본 비율을 시뮬레이션할 때 사용한다.
+
+```python
+import numpy as np
+
+def sample_proportions(sample_size, probabilities):
+    return np.random.multinomial(sample_size, probabilities) / sample_size
+```
+
+예시:
+
+```python
+model = np.array([0.15, 0.18, 0.54, 0.12, 0.01])
+simulated = sample_proportions(1453, model)
+```
+
+### Total Variation Distance, TVD
+
+여러 카테고리로 이루어진 두 분포가 얼마나 다른지 측정한다.
+
+```python
+def tvd(p, q):
+    return sum(abs(p - q)) / 2
+```
+
+공식:
+
+```text
+TVD(P, Q) = 1/2 * sum(|P_i - Q_i|)
+```
+
+해석:
+
+- TVD가 0이면 두 분포가 같다.
+- TVD가 클수록 두 분포 차이가 크다.
+- 배심원 문제처럼 여러 인종/집단 비율을 비교할 때 적합하다.
+
+### 가설검정 Python 패턴
+
+```python
+eligible_population = np.array([0.15, 0.18, 0.54, 0.12, 0.01])
+
+def one_simulated_tvd():
+    sample_distribution = sample_proportions(1453, eligible_population)
+    return tvd(sample_distribution, eligible_population)
+
+tvds = np.array([])
+for i in np.arange(10000):
+    tvds = np.append(tvds, one_simulated_tvd())
+```
+
+관측 통계량이 시뮬레이션 분포의 꼬리에 있으면 귀무가설에 반하는 증거가 된다.
+
+---
+
+## 2. 지도 시각화
+
+### Folium 기본
+
+Folium은 Python에서 지도 시각화를 만드는 패키지다. OpenStreetMap을 기반으로 하며 marker, popup, tooltip, layer, polyline 등을 추가할 수 있다.
+
+```python
+import folium
+
+busan = [35.1797957, 129.0727983]
+m = folium.Map(location=busan, zoom_start=12, width=800, height=500)
+m
+```
+
+좌표 순서는 보통 `[위도, 경도]`다.
+
+### Tile layer와 layer control
+
+```python
+m = folium.Map(location=busan, zoom_start=12)
+folium.TileLayer("cartodbpositron").add_to(m)
+folium.TileLayer("cartodbdark_matter").add_to(m)
+folium.LayerControl().add_to(m)
+```
+
+### Marker
+
+```python
+pnu = [35.23379098528912, 129.08090997889803]
+
+folium.Marker(
+    pnu,
+    popup="PNU",
+    tooltip="Click here to see Popup",
+    icon=folium.Icon(icon="bookmark", color="red", prefix="fa")
+).add_to(m)
+```
+
+### MarkerCluster
+
+여러 지점을 한 지도에 표시할 때 겹침을 줄인다.
+
+```python
+from folium import Marker
+from folium.plugins import MarkerCluster
+
+cluster = MarkerCluster()
+
+for _, row in df.iterrows():
+    cluster.add_child(
+        Marker(
+            location=[row["Lat"], row["Long"]],
+            popup=row["Name"]
+        )
+    )
+
+cluster.add_to(m)
+```
+
+### PolyLine
+
+지하철 노선처럼 점들을 연결해 경로를 표현한다.
+
+```python
+from folium import PolyLine
+
+for line_name, group in df.groupby("LineName"):
+    latlongs = group[["Lat", "Long"]].values.tolist()
+    PolyLine(latlongs, tooltip=line_name).add_to(m)
+```
+
+시험 포인트:
+
+- 지도 중심 좌표와 zoom level의 의미
+- marker, popup, tooltip 차이
+- cluster는 많은 marker를 묶어 가독성을 높인다.
+- polyline은 순서가 있는 좌표들을 선으로 연결한다.
+
+---
+
+## 3. 평균, 백분위수, 표준편차
+
+### Percentile
+
+백분위수는 정렬된 데이터에서 특정 비율 위치의 값이다.
+
+- 50th percentile = median
+- 95th percentile = 전체 값 중 약 95%가 그 값 이하
+
+Nearest-rank 방식:
+
+1. 데이터를 오름차순 정렬한다.
+2. 위치를 계산한다.
+3. 정수 위치가 아니면 올림한다.
+4. 실제 데이터 원소 중 하나를 선택한다.
+
+Numpy 예시:
+
+```python
+import numpy as np
+
+s = [12, 17, 6, 9, 7]
+np.percentile(s, 85, method="inverted_cdf")
+np.percentile(s, 85, method="linear")
+```
+
+주의:
+
+- `inverted_cdf`는 nearest-rank에 가깝고 실제 데이터 값이 나온다.
+- `linear`는 보간하므로 데이터에 없는 값이 나올 수 있다.
+
+### 평균
+
+평균은 데이터의 합을 개수로 나눈 값이다.
+
+```python
+np.mean(data)
+np.average(data)
+```
+
+특징:
+
+- 데이터에 실제로 존재하는 값일 필요는 없다.
+- 최솟값과 최댓값 사이에 있다.
+- 극단값(outlier)에 민감하다.
+- 히스토그램에서 균형점 역할을 한다.
+
+### 평균과 중앙값
+
+- 대칭 분포: 평균과 중앙값이 비슷하다.
+- 오른쪽 꼬리 분포: 평균이 중앙값보다 커지는 경향이 있다.
+- 왼쪽 꼬리 분포: 평균이 중앙값보다 작아지는 경향이 있다.
+
+### 표준편차
+
+표준편차는 데이터가 평균에서 대략 얼마나 떨어져 있는지 나타낸다.
+
+개념:
+
+```text
+SD = 편차의 제곱 평균의 제곱근
+```
+
+절차:
+
+1. 평균을 구한다.
+2. 각 값에서 평균을 뺀 편차를 구한다.
+3. 편차를 제곱한다.
+4. 제곱한 값들의 평균을 구한다.
+5. 제곱근을 취한다.
+
+```python
+np.std(data)
+```
+
+주의:
+
+- 표준편차는 데이터와 같은 단위를 가진다.
+- 모든 값이 같으면 표준편차는 0이다.
+- 이상치가 있으면 표준편차가 커진다.
+
+### Chebyshev 부등식
+
+분포 모양과 관계없이 평균 주변에 데이터가 얼마나 있는지 보장한다.
+
+```text
+평균 ± z SD 범위 안의 비율 >= 1 - 1/z^2
+```
+
+예:
+
+- 평균 ± 2 SD 안에 적어도 75%
+- 평균 ± 3 SD 안에 적어도 88.89%
+
+종 모양 정규분포에서는 경험적으로:
+
+- 평균 ± 1 SD: 약 68%
+- 평균 ± 2 SD: 약 95%
+- 평균 ± 3 SD: 약 99.7%
+
+---
+
+## 4. 정규분포와 중심극한정리
+
+### 정규분포
+
+정규분포는 평균을 중심으로 대칭인 종 모양 분포다.
+
+```text
+X ~ N(mu, sigma^2)
+```
+
+- `mu`: 평균, 중심 위치
+- `sigma^2`: 분산
+- `sigma`: 표준편차, 퍼짐 정도
+
+정규분포에서는 평균과 중앙값이 같다.
+
+### 중심극한정리, CLT
+
+중심극한정리는 표본평균의 분포에 대한 정리다.
+
+핵심:
+
+- 모집단 분포가 정규분포가 아니어도,
+- 표본 크기 `n`이 충분히 크고,
+- 독립적으로 무작위 표본을 뽑으면,
+- 표본평균들의 분포는 대략 정규분포에 가까워진다.
+
+공식 감각:
+
+```text
+X_i의 평균이 mu, 분산이 sigma^2이면
+sum(X_i)는 대략 N(n*mu, n*sigma^2)
+sample mean은 대략 N(mu, sigma^2/n)
+```
+
+중요 해석:
+
+- 표본평균은 모평균을 추정하는 데 중요하다.
+- 표본 크기가 커질수록 표본평균의 변동성은 작아진다.
+- 표본평균의 표준편차는 대략 `population SD / sqrt(n)`이다.
+
+---
+
+## 5. 추정과 Bootstrap
+
+### Parameter와 Statistic
+
+- Parameter: 모집단의 고정된 값. 예: 모집단 평균, 모집단 중앙값
+- Statistic: 표본에서 계산한 값. 예: 표본 평균, 표본 중앙값
+
+현실에서는 모집단 전체를 모르는 경우가 많으므로 표본 statistic으로 parameter를 추정한다.
+
+### 추정의 변동성
+
+무작위 표본은 매번 달라질 수 있다. 따라서 표본에서 계산한 추정치도 달라진다.
+
+문제:
+
+- 모집단을 다시 샘플링할 수 없다.
+- 표본은 하나뿐이다.
+- 그래도 추정치의 불확실성을 알고 싶다.
+
+해결:
+
+- Bootstrap
+
+### Bootstrap 원리
+
+원래 표본이 충분히 크고 무작위로 뽑혔다면, 원래 표본은 모집단을 어느 정도 닮았다고 본다. 그래서 원래 표본에서 다시 복원추출을 반복한다.
+
+절차:
+
+1. original sample을 준비한다.
+2. original sample에서 같은 크기로 복원추출한다.
+3. bootstrap sample마다 statistic을 계산한다.
+4. statistic의 empirical distribution을 만든다.
+5. 분포의 가운데 구간으로 confidence interval을 만든다.
+
+핵심 조건:
+
+- 반드시 복원추출한다: `replace=True`
+- bootstrap sample 크기는 원래 표본 크기와 같게 한다.
+- 각 bootstrap sample마다 statistic을 다시 계산한다.
+
+### Bootstrap 코드 패턴
+
+```python
+def bootstrap_median(original_sample, label, replications):
+    medians = np.array([])
+
+    for i in np.arange(replications):
+        bootstrap_sample = original_sample.sample(
+            n=len(original_sample),
+            replace=True
+        )
+        bootstrap_median = np.percentile(
+            bootstrap_sample[label],
+            50,
+            method="inverted_cdf"
+        )
+        medians = np.append(medians, bootstrap_median)
+
+    return medians
+```
+
+### Confidence Interval
+
+Bootstrap 통계량 분포의 가운데 95%를 95% confidence interval로 사용한다.
+
+```python
+left = np.percentile(bootstrap_stats, 2.5, method="inverted_cdf")
+right = np.percentile(bootstrap_stats, 97.5, method="inverted_cdf")
+```
+
+해석:
+
+- 95% CI는 "모수가 95% 확률로 이 구간 안에 있다"는 뜻이 아니다.
+- 같은 절차를 아주 많이 반복하면, 만들어진 구간들 중 약 95%가 진짜 parameter를 포함한다는 의미다.
+
+### CI를 이용한 검정
+
+양측 검정에서:
+
+- 귀무가설: population average = x
+- 대립가설: population average != x
+- 95% CI 안에 x가 없으면 5% 유의수준에서 귀무가설 기각
+- 95% CI 안에 x가 있으면 귀무가설 기각 불가
+
+---
+
+## 6. 선형회귀
+
+### 회귀분석
+
+회귀분석은 독립변수 `X`와 종속변수 `Y` 사이의 관계를 추정하는 방법이다.
+
+선형회귀는 관계를 1차식으로 가정한다.
+
+```text
+Y = wX + b
+```
+
+- `w`: 기울기, X가 1 증가할 때 Y가 얼마나 변하는지
+- `b`: 절편, X가 0일 때 예측되는 Y
+- 목표: 오차가 가장 작은 `w`, `b` 찾기
+
+### 선형회귀의 기본 가정
+
+- 선형성: X와 Y의 관계가 선형이다.
+- 독립성: 관측치 또는 독립변수 사이의 의존성이 낮다.
+- 등분산성: 잔차의 퍼짐이 특정 구간에 몰리지 않는다.
+- 정규성: 통계적 추론을 위해 잔차가 정규분포를 따른다고 가정한다.
+
+주의:
+
+- 모델 학습 자체에는 잔차 정규성이 반드시 필요한 것은 아니다.
+- p-value, 신뢰구간, 유의성 검정에는 정규성 가정이 중요하다.
+
+### scikit-learn 기본 패턴
+
+```python
+from sklearn.linear_model import LinearRegression
+
+X = [163, 179, 166, 169, 171]
+y = [54, 63, 57, 56, 58]
+
+X = [[x] for x in X]  # scikit-learn은 2차원 입력 필요
+
+model = LinearRegression()
+model.fit(X, y)
+y_pred = model.predict(X)
+
+print(model.coef_[0])
+print(model.intercept_)
+```
+
+중요:
+
+- `X`는 반드시 2차원이어야 한다.
+- 단일 변수도 `[163]`, `[179]`처럼 넣어야 한다.
+- `y`는 1차원이어도 된다.
+
+### make_regression
+
+```python
+from sklearn.datasets import make_regression
+
+X, y = make_regression(
+    n_samples=100,
+    n_features=1,
+    noise=10,
+    random_state=42
+)
+```
+
+- `n_samples`: 데이터 개수
+- `n_features`: 독립변수 개수
+- `noise`: 잡음 크기
+- `random_state`: 재현 가능한 난수 고정
+
+### ravel과 flatten
+
+- `ravel()`: 다차원 배열을 1차원 view로 변환
+- `flatten()`: 다차원 배열을 1차원 copy로 변환
+
+시각화할 때:
+
+```python
+sns.scatterplot(x=X.ravel(), y=y)
+```
+
+### 회귀 평가 지표
+
+#### MAE
+
+Mean Absolute Error.
+
+```text
+MAE = 평균(|실제값 - 예측값|)
+```
+
+```python
+from sklearn.metrics import mean_absolute_error
+mae = mean_absolute_error(y, y_pred)
+```
+
+특징:
+
+- 단위가 원래 y와 같다.
+- 오차 크기를 직관적으로 해석하기 쉽다.
+
+#### MSE
+
+Mean Squared Error.
+
+```text
+MSE = 평균((실제값 - 예측값)^2)
+```
+
+```python
+from sklearn.metrics import mean_squared_error
+mse = mean_squared_error(y, y_pred)
+```
+
+특징:
+
+- 큰 오차에 더 큰 패널티를 준다.
+- 미분 가능해서 최적화에 자주 쓰인다.
+
+#### R-square
+
+결정계수. 전체 변동 중 모델이 설명한 비율이다.
+
+```text
+R^2 = 1 - SSR / SST
+```
+
+- SST: 실제 y가 평균에서 얼마나 떨어져 있는지의 총합
+- SSR: 실제 y와 예측 y의 차이의 제곱합
+
+```python
+from sklearn.metrics import r2_score
+r2 = r2_score(y, y_pred)
+```
+
+해석:
+
+- `R^2 = 1`: 완벽한 예측
+- `R^2 = 0`: 평균으로 예측하는 것과 비슷
+- 높을수록 설명력이 크지만, 항상 좋은 모델이라는 뜻은 아니다.
+
+주의:
+
+- 이상치에 민감하다.
+- 변수가 늘면 올라가는 경향이 있다.
+- 비선형 관계에서는 해석에 주의해야 한다.
+
+---
+
+## 7. 시험 직전 체크리스트
+
+### 반드시 설명할 수 있어야 하는 것
+
+- 귀무가설과 대립가설의 차이
+- p-value의 정확한 의미
+- TVD가 왜 categorical distribution 비교에 적합한지
+- percentile 계산에서 `inverted_cdf`와 `linear`의 차이
+- 평균이 outlier에 민감한 이유
+- 표준편차 계산 절차
+- Chebyshev 부등식의 의미
+- 중심극한정리가 말하는 대상은 원자료 분포가 아니라 표본평균 분포라는 점
+- bootstrap에서 복원추출을 해야 하는 이유
+- confidence interval의 올바른 해석
+- 선형회귀에서 `X`를 2차원으로 넣어야 하는 이유
+- MAE, MSE, R-square의 차이
+
+### 자주 틀리는 포인트
+
+- p-value를 "귀무가설이 참일 확률"로 해석하면 안 된다.
+- CI를 "모수가 95% 확률로 들어 있는 구간"이라고 말하면 안 된다.
+- bootstrap에서 `replace=False`를 쓰면 원래 표본을 섞는 것에 가깝고 bootstrap이 아니다.
+- 표본평균의 분포가 정규분포에 가까워지는 것이지, 원래 데이터가 정규분포가 되는 것은 아니다.
+- 지도 좌표는 `[위도, 경도]` 순서다.
+- `LinearRegression`의 `X`는 2차원 배열이어야 한다.
+- R-square가 높다고 인과관계가 증명되는 것은 아니다.
+
+### 코드 암기 우선순위
+
+```python
+# 1. categorical sampling
+np.random.multinomial(sample_size, probabilities) / sample_size
+
+# 2. TVD
+sum(abs(p - q)) / 2
+
+# 3. percentile
+np.percentile(data, q, method="inverted_cdf")
+
+# 4. bootstrap sample
+sample.sample(n=len(sample), replace=True)
+
+# 5. confidence interval
+np.percentile(stats, 2.5)
+np.percentile(stats, 97.5)
+
+# 6. linear regression
+model = LinearRegression()
+model.fit(X, y)
+y_pred = model.predict(X)
+
+# 7. regression metrics
+mean_absolute_error(y, y_pred)
+mean_squared_error(y, y_pred)
+r2_score(y, y_pred)
+```
+
+---
+
+## 8. 1페이지 압축 요약
+
+- 가설검정: 귀무가설 아래에서 통계량을 시뮬레이션하고, 관측 통계량이 얼마나 극단적인지 본다.
+- p-value: 귀무가설이 참일 때 관측값 이상으로 극단적인 값이 나올 확률.
+- TVD: 두 categorical distribution 차이의 절대값 합을 2로 나눈 값.
+- 평균: 균형점, outlier에 민감.
+- 중앙값: 50th percentile, outlier에 평균보다 강함.
+- 표준편차: 평균으로부터의 대표적 거리.
+- Chebyshev: 평균 ± z SD 안에 최소 `1 - 1/z^2` 비율 존재.
+- CLT: 표본 크기가 크면 표본평균들의 분포는 대략 정규분포.
+- Bootstrap: 원표본에서 같은 크기로 복원추출을 반복해 statistic의 변동성을 추정.
+- CI: 반복 절차로 만든 구간들이 장기적으로 parameter를 포함하는 비율.
+- 선형회귀: `Y = wX + b` 형태로 X와 Y의 관계를 예측.
+- MAE: 절대오차 평균.
+- MSE: 제곱오차 평균, 큰 오차에 민감.
+- R-square: 모델이 y의 전체 변동을 설명하는 비율.

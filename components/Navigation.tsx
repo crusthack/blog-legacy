@@ -36,6 +36,9 @@ export default function Navi({ posts }: NaviProps) {
             />
             Main
           </Link>
+          <Link href="/upload" className="flex items-center text-l font-bold hover:opacity-70 transition whitespace-nowrap">
+            MDX
+          </Link>
           <Link href="/game" className="flex items-center text-l font-bold hover:opacity-70 transition whitespace-nowrap">
             웹게임
           </Link>

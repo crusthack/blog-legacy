@@ -1,0 +1,178 @@
+---
+title: 'Next.js 프로젝트 ESLint 설정'
+date: '2026-06-05'
+description: '현재 MDX 블로그 프로젝트에 ESLint를 추가하고, 활용 방법과 운영 기준을 정리'
+---
+
+> Next.js 프로젝트에서 ESLint를 사용하면 코드 스타일, 타입 안전성, React Hook 사용 방식, Next.js 권장 규칙을 자동으로 점검할 수 있다.  
+> 이 글은 현재 MDX 블로그 프로젝트에 ESLint를 추가하면서 적용한 설정과 앞으로의 활용 방안을 정리한 내용이다.
+
+# ESLint란?
+- ESLint는 JavaScript, TypeScript 코드의 문제를 정적 분석으로 찾아주는 도구이다.
+- 실행 전 단계에서 코드 냄새, 잠재적 버그, 사용하지 않는 변수, React Hook 의존성 문제 등을 확인할 수 있다.
+- Next.js 프로젝트에서는 `eslint-config-next`를 사용하면 React, TypeScript, Next.js에 맞는 기본 규칙을 쉽게 적용할 수 있다.
+
+# 현재 프로젝트에 추가한 이유
+- 기능을 추가할 때 타입 실수나 React Hook 의존성 누락을 빨리 확인하기 위해 사용한다.
+- 빌드는 성공하지만 유지보수 관점에서 위험한 코드를 warning으로 남겨, 이후 리팩터링 우선순위를 정할 수 있다.
+- GitHub Actions 같은 CI에서 `npm run lint`를 실행하면 배포 전에 기본 품질 검사를 자동화할 수 있다.
+- 여러 컴포넌트와 MDX 렌더러가 늘어나는 상황에서 코드 작성 기준을 한 곳에 모아두기 좋다.
+
+# 패키지 설치
+현재 프로젝트에서는 기존에 잘못된 `eslint-config-next@0.2.4`가 설치되어 있어서 Next 공식 설정을 찾지 못했다.
+
+공식 Next.js ESLint 설정으로 교체하고, 호환되는 ESLint 9 계열을 사용하도록 정리했다.
+
+```terminal
+npm install --save-dev eslint-config-next@16.2.7
+npm install --save-dev eslint@9.39.4
+```
+
+`package.json`의 lint 스크립트는 아래처럼 둔다.
+
+```json
+{
+  "scripts": {
+    "lint": "eslint"
+  }
+}
+```
+
+# 설정 파일
+현재 프로젝트의 설정 파일은 루트의 `eslint.config.mjs`이다.
+
+```js
+import { defineConfig, globalIgnores } from "eslint/config";
+import nextVitals from "eslint-config-next/core-web-vitals";
+import nextTs from "eslint-config-next/typescript";
+
+const eslintConfig = defineConfig([
+  ...nextVitals,
+  ...nextTs,
+  {
+    rules: {
+      "@typescript-eslint/no-explicit-any": "warn",
+      "@next/next/no-img-element": "warn",
+      "prefer-const": "warn",
+      "react-hooks/exhaustive-deps": "warn",
+      "react-hooks/immutability": "warn",
+      "react-hooks/refs": "warn",
+      "react-hooks/set-state-in-effect": "warn",
+    },
+  },
+  globalIgnores([
+    ".next/**",
+    "out/**",
+    "build/**",
+    "next-env.d.ts",
+  ]),
+]);
+
+export default eslintConfig;
+```
+
+## 설정 방향
+- `core-web-vitals`: Next.js 권장 규칙과 성능 관련 규칙을 적용한다.
+- `typescript`: TypeScript 프로젝트에 필요한 규칙을 적용한다.
+- `.next`, `out`, `build`, `next-env.d.ts`는 생성물이므로 검사 대상에서 제외한다.
+- 현재 프로젝트에 이미 존재하는 코드의 warning을 한 번에 error로 막지 않고, 먼저 지속적으로 실행 가능한 상태를 만든다.
+
+# 사용 방법
+프로젝트 루트에서 아래 명령을 실행한다.
+
+```terminal
+npm run lint
+```
+
+PowerShell에서 `npm` 실행 정책 문제가 발생하면 `npm.cmd`로 실행한다.
+
+```terminal
+npm.cmd run lint
+```
+
+lint 결과는 크게 두 가지로 본다.
+
+- `error`: 즉시 수정해야 하는 항목이다. CI나 배포 전 검사에서 실패로 처리하는 것이 좋다.
+- `warning`: 당장 빌드를 막지는 않지만 이후 리팩터링 대상으로 관리한다.
+
+# 현재 실행 결과
+현재 설정 기준으로 `npm run lint`는 성공한다.
+
+다만 기존 코드에서 warning이 남아 있다.
+
+- `any` 타입 사용
+- 사용하지 않는 변수
+- `prefer-const`
+- React Hook 의존성 누락
+- effect 안에서 즉시 `setState` 호출
+- render 중 ref 접근
+- 일반 `<img>` 사용
+
+이 항목들은 모두 빌드를 막지는 않지만, 장기적으로는 수정하는 것이 좋다.
+
+# 활용 방안
+## 1. 기능 추가 후 기본 검사
+새 페이지, 컴포넌트, API route를 추가한 뒤에는 아래 순서로 확인한다.
+
+```terminal
+npm run lint
+npm run build
+```
+
+- `lint`는 코드 품질과 규칙 위반을 확인한다.
+- `build`는 타입 검사와 Next.js 빌드 가능 여부를 확인한다.
+
+둘 다 통과하면 최소한 배포 가능한 상태인지 판단하기 쉽다.
+
+## 2. warning을 리팩터링 목록으로 사용
+현재 warning을 모두 한 번에 고치는 것은 비효율적일 수 있다.
+
+대신 기능 단위로 수정할 때 관련 warning도 같이 정리한다.
+
+- 게임 페이지를 수정할 때 `app/game/page.tsx`의 Hook warning 정리
+- MDX 렌더러를 수정할 때 `lib/mdx.tsx`, `components/SlideContent.tsx` warning 정리
+- 이미지 처리 로직을 수정할 때 `<img>`와 `next/image` 사용 기준 정리
+
+## 3. CI에 연결
+GitHub Actions에서 배포 전에 lint를 실행하면, 규칙 위반이 있는 코드가 배포되는 것을 줄일 수 있다.
+
+예시 흐름은 다음과 같다.
+
+```yaml
+- name: Install dependencies
+  run: npm ci
+
+- name: Lint
+  run: npm run lint
+
+- name: Build
+  run: npm run build
+```
+
+## 4. 규칙을 단계적으로 강화
+현재는 기존 코드가 많기 때문에 일부 규칙을 warning으로 둔다.
+
+warning 수가 줄어들면 아래처럼 중요한 규칙부터 error로 올릴 수 있다.
+
+```js
+{
+  rules: {
+    "@typescript-eslint/no-explicit-any": "error",
+    "react-hooks/exhaustive-deps": "error",
+  },
+}
+```
+
+단, 규칙을 error로 올리기 전에는 기존 warning을 먼저 정리해야 한다.
+
+# 운영 기준
+- 새로 작성하는 코드는 warning을 만들지 않는 것을 기본 목표로 한다.
+- 기존 warning은 기능 수정 범위에 들어왔을 때 같이 정리한다.
+- 임시 예외가 필요하면 전체 설정을 낮추기보다 해당 코드 근처에 짧은 이유를 남긴다.
+- lint 통과만으로 충분하다고 보지 않고, `npm run build`까지 함께 확인한다.
+
+# 마무리
+ESLint는 코드를 자동으로 고쳐주는 도구라기보다, 프로젝트가 커질수록 놓치기 쉬운 문제를 계속 알려주는 점검 도구에 가깝다.
+
+현재 프로젝트에서는 먼저 lint가 안정적으로 실행되는 상태를 만들고, warning을 리팩터링 목록으로 관리하는 방향이 적절하다.  
+이후 warning이 줄어들면 핵심 규칙을 error로 강화해 배포 전 품질 기준을 더 엄격하게 만들 수 있다.

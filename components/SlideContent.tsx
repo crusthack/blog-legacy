@@ -38,9 +38,11 @@ interface SlideContentProps {
     text: string;
     id: string;
   }[];
+  returnHref?: string;
+  onLeave?: () => void;
 }
 
-export default function SlideContent({ slides, category, slug, title, backgroundStyle, toc }: SlideContentProps) {
+export default function SlideContent({ slides, category, slug, title, backgroundStyle, toc, returnHref, onLeave }: SlideContentProps) {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [isSlideIndexReady, setIsSlideIndexReady] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -182,7 +184,16 @@ export default function SlideContent({ slides, category, slug, title, background
     const shouldLeave = window.confirm('슬라이드 뷰를 종료하고 포스트로 돌아갈까요?');
     if (shouldLeave) {
       clearSlideHash();
-      router.push(getPostHref(category, slug));
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+      }
+
+      if (onLeave) {
+        onLeave();
+        return;
+      }
+
+      router.push(returnHref ?? getPostHref(category, slug));
     }
   };
 
