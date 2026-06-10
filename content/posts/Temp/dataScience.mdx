@@ -224,64 +224,337 @@ B 3번 사용했을 때 스탯이 0 상승할 확률
 이런 것들 데이터 종류가 어떻게 되는지
 평균이나 합계를 구한다면 어떤 데이터들의 가능한지
 
+# 데이터과학입문 기말 시험 준비 정리
 
+현재 디렉토리 강의자료 기준 정리 범위:
 
-# 데이터과학입문 기말 시험 준비
-
-현재 디렉토리의 자료 기준 범위:
-
-- W9L1, W9L2: Testing Hypothesis
+- W9L1: Testing Hypothesis 1
+- W9L2: Testing Hypothesis 2
 - W10L1: Map Visualization
 - W11L1: Why the Mean Matters?
 - W12L1: Estimation
 - W12L2: Linear Regression
+- W13L2: Comparing Two Samples
+- W14L1: Outro, AI 시대의 데이터과학
 
 ---
 
-## 1. 가설검정
+## 0. 큰 범주별 전체 목차
 
-### 핵심 흐름
+기말 PDF 전체 내용은 주차 순서보다 다음 큰 범주로 묶어 이해하는 것이 좋다.
 
-가설검정은 관측된 데이터가 어떤 확률 모델로 설명 가능한지 판단하는 절차다.
+### 0.1 가설검정
 
-1. 귀무가설(null hypothesis)을 명확한 확률 모델로 세운다.
-2. 대립가설(alternative hypothesis)을 세운다.
-3. 두 가설을 구분할 검정통계량(test statistic)을 정한다.
-4. 귀무가설이 참이라고 가정하고 데이터를 반복 시뮬레이션한다.
-5. 시뮬레이션된 통계량 분포와 관측 통계량을 비교한다.
-6. p-value 또는 관측값의 위치를 보고 귀무가설을 기각할지 판단한다.
+해당 자료:
 
-### 귀무가설과 대립가설
+- W9L1: Testing Hypothesis 1
+- W9L2: Testing Hypothesis 2
 
-- 귀무가설: 차이/편향/효과가 없고, 관측된 차이는 우연으로 설명된다는 모델
-- 대립가설: 우연만으로 설명하기 어렵고, 실제 차이/편향/효과가 있다는 주장
-- 귀무가설은 반드시 시뮬레이션 가능한 형태여야 한다.
+핵심 질문:
 
-예시:
+```text
+관측된 데이터가 어떤 모델 또는 귀무가설 아래에서 자연스럽게 나올 수 있는가?
+```
 
-- Jury selection
-  - Null: 배심원 패널은 적격 인구에서 무작위로 뽑혔다.
-  - Alternative: 특정 집단이 배제되는 편향이 있다.
-- Section score
-  - Null: 특정 section의 평균 점수는 전체 수업에서 무작위 표본을 뽑았을 때 나올 수 있다.
-  - Alternative: 해당 section 평균은 우연만으로 보기 어렵게 낮다.
+주요 내용:
 
-### p-value
+- 모델은 데이터 생성 과정에 대한 가정이다.
+- 귀무가설은 시뮬레이션 가능한 chance model이다.
+- 대립가설은 귀무가설과 다른 설명이다.
+- 검정통계량은 귀무가설과 대립가설을 구분하도록 정한다.
+- 귀무가설 아래에서 검정통계량의 경험적 분포를 만든다.
+- 관측 통계량이 분포의 꼬리에 있으면 귀무가설과 일관되지 않는다고 본다.
+- p-value는 귀무가설 아래에서 관측값과 같거나 더 극단적인 값이 나올 확률이다.
+- p-value cutoff는 데이터를 보기 전에 정하는 오류확률 기준이다.
 
-p-value는 귀무가설이 참일 때, 관측 통계량만큼 또는 대립가설 방향으로 더 극단적인 결과가 나올 확률이다.
+대표 예제:
 
-- p-value가 작다: 귀무가설 아래에서 관측 결과가 드물다.
-- p-value가 유의수준보다 작다: 귀무가설 기각
-- p-value가 유의수준보다 크다: 귀무가설을 기각할 근거 부족
+- Swain 배심원 선정 사례
+- Mendel 완두콩 유전 모델
+- Alameda County jury panel과 TVD
+- Section 3 중간고사 평균
+- 공정한 동전과 error probability
 
-주의:
+### 0.2 지도 시각화와 공간데이터
 
-- p-value는 귀무가설이 참일 확률이 아니다.
-- 귀무가설을 기각하지 못했다고 귀무가설이 참이라고 증명된 것은 아니다.
+해당 자료:
 
-### Categorical distribution과 sample_proportions
+- W10L1: Map Visualization
 
-카테고리별 확률이 주어진 모집단에서 표본 비율을 시뮬레이션할 때 사용한다.
+핵심 질문:
+
+```text
+위도·경도와 지역 경계가 있는 데이터를 지도 위에서 어떻게 표현할 것인가?
+```
+
+주요 내용:
+
+- Folium으로 지도 객체를 만든다.
+- Marker, Popup, Tooltip으로 위치 정보를 표현한다.
+- MarkerCluster로 많은 점을 묶어 보여준다.
+- PolyLine으로 경로나 노선을 그린다.
+- GeoJSON으로 행정구역 같은 polygon 경계를 표현한다.
+- Choropleth map으로 지역별 값을 색으로 나타낸다.
+- groupby, pivot table, join으로 지도에 올릴 데이터를 정리한다.
+- 공간 인덱싱은 좌표를 cell ID로 바꾸어 근접 검색과 공간 집계를 빠르게 한다.
+- Geohash는 직사각형 격자 기반, H3는 육각형 격자 기반이다.
+
+대표 예제:
+
+- 부산 지도와 부산 지하철 노선
+- 부산 구별 choropleth
+- Bay Area bike sharing 데이터
+- 인기 자전거 대여소 지도
+- Geohash와 H3 cell 시각화
+
+### 0.3 평균 문제와 표본평균의 분포
+
+해당 자료:
+
+- W11L1: Why the Mean Matters?
+
+핵심 질문:
+
+```text
+평균은 왜 중요한가, 그리고 표본평균은 모집단 평균을 얼마나 잘 추정하는가?
+```
+
+주요 내용:
+
+- percentile은 순위 기반 요약값이다.
+- median은 50th percentile이다.
+- mean은 histogram의 balance point이며 outlier와 skewness에 민감하다.
+- standard deviation은 평균으로부터의 대표적 거리다.
+- Chebyshev 부등식은 모든 분포에서 평균 ± z SD 안의 최소 비율을 보장한다.
+- standard unit은 값이 평균에서 몇 SD 떨어져 있는지 나타낸다.
+- 정규분포에서는 평균 ± 1, 2, 3 SD가 대략 68%, 95%, 99.7%를 포함한다.
+- 중심극한정리, CLT는 큰 무작위표본의 평균 분포가 대략 정규분포가 된다는 정리다.
+- 표본평균 분포의 중심은 population mean이다.
+- 표본평균 분포의 SD는 `population SD / sqrt(sample size)`이다.
+
+대표 예제:
+
+- scores by section의 percentile
+- San Francisco salary의 mean과 median
+- NBA height/age와 standard unit
+- baby.csv와 Chebyshev
+- United flight delay와 CLT
+- sample size 100, 400, 625의 표본평균 분포 비교
+
+### 0.4 추정과 신뢰구간
+
+해당 자료:
+
+- W12L1: Estimation
+
+핵심 질문:
+
+```text
+표본 하나만 가지고 모수를 어떻게 추정하고, 그 불확실성을 어떻게 표현할 것인가?
+```
+
+주요 내용:
+
+- parameter는 모집단의 고정된 값이고, statistic은 표본에서 계산한 값이다.
+- statistic은 parameter의 추정치로 사용된다.
+- 표본이 달라지면 statistic도 달라지므로 추정치에는 variability가 있다.
+- bootstrap은 original sample에서 같은 크기로 복원추출을 반복하는 방법이다.
+- bootstrap distribution으로 추정치의 변동성을 본다.
+- confidence interval은 bootstrap statistic의 가운데 구간으로 만들 수 있다.
+- 95% confidence interval은 같은 절차를 반복했을 때 약 95%의 구간이 parameter를 포함한다는 뜻이다.
+- CI에 null value가 포함되는지로 양측 가설검정을 할 수 있다.
+
+대표 예제:
+
+- San Francisco 2019 compensation median
+- bootstrap median
+- 100개 confidence interval
+- 산모 평균 나이 추정
+- 부산대역 승하차 인원 평균 검정
+
+### 0.5 선형회귀와 예측 모델
+
+해당 자료:
+
+- W12L2: Linear Regression
+
+핵심 질문:
+
+```text
+독립변수 X와 종속변수 Y 사이의 관계를 직선으로 모델링하고 예측할 수 있는가?
+```
+
+주요 내용:
+
+- machine learning은 데이터를 통해 모델 parameter를 조정하는 과정이다.
+- regression은 입력 X로 출력 Y를 예측하는 supervised learning 문제다.
+- linear regression은 `Y = wX + b` 형태의 직선을 찾는다.
+- 좋은 모델은 관측값과 예측값의 오차가 작다.
+- scikit-learn의 `LinearRegression`에서 X는 2차원 배열이어야 한다.
+- MAE는 절대오차 평균이며 원래 단위로 해석하기 쉽다.
+- MSE는 제곱오차 평균이며 큰 오차를 강하게 벌한다.
+- R-square는 전체 변동 중 모델이 설명한 비율이다.
+- R-square가 높아도 인과관계를 뜻하지는 않는다.
+
+대표 예제:
+
+- 키와 몸무게 간단 회귀
+- `make_regression` 데이터
+- MSE로 w 조정하기
+- Iris petal width와 petal length
+- Penguins bill length와 flipper length
+
+### 0.6 두 표본 비교와 A/B Testing
+
+해당 자료:
+
+- W13L2: Comparing Two Samples
+
+핵심 질문:
+
+```text
+두 집단의 차이가 우연인지, 실제 집단 차이 또는 처치 효과인지 어떻게 판단할 것인가?
+```
+
+주요 내용:
+
+- A/B testing은 두 sample이 같은 underlying distribution에서 왔는지 검정한다.
+- numerical variable과 group label을 구분해야 한다.
+- 검정통계량으로 두 집단 평균 차이를 자주 사용한다.
+- 귀무가설 아래에서는 group label과 관측값의 연결이 의미 없다고 본다.
+- permutation test는 label을 비복원으로 섞어 귀무분포를 만든다.
+- observational study에서는 association만 조심스럽게 말할 수 있다.
+- randomized controlled experiment에서는 random assignment 덕분에 causation을 더 강하게 말할 수 있다.
+
+대표 예제:
+
+- 흡연 산모와 비흡연 산모의 아기 출생체중
+- label shuffling
+- empirical p-value
+- association vs causation
+- BTA low-back pain randomized controlled trial
+- potential outcomes 관점
+
+### 0.7 AI 시대의 데이터과학
+
+해당 자료:
+
+- W14L1: Outro
+
+핵심 질문:
+
+```text
+AI가 많은 작업을 대신하는 시대에 데이터과학을 왜 배우고 어떻게 써야 하는가?
+```
+
+주요 내용:
+
+- AI 시대에는 작업 수행 능력보다 작업 정의 능력이 중요해진다.
+- 데이터과학은 AI 답변을 검증하고 좋은 질문을 만들기 위한 기초다.
+- LLM은 다음 단어를 확률적으로 예측하는 모델이므로 그럴듯하지만 틀릴 수 있다.
+- 사실 확인, 교차검증, 최신 정보 확인, 짧은 대화 관리가 중요하다.
+- 프롬프트에는 목표, 맥락, 형식, 제약조건, 평가 기준이 들어가야 한다.
+- AI 결과는 bias, hallucination, overconfidence, accountability 문제를 가질 수 있다.
+- 데이터과학자는 문제를 정의하고, 데이터를 의심하고, 결과를 검증하고, 사람에게 설명해야 한다.
+
+대표 예제:
+
+- 같은 부산 지하철 데이터에서 다른 질문 만들기
+- 좋은 프롬프트와 나쁜 프롬프트 비교
+- 큰 작업을 단계별로 쪼개기
+- AI 답변 교차검증
+- 작은 반복 문제부터 자동화하기
+
+---
+
+## 0.8 범주 간 전체 흐름
+
+기말 범위의 큰 흐름은 다음과 같다.
+
+1. 데이터와 모델을 비교한다.
+2. 무작위성을 시뮬레이션한다.
+3. 통계량의 경험적 분포를 만든다.
+4. 관측값이 그 분포에서 자연스러운지 판단한다.
+5. 표본으로 모집단의 값을 추정한다.
+6. 추정치의 불확실성을 bootstrap과 confidence interval로 표현한다.
+7. 두 집단을 비교할 때는 label shuffling, permutation test, A/B testing을 사용한다.
+8. 지도 시각화, 회귀분석, AI 활용까지 데이터 분석 과정을 실제 문제에 연결한다.
+
+시험에서 자주 묻기 좋은 축:
+
+- 모델, 귀무가설, 대립가설의 차이
+- 검정통계량을 왜 그렇게 정하는지
+- p-value와 유의수준의 정확한 의미
+- bootstrap과 confidence interval의 정확한 해석
+- 평균, 표준편차, CLT, square root law의 연결
+- permutation test에서 label을 섞는 이유
+- 관찰연구와 randomized controlled experiment의 차이
+- 회귀분석 평가 지표와 해석
+- 지도 시각화에서 folium, GeoJSON, choropleth, spatial indexing의 역할
+
+---
+
+## 1. W9L1 - Testing Hypothesis 1
+
+### 1.1 Model
+
+모델은 데이터가 어떻게 만들어졌는지에 대한 가정들의 집합이다.
+
+데이터과학에서 많은 모델은 randomness를 포함한다.
+
+- 동전 던지기: 앞면 확률 1/2
+- 주사위 던지기: 각 눈 확률 1/6
+- 배심원 선정: 적격 인구에서 무작위로 선정
+- 멘델 유전 모델: 보라색 꽃 확률 75%, 흰색 꽃 확률 25%
+
+핵심 질문:
+
+```text
+Does the model fit the data?
+```
+
+즉, 모델이 예측하는 결과와 실제 관측 데이터가 일관적인지 확인한다.
+
+### 1.2 모델 평가 접근법
+
+1. 모델의 가정에 따라 데이터를 시뮬레이션한다.
+2. 모델이 예측하는 통계량 분포를 얻는다.
+3. 실제 관측 데이터에서 계산한 통계량과 비교한다.
+4. 관측값이 모델 예측과 일관되지 않으면 모델에 반하는 증거가 된다.
+
+중요:
+
+- 데이터는 실제로 관측된 것이다.
+- 모델은 가정이다.
+- 데이터와 모델이 충돌하면, 보통 모델을 의심한다.
+
+### 1.3 Jury Selection 예제
+
+미국 헌법은 공정한 배심원 재판을 보장한다.
+
+Robert Swain 사례:
+
+- Talladega County의 적격 배심원 중 Black 비율: 26%
+- 실제 jury panel 100명 중 Black: 8명
+- 실제 jury 12명 중 Black: 0명
+
+법원은 8/100이 26%보다 낮지만, 체계적 배제를 입증할 정도로 충분히 다르지 않다고 보았다.
+
+데이터과학 질문:
+
+```text
+정말 무작위로 100명을 뽑았다면 Black panelist가 8명 이하가 나오는 일이 현실적인가?
+```
+
+### 1.4 Discrete Probability Distribution
+
+강의에서 다룬 이산분포:
+
+- Bernoulli distribution: 어떤 사건이 발생할 확률 `p`, 발생하지 않을 확률 `1-p`
+- Binomial distribution: 같은 성공확률 `p`를 가지는 시행을 `n`번 반복
+- Multinomial distribution: binomial의 다항 확장, 여러 카테고리 중 하나가 선택됨
+
+`sample_proportions`는 categorical distribution에서 표본을 무작위 추출하고, 표본의 경험적 비율을 반환한다.
 
 ```python
 import numpy as np
@@ -290,21 +563,139 @@ def sample_proportions(sample_size, probabilities):
     return np.random.multinomial(sample_size, probabilities) / sample_size
 ```
 
-예시:
+예:
 
 ```python
-model = np.array([0.15, 0.18, 0.54, 0.12, 0.01])
-simulated = sample_proportions(1453, model)
+sample_size = 100
+eligible_population = [0.26, 0.74]  # Black, non-Black
+sample_distribution = sample_proportions(sample_size, eligible_population)
 ```
 
-### Total Variation Distance, TVD
+### 1.5 Swain 배심원 시뮬레이션
 
-여러 카테고리로 이루어진 두 분포가 얼마나 다른지 측정한다.
+검정통계량:
+
+```text
+100명 jury panel 중 Black panelist 수
+```
+
+귀무모델:
+
+- 적격 인구의 26%가 Black이다.
+- jury panel은 이 인구에서 무작위로 뽑힌다.
+
+시뮬레이션 함수:
 
 ```python
-def tvd(p, q):
-    return sum(abs(p - q)) / 2
+sample_size = 100
+eligible_population = [0.26, 0.74]
+
+def one_simulated_count():
+    return sample_size * sample_proportions(sample_size, eligible_population).item(0)
+
+counts = np.array([])
+repetitions = 10000
+
+for i in np.arange(repetitions):
+    counts = np.append(counts, one_simulated_count())
 ```
+
+해석:
+
+- 시뮬레이션된 count들의 히스토그램이 귀무모델의 예측이다.
+- 관측값 8이 히스토그램의 극단적인 왼쪽 꼬리에 있으면, 무작위 선정 모델과 일관적이지 않다.
+- 이 경우 데이터는 "Black panelist가 체계적으로 적게 뽑혔다"는 대립 관점을 지지한다.
+
+### 1.6 Mendel 유전 모델 예제
+
+멘델 모델:
+
+- 특정 완두콩 식물은 보라색 꽃일 확률 75%
+- 흰색 꽃일 확률 25%
+- 각 식물의 색은 다른 식물과 독립
+
+관측:
+
+- 전체 929개 식물
+- 보라색 꽃: 709개
+- 관측 보라색 비율: `709 / 929`
+
+검정통계량:
+
+```text
+abs(관측 보라색 비율 - 75%)
+```
+
+대립가설은 "75%보다 크다" 또는 "75%보다 작다" 한쪽이 아니라, 모델의 예측인 75%에서 멀리 떨어져 있다는 것이다. 따라서 절대거리 통계량을 사용한다.
+
+```python
+observed_purples = 709 / 929
+predicted_proportions = np.array([0.75, 0.25])
+
+def purple_flowers():
+    return sample_proportions(929, predicted_proportions).item(0) * 100
+
+distances = np.array([])
+for i in np.arange(10000):
+    simulated_percent = purple_flowers()
+    distances = np.append(distances, abs(simulated_percent - 75))
+
+observed_distance = abs(observed_purples * 100 - 75)
+```
+
+### 1.7 W9L1 핵심 결론
+
+가설검정의 기본 구조:
+
+1. 모델을 세운다.
+2. 모델과 데이터의 차이를 측정할 통계량을 고른다.
+3. 모델이 참이라고 가정하고 통계량을 반복 시뮬레이션한다.
+4. 관측 통계량을 시뮬레이션 분포와 비교한다.
+5. 관측값이 꼬리에 있으면 모델이 데이터와 일관되지 않는다고 판단한다.
+
+---
+
+## 2. W9L2 - Testing Hypothesis 2
+
+### 2.1 Alameda County Jury Panels
+
+자료:
+
+- Alameda County jury service에 보고한 사람 수: 1453명
+- 여러 ethnicity category에 대해 적격 인구 비율과 실제 panel 비율 비교
+
+예시 데이터:
+
+```python
+jury = pd.DataFrame({
+    'Ethnicity': np.array(['Asian/PI', 'Black/AA', 'Caucasian', 'Hispanic', 'Other']),
+    'Eligible': np.array([0.15, 0.18, 0.54, 0.12, 0.01]),
+    'Panels': np.array([0.26, 0.08, 0.54, 0.08, 0.04])
+})
+```
+
+해석:
+
+- Asian/PI와 Other는 panel에서 더 높게 나타난다.
+- Black/AA와 Hispanic은 panel에서 낮게 나타난다.
+- 여러 카테고리 전체의 차이를 하나의 숫자로 요약해야 한다.
+
+### 2.2 DataFrame melt
+
+wide format을 long format으로 바꾼다.
+
+```python
+jury_mdf = jury.melt(id_vars="Ethnicity")
+```
+
+사용 이유:
+
+- seaborn의 `hue`를 이용해 `Eligible`과 `Panels`를 나란히 비교하기 좋다.
+- barplot에서 여러 변수 열을 하나의 categorical column으로 바꿀 수 있다.
+
+### 2.3 Total Variation Distance, TVD
+
+여러 카테고리 분포의 차이를 측정하기 위해 TVD를 사용한다.
 
 공식:
 
@@ -312,13 +703,42 @@ def tvd(p, q):
 TVD(P, Q) = 1/2 * sum(|P_i - Q_i|)
 ```
 
+코드:
+
+```python
+def tvd(p, q):
+    return sum(abs(p - q)) / 2
+
+observed_tvd = tvd(jury["Panels"], jury["Eligible"])
+```
+
+왜 2로 나누는가:
+
+- 한 카테고리에서 줄어든 비율은 다른 카테고리에서 늘어난 비율로 나타난다.
+- 절대차를 모두 더하면 같은 이동이 두 번 계산된다.
+- 따라서 2로 나누어 실제 분포 간 이동량으로 해석한다.
+
 해석:
 
-- TVD가 0이면 두 분포가 같다.
-- TVD가 클수록 두 분포 차이가 크다.
-- 배심원 문제처럼 여러 인종/집단 비율을 비교할 때 적합하다.
+- `TVD = 0`: 두 분포가 완전히 같다.
+- 값이 클수록 분포 차이가 크다.
+- 여러 카테고리를 동시에 비교하는 검정통계량으로 적합하다.
 
-### 가설검정 Python 패턴
+### 2.4 Alameda Jury 가설검정
+
+귀무가설:
+
+```text
+jury panel은 적격 인구의 ethnicity 분포에서 무작위로 뽑혔다.
+```
+
+대립가설:
+
+```text
+jury panel은 적격 인구에서 무작위로 뽑힌 것이 아니며, ethnicity 구성이 다르다.
+```
+
+시뮬레이션:
 
 ```python
 eligible_population = np.array([0.15, 0.18, 0.54, 0.12, 0.01])
@@ -332,15 +752,192 @@ for i in np.arange(10000):
     tvds = np.append(tvds, one_simulated_tvd())
 ```
 
-관측 통계량이 시뮬레이션 분포의 꼬리에 있으면 귀무가설에 반하는 증거가 된다.
+판단:
+
+- 관측 TVD가 시뮬레이션 TVD 분포의 오른쪽 꼬리에 있으면 무작위 선정 모델과 일관적이지 않다.
+- categorical distribution 비교에는 count 하나보다 TVD가 더 적합하다.
+
+### 2.5 Hypotheses
+
+가설검정은 데이터가 생성된 방식에 대한 두 관점 중 하나를 고르는 절차다.
+
+귀무가설, null hypothesis:
+
+- 명확한 chance model이다.
+- 시뮬레이션 가능해야 한다.
+- 보통 "차이는 우연 때문이다", "무작위로 발생했다", "효과가 없다" 형태다.
+
+대립가설, alternative hypothesis:
+
+- 귀무가설과 반대되는 관점이다.
+- 관측된 차이가 우연만으로 설명되지 않는다는 주장이다.
+- 단측 또는 양측 방향을 가질 수 있다.
+
+중요:
+
+- 시뮬레이션은 귀무가설 아래에서 수행한다.
+- 대립가설은 검정통계량의 어느 방향이 증거인지 결정한다.
+
+### 2.6 Test Statistic 고르는 법
+
+검정통계량을 고를 때 물어야 할 질문:
+
+- 어떤 값이 귀무가설을 지지하는가?
+- 어떤 값이 대립가설을 지지하는가?
+- 대립가설 방향이 큰 값인가, 작은 값인가, 양쪽 끝인가?
+
+예:
+
+- Swain jury: Black panelist 수가 너무 작으면 대립가설 지지
+- Mendel: 75%에서 너무 멀면 대립가설 지지
+- Alameda jury: TVD가 너무 크면 대립가설 지지
+- Section score: section 평균이 너무 낮으면 대립가설 지지
+
+### 2.7 Section Score 예제
+
+상황:
+
+- 큰 통계 수업이 12개 discussion section으로 나뉨
+- Section 3 학생들이 중간고사 평균이 낮다고 느낀다.
+- Section 3의 평균이 정말 낮은지, 아니면 우연히 낮은 것인지 판단한다.
+
+귀무가설:
+
+```text
+Section 3은 전체 수업에서 같은 크기의 학생들을 무작위로 뽑은 것과 같다.
+```
+
+대립가설:
+
+```text
+Section 3 평균은 우연만으로 보기 어렵게 낮다.
+```
+
+검정통계량:
+
+```text
+section 평균 점수
+```
+
+대립가설 방향:
+
+- 평균이 작을수록 대립가설을 지지한다.
+
+시뮬레이션:
+
+```python
+def random_sample_midterm_avg():
+    random_sample = scores.sample(n=27, replace=False)
+    return random_sample.Midterm.mean()
+
+sample_averages = np.array([])
+repetitions = 50000
+
+for i in np.arange(repetitions):
+    sample_averages = np.append(sample_averages, random_sample_midterm_avg())
+```
+
+관측값:
+
+```python
+observed_average = 13.666667
+```
+
+p-value:
+
+```python
+p_value = np.count_nonzero(sample_averages <= observed_average) / 50000
+```
+
+### 2.8 Statistical Significance
+
+관측 통계량이 귀무가설 아래의 경험적 분포 꼬리에 있으면, 데이터는 귀무가설과 일관되지 않는다.
+
+관습:
+
+- p-value < 5%: statistically significant
+- p-value < 1%: highly statistically significant
+
+주의:
+
+- 5%와 1%는 절대 법칙이 아니라 관습적 기준이다.
+- cutoff는 데이터를 보기 전에 정해야 한다.
+
+### 2.9 P-value
+
+정의:
+
+```text
+p-value는 귀무가설이 참일 때, 관측 통계량과 같거나 대립가설 방향으로 더 극단적인 값이 나올 확률이다.
+```
+
+정확한 표현:
+
+- under the null hypothesis
+- test statistic
+- equal to the observed value
+- or even further in the direction of the alternative
+
+틀린 해석:
+
+- p-value는 귀무가설이 참일 확률이 아니다.
+- p-value는 대립가설이 참일 확률이 아니다.
+- p-value가 크다고 귀무가설이 참이라고 증명되는 것은 아니다.
+
+### 2.10 P-value와 Error Probability
+
+동전 예제:
+
+- 학생 10,000명이 각각 공정한 동전을 2000번 던진다.
+- 검정통계량: `abs(number of heads - 1000)`
+- 5% cutoff를 사용한다.
+- 모든 동전이 공정해도 약 5%의 학생은 동전이 불공정하다고 잘못 결론 내릴 수 있다.
+
+의미:
+
+- 유의수준 5%는 귀무가설이 참일 때 잘못 기각할 확률을 약 5%로 제한하는 기준이다.
+- p-value cutoff는 error probability와 연결된다.
+
+구분:
+
+- p-value cutoff: 데이터 보기 전에 정하는 기준
+- p-value: 관측 데이터와 시뮬레이션 결과로 계산되는 값
 
 ---
 
-## 2. 지도 시각화
+## 3. W10L1 - Map Visualization
 
-### Folium 기본
+### 3.1 지도 시각화의 목적
 
-Folium은 Python에서 지도 시각화를 만드는 패키지다. OpenStreetMap을 기반으로 하며 marker, popup, tooltip, layer, polyline 등을 추가할 수 있다.
+지도 시각화는 지리정보가 포함된 데이터를 공간적으로 이해하기 위한 방법이다.
+
+활용 예:
+
+- 길찾기
+- 맛집 탐색
+- 버스/지하철 위치
+- 공용 자전거 대여소
+- 지역별 가격, 인구, 수요 분포
+- 반경 검색, 근접 검색
+
+데이터과학에서 중요한 이유:
+
+- 위도와 경도가 있는 데이터를 빠르게 시각화할 수 있다.
+- 공간 패턴을 직관적으로 파악할 수 있다.
+- 지도 위에서 marker, line, polygon, color scale로 다양한 정보를 표현할 수 있다.
+
+### 3.2 Folium
+
+Folium은 Python에서 지도 시각화를 만드는 패키지다.
+
+특징:
+
+- OpenStreetMap 기반
+- marker, popup, tooltip, layer, polyline, GeoJSON, choropleth 지원
+- Jupyter/Colab에서 HTML 지도로 출력 가능
+- 국내 지도 서비스보다 품질이 떨어질 수 있지만 데이터 분석용으로 편리하다.
+
+기본 지도:
 
 ```python
 import folium
@@ -350,9 +947,27 @@ m = folium.Map(location=busan, zoom_start=12, width=800, height=500)
 m
 ```
 
-좌표 순서는 보통 `[위도, 경도]`다.
+좌표 순서:
 
-### Tile layer와 layer control
+```text
+[latitude, longitude] = [위도, 경도]
+```
+
+### 3.3 branca Figure
+
+Colab/Jupyter에서 지도와 셀 사이의 여백, 지도 크기를 조정할 때 사용한다.
+
+```python
+from branca.element import Figure
+
+fig = Figure(width=600, height=400)
+m = folium.Map(location=busan, zoom_start=12)
+fig.add_child(m)
+```
+
+### 3.4 Tile Layer
+
+지도 배경 스타일을 바꿀 수 있다.
 
 ```python
 m = folium.Map(location=busan, zoom_start=12)
@@ -361,10 +976,17 @@ folium.TileLayer("cartodbdark_matter").add_to(m)
 folium.LayerControl().add_to(m)
 ```
 
-### Marker
+중요:
+
+- 기본은 OpenStreetMap
+- 여러 tile을 추가하면 `LayerControl`로 선택 가능
+- tile은 데이터가 아니라 지도 배경이다.
+
+### 3.5 Marker, Popup, Tooltip, Icon
 
 ```python
 pnu = [35.23379098528912, 129.08090997889803]
+pnu_station = [35.22884833731382, 129.09063225747852]
 
 folium.Marker(
     pnu,
@@ -374,9 +996,16 @@ folium.Marker(
 ).add_to(m)
 ```
 
-### MarkerCluster
+구분:
 
-여러 지점을 한 지도에 표시할 때 겹침을 줄인다.
+- Marker: 지도 위 위치 표시
+- Popup: marker를 클릭했을 때 보이는 내용
+- Tooltip: hover할 때 보이는 짧은 설명
+- Icon: marker의 모양과 색
+
+### 3.6 MarkerCluster
+
+많은 지점을 한 지도에 표시하면 겹쳐 보인다. MarkerCluster는 가까운 marker들을 묶어 가독성을 높인다.
 
 ```python
 from folium import Marker
@@ -395,9 +1024,14 @@ for _, row in df.iterrows():
 cluster.add_to(m)
 ```
 
-### PolyLine
+시험 포인트:
 
-지하철 노선처럼 점들을 연결해 경로를 표현한다.
+- marker 수가 많을 때 cluster를 사용한다.
+- zoom in하면 cluster가 개별 marker로 풀린다.
+
+### 3.7 PolyLine
+
+좌표들을 순서대로 연결해 선을 그린다.
 
 ```python
 from folium import PolyLine
@@ -407,300 +1041,1391 @@ for line_name, group in df.groupby("LineName"):
     PolyLine(latlongs, tooltip=line_name).add_to(m)
 ```
 
-시험 포인트:
+사용 예:
 
-- 지도 중심 좌표와 zoom level의 의미
-- marker, popup, tooltip 차이
-- cluster는 많은 marker를 묶어 가독성을 높인다.
-- polyline은 순서가 있는 좌표들을 선으로 연결한다.
+- 지하철 노선
+- 버스 경로
+- 이동 궤적
+- GPS trajectory
+
+주의:
+
+- 좌표 순서가 의미 있다.
+- group 안의 행 순서가 잘못되어 있으면 선이 엉뚱하게 연결될 수 있다.
+
+### 3.8 GeoJSON
+
+GeoJSON은 지리공간 객체를 JSON 형식으로 저장하는 표준이다.
+
+예:
+
+- 구/군 경계
+- 행정동 경계
+- 도로망
+- 다각형 영역
+
+Folium에서 GeoJSON 표시:
+
+```python
+import json
+
+with open("busan_gu.json", encoding="utf-8") as f:
+    busan_geojson = json.load(f)
+
+m = folium.Map(location=busan, zoom_start=10)
+folium.GeoJson(busan_geojson).add_to(m)
+```
+
+GeoJSON feature 구조:
+
+- `type`: Feature
+- `id`: 행정구역 이름 등
+- `properties`: code, name, name_eng, base_year 등 속성
+- `geometry`: Polygon 또는 MultiPolygon 좌표
+
+### 3.9 Choropleth Map
+
+Choropleth map은 지역별 값을 색으로 표현하는 지도다.
+
+질문 예:
+
+- 특정 변수가 지역별로 어떻게 분포하는가?
+- 가격, 인구, 거리, 위험도, 수요가 어디서 높고 낮은가?
+
+기본 코드:
+
+```python
+busan_map = folium.Map(location=busan, zoom_start=10)
+
+folium.Choropleth(
+    geo_data=busan_geojson,
+    data=busan_df["price"],
+    fill_color="PuRd",
+    key_on="feature.id"
+).add_to(busan_map)
+```
+
+중요 옵션:
+
+- `geo_data`: 경계 정보를 담은 GeoJSON
+- `data`: 색으로 표현할 값
+- `columns`: key와 value가 있는 DataFrame 열
+- `key_on`: GeoJSON의 어떤 속성과 DataFrame key를 연결할지
+- `fill_color`: ColorBrewer palette
+
+### 3.10 ColorBrewer
+
+ColorBrewer는 지도 시각화에 자주 쓰이는 predefined color palette다.
+
+색 선택 주의:
+
+- 순서형 데이터: 밝은 색에서 진한 색으로 변화
+- 범주형 데이터: 서로 구분되는 색
+- 양쪽 방향으로 차이가 있는 데이터: diverging palette
+
+### 3.11 Bike Sharing 데이터
+
+Bay Area bike sharing 자료:
+
+- 2014년 9월부터 2015년 8월까지 354,152건의 대여
+- 주요 attribute:
+  - 대여 ID
+  - 대여 기간, 초 단위
+  - 대여 시작 날짜/시간
+  - 시작 대여소 이름과 코드
+  - 반납 대여소 이름과 코드
+  - 자전거 serial number
+  - 사용자 타입
+  - zip code
+
+데이터 로드:
+
+```python
+url = "https://raw.githubusercontent.com/data-8/textbook/main/assets/data/trip.csv"
+trip = pd.read_csv(url)
+```
+
+추가 요금이 발생하지 않는 30분 이내 대여만 필터링:
+
+```python
+commute = trip[trip.Duration < 1800]
+```
+
+히스토그램:
+
+```python
+sns.histplot(data=commute, x="Duration", bins=60)
+```
+
+### 3.12 groupby
+
+가장 많이 대여가 발생한 station 찾기:
+
+```python
+starts = commute.groupby("Start Station")["Start Station"].count()
+starts = starts.reset_index(name="count").sort_values(by="count", ascending=False)
+```
+
+대여/반납 station pair:
+
+```python
+commute.groupby(["Start Station", "End Station"])["End Station"].count()
+```
+
+핵심:
+
+- groupby는 같은 값을 가진 행들을 묶어 집계한다.
+- 결과가 Series이면 `reset_index`로 DataFrame으로 바꾸면 다루기 쉽다.
+
+### 3.13 Pivot Table
+
+대여소와 반납소 조합을 행/열 표로 바꾼다.
+
+```python
+pd.pivot_table(
+    commute,
+    columns="Start Station",
+    index="End Station",
+    aggfunc="count"
+).fillna(0).apply(np.int64)
+```
+
+최단 이동 시간:
+
+```python
+pd.pivot_table(
+    commute,
+    columns="Start Station",
+    index="End Station",
+    values="Duration",
+    aggfunc="min"
+).fillna(0).apply(np.int64)
+```
+
+### 3.14 Station Map
+
+station 위치 데이터:
+
+```python
+url = "https://raw.githubusercontent.com/data-8/textbook/main/assets/data/station.csv"
+stations = pd.read_csv(url)
+```
+
+지도 중심을 평균 좌표로 설정:
+
+```python
+cityMap = folium.Map(
+    location=[stations["lat"].mean(), stations["long"].mean()],
+    zoom_start=10
+)
+```
+
+원형 marker:
+
+```python
+folium.CircleMarker(
+    location=[lat, long],
+    radius=5,
+    color="blue",
+    fill=True
+).add_to(cityMap)
+```
+
+### 3.15 join 활용
+
+도시별 색상 정보를 station 데이터에 결합한다.
+
+```python
+cities = stations.groupby("landmark")["landmark"].count()
+cities = cities.reset_index(name="count").rename(columns={"landmark": "city"})
+
+colors = cities.copy()
+colors["color"] = np.array(["blue", "red", "green", "orange", "purple"])
+
+joined = stations.join(colors.set_index("city"), on="landmark", how="inner")
+colored = joined.loc[:, ["lat", "long", "name", "color"]]
+```
+
+join 의미:
+
+- 한 DataFrame에 있는 위치 데이터와 다른 DataFrame에 있는 색/집계 정보를 key 기준으로 합친다.
+- 지도 시각화에서는 위치 테이블에 count, category, color 등을 붙이는 데 자주 사용한다.
+
+### 3.16 인기 대여소 지도
+
+절차:
+
+1. 대여 시작 station별 count 계산
+2. station 위치 데이터와 count를 join
+3. count에 따라 marker 크기 또는 색 설정
+4. Folium CircleMarker로 지도 표시
+
+색상 함수:
+
+```python
+def color_select(areas):
+    if areas > 3000:
+        return "red"
+    elif areas > 2000:
+        return "yellow"
+    elif areas > 1000:
+        return "green"
+    else:
+        return "dodgerblue"
+```
+
+### 3.17 Spatial Indexing System
+
+공간 인덱싱은 위치 데이터에 대한 효율적 질의를 위해 사용한다.
+
+질의 예:
+
+- k-NN: 가장 가까운 k개 찾기
+- range query: 반경 r 이내 지점 찾기
+- 근접 검색
+- 공간 집계
+
+기본 아이디어:
+
+- 공간을 계층적 cell로 나눈다.
+- 위도/경도를 cell ID로 encoding한다.
+- 가까운 지점들은 같거나 인접한 cell에 있을 가능성이 높다.
+
+대표 방식:
+
+- Geohash: 위도/경도 기반 직사각형 격자
+- H3: Uber가 개발한 육각형 격자
+
+### 3.18 Geohash
+
+Geohash는 지구 표면을 직사각형 격자로 나누고, 각 격자를 문자열로 표현한다.
+
+특징:
+
+- 문자열 길이가 길수록 더 작은 영역
+- parent geohash에 base32 문자를 붙이면 child cell을 만들 수 있다.
+
+코드:
+
+```python
+import pygeohash as pgh
+
+pnu_lat = 35.230753
+pnu_lng = 129.083263
+
+cell_container = []
+for precision in range(1, 13):
+    cell = pgh.encode(pnu_lat, pnu_lng, precision=precision)
+    cell_container.append(cell)
+```
+
+bounding box:
+
+```python
+pgh.get_bounding_box(cell)
+```
+
+Geohash cell을 Folium polygon으로 그릴 수 있다.
+
+### 3.19 H3
+
+H3는 Uber가 개발한 육각형 기반 공간 인덱싱 시스템이다.
+
+특징:
+
+- 위도/경도를 H3 cell ID로 변환
+- resolution이 높을수록 작은 육각형
+- parent-child cell 구조
+- 육각형은 이웃 관계를 다루기 좋다.
+
+코드:
+
+```python
+import h3
+
+pnu_lat = 35.230753
+pnu_lng = 129.083263
+
+cell_container = []
+for resolution in range(16):
+    cell = h3.latlng_to_cell(pnu_lat, pnu_lng, resolution)
+    cell_container.append(cell)
+```
+
+cell boundary:
+
+```python
+h3.cell_to_boundary(cell)
+```
+
+child cells:
+
+```python
+h3.cell_to_children(parent_cell, child_res)
+```
+
+### 3.20 W10 시험 포인트
+
+- Folium은 지도 객체를 만들고 marker, line, polygon을 추가하는 도구다.
+- 좌표 순서는 `[위도, 경도]`다.
+- popup은 클릭, tooltip은 hover다.
+- MarkerCluster는 많은 marker의 겹침을 줄인다.
+- PolyLine은 순서 있는 좌표를 선으로 연결한다.
+- GeoJSON은 행정구역 등 지리 경계를 담는다.
+- Choropleth는 지역별 값을 색으로 표현한다.
+- groupby, pivot, join은 지도 시각화 전 데이터 정리에 핵심이다.
+- Geohash는 직사각형 격자, H3는 육각형 격자 기반 공간 인덱싱이다.
 
 ---
 
-## 3. 평균, 백분위수, 표준편차
+## 4. W11L1 - Why the Mean Matters?
 
-### Percentile
+### 4.1 Percentile
 
-백분위수는 정렬된 데이터에서 특정 비율 위치의 값이다.
+수치형 데이터는 정렬할 수 있으므로 rank를 기준으로 값을 설명할 수 있다.
 
-- 50th percentile = median
-- 95th percentile = 전체 값 중 약 95%가 그 값 이하
+백분위수:
 
-Nearest-rank 방식:
+- `p`번째 percentile은 데이터에서 특정 비율 위치의 값이다.
+- 50th percentile은 median이다.
+- 95th percentile은 대략 데이터의 95%가 그 값 이하라는 뜻이다.
 
-1. 데이터를 오름차순 정렬한다.
-2. 위치를 계산한다.
-3. 정수 위치가 아니면 올림한다.
-4. 실제 데이터 원소 중 하나를 선택한다.
+주의할 모호성:
 
-Numpy 예시:
+- 모든 값이 같으면 같은 값이 여러 percentile로 해석될 수 있다.
+- index가 정수로 떨어지지 않으면 정의 방식에 따라 결과가 달라진다.
+
+### 4.2 Nearest-Rank 방식
+
+예:
+
+```python
+s = [12, 17, 6, 9, 7]
+np.sort(s)  # [6, 7, 9, 12, 17]
+```
+
+80th percentile:
+
+- 원소 5개
+- 5개의 80% = 4개
+- 4번째 값 = 12
+
+70th percentile:
+
+- 5개의 70% = 3.5
+- 올림해서 4번째 값
+- 결과 = 12
+
+강의 정의:
+
+```text
+p번째 percentile은 데이터의 원소 중 p% 이상에 해당하는 값 중 가장 작은 값이다.
+```
+
+계산 절차:
+
+1. 리스트를 오름차순으로 정렬한다.
+2. `k = p/100 * (n - 1)`을 계산한다.
+3. `k`가 정수이면 해당 위치의 원소를 선택한다.
+4. `k`가 정수가 아니면 다음 정수로 올림한 위치의 원소를 선택한다.
+
+### 4.3 Continuous Percentile
+
+통계학의 일반적 정의에서는 percentile 값이 반드시 데이터의 원소일 필요가 없다.
+
+보간, interpolation:
+
+- `p`가 정확한 index에 해당하지 않을 때 가까운 두 값 사이를 보간한다.
+- 따라서 실제 데이터에 없는 값이 나올 수 있다.
+
+Numpy 비교:
 
 ```python
 import numpy as np
 
 s = [12, 17, 6, 9, 7]
-np.percentile(s, 85, method="inverted_cdf")
-np.percentile(s, 85, method="linear")
-```
 
-주의:
-
-- `inverted_cdf`는 nearest-rank에 가깝고 실제 데이터 값이 나온다.
-- `linear`는 보간하므로 데이터에 없는 값이 나올 수 있다.
-
-### 평균
-
-평균은 데이터의 합을 개수로 나눈 값이다.
-
-```python
-np.mean(data)
-np.average(data)
-```
-
-특징:
-
-- 데이터에 실제로 존재하는 값일 필요는 없다.
-- 최솟값과 최댓값 사이에 있다.
-- 극단값(outlier)에 민감하다.
-- 히스토그램에서 균형점 역할을 한다.
-
-### 평균과 중앙값
-
-- 대칭 분포: 평균과 중앙값이 비슷하다.
-- 오른쪽 꼬리 분포: 평균이 중앙값보다 커지는 경향이 있다.
-- 왼쪽 꼬리 분포: 평균이 중앙값보다 작아지는 경향이 있다.
-
-### 표준편차
-
-표준편차는 데이터가 평균에서 대략 얼마나 떨어져 있는지 나타낸다.
-
-개념:
-
-```text
-SD = 편차의 제곱 평균의 제곱근
-```
-
-절차:
-
-1. 평균을 구한다.
-2. 각 값에서 평균을 뺀 편차를 구한다.
-3. 편차를 제곱한다.
-4. 제곱한 값들의 평균을 구한다.
-5. 제곱근을 취한다.
-
-```python
-np.std(data)
-```
-
-주의:
-
-- 표준편차는 데이터와 같은 단위를 가진다.
-- 모든 값이 같으면 표준편차는 0이다.
-- 이상치가 있으면 표준편차가 커진다.
-
-### Chebyshev 부등식
-
-분포 모양과 관계없이 평균 주변에 데이터가 얼마나 있는지 보장한다.
-
-```text
-평균 ± z SD 범위 안의 비율 >= 1 - 1/z^2
+np.percentile(s, 85, method="inverted_cdf")  # nearest-rank에 가까움
+np.percentile(s, 85, method="linear")        # 보간
 ```
 
 예:
 
-- 평균 ± 2 SD 안에 적어도 75%
-- 평균 ± 3 SD 안에 적어도 88.89%
+- 정렬: `[6, 7, 9, 12, 17]`
+- `k = 0.85 * 4 = 3.4`
+- `inverted_cdf`: 올림 위치 값 17
+- `linear`: `12 + 0.4 * (17 - 12) = 14`
 
-종 모양 정규분포에서는 경험적으로:
+시험 포인트:
+
+- `inverted_cdf`는 실제 데이터 값 중 하나를 반환한다.
+- `linear`는 데이터에 없는 보간값을 반환할 수 있다.
+
+### 4.4 scores_and_sections 예제
+
+데이터:
+
+- 한 학기 수업 데이터
+- 학생 359명
+- 열: discussion section, midterm score
+
+85th percentile 예:
+
+- `0.85 * (359 - 1) = 304.3`
+- nearest-rank 관점에서 305번째 근처 값
+- 강의 예시 결과: 22
+
+히스토그램:
+
+```python
+fig, ax = plt.subplots()
+ax.hist(
+    scores_and_sections["Midterm"],
+    bins=np.arange(-0.5, 25.6, 1),
+    density=True,
+    linewidth=0.5,
+    edgecolor="white"
+)
+```
+
+### 4.5 Mean
+
+평균은 데이터 합을 개수로 나눈 값이다.
+
+예:
+
+```text
+Data: 2, 3, 3, 9
+Average = (2 + 3 + 3 + 9) / 4 = 4.25
+```
+
+기본 성질:
+
+- 데이터 안에 실제로 있는 값일 필요가 없다.
+- 데이터가 정수여도 평균은 소수일 수 있다.
+- 최솟값과 최댓값 사이에 있다.
+- 반드시 정중앙은 아니다.
+- 데이터와 같은 단위를 가진다.
+- 모든 값을 한 그릇에 모아 균등하게 나눈 값으로 볼 수 있다.
+
+코드:
+
+```python
+np.average(data)
+np.mean(data)
+```
+
+### 4.6 Mean과 Median 비교
+
+평균:
+
+- 히스토그램의 균형점
+- 물리학의 질량중심과 비슷하다.
+- outlier와 긴 꼬리에 민감하다.
+
+중앙값:
+
+- 50th percentile
+- 순서상 가운데 값
+- outlier에 평균보다 덜 민감하다.
+
+분포 형태별 관계:
+
+- 대칭 분포: 평균과 중앙값이 비슷하거나 같다.
+- 오른쪽으로 치우친 분포: 평균이 오른쪽 꼬리 방향으로 끌려가 중앙값보다 커진다.
+- 왼쪽으로 치우친 분포: 평균이 왼쪽 꼬리 방향으로 끌려가 중앙값보다 작아진다.
+
+예:
+
+```python
+not_symmetric = np.array([2, 3, 3, 9])
+np.mean(not_symmetric)  # 4.25
+```
+
+### 4.7 San Francisco Salary 예제
+
+데이터:
+
+- 2015년 San Francisco 시공무원 급여 및 복지 데이터
+- `Total Compensation` 사용
+
+히스토그램:
+
+```python
+bins = np.arange(10000, 700000, 25000)
+sns.histplot(
+    data=sf2015,
+    x="Total Compensation",
+    bins=bins,
+    stat="percent"
+)
+```
+
+Median과 mean:
+
+```python
+compensation = sf2015["Total Compensation"]
+
+sf_median = np.percentile(compensation, q=50, method="higher")
+sf_avg = np.mean(compensation)
+```
+
+강의 예:
+
+- median: 110305.79
+- mean: 114725.984...
+
+해석:
+
+- 급여 분포는 오른쪽 꼬리가 길기 쉽다.
+- 높은 급여 outlier가 평균을 중앙값보다 크게 만든다.
+
+### 4.8 Variability
+
+데이터의 퍼짐을 측정해야 한다.
+
+Plan A:
+
+```text
+max - min
+```
+
+장점:
+
+- 쉽다.
+
+단점:
+
+- 분포의 전체 모양을 잘 설명하지 못한다.
+- outlier 두 개에 지나치게 의존한다.
+
+Plan B:
+
+- 평균 주변의 변동성을 측정한다.
+- 분산과 표준편차를 사용한다.
+
+### 4.9 Standard Deviation
+
+표준편차는 데이터가 평균에서 대략 얼마나 떨어져 있는지 측정한다.
+
+정의:
+
+```text
+SD = Root Mean Square of Deviations from Average
+```
+
+계산 단계:
+
+1. 평균을 구한다.
+2. 각 값에서 평균을 뺀 deviation을 구한다.
+3. deviation을 제곱한다.
+4. 제곱 deviation의 평균을 구한다. 이것이 variance다.
+5. variance의 제곱근을 구한다. 이것이 SD다.
+
+예:
+
+```python
+any_numbers = np.array([1, 2, 2, 10])
+
+mean = np.mean(any_numbers)
+deviations = any_numbers - mean
+squared_deviations = deviations ** 2
+variance = np.mean(squared_deviations)
+sd = variance ** 0.5
+```
+
+Numpy:
+
+```python
+np.std(any_numbers)
+```
+
+특징:
+
+- 데이터와 같은 단위를 가진다.
+- 모든 값이 같으면 SD는 0이다.
+- 이상치가 있으면 SD가 커진다.
+
+### 4.10 Why Use SD?
+
+분포 모양과 무관하게 많은 데이터는 평균 주변 몇 SD 범위 안에 있다.
+
+정규분포형 데이터에서는 경험적으로:
 
 - 평균 ± 1 SD: 약 68%
 - 평균 ± 2 SD: 약 95%
 - 평균 ± 3 SD: 약 99.7%
 
----
+모든 분포에 대해 보장되는 것은 Chebyshev's Inequality다.
 
-## 4. 정규분포와 중심극한정리
+### 4.11 NBA height/age 예제
 
-### 정규분포
+NBA 2013 데이터에서 키:
 
-정규분포는 평균을 중심으로 대칭인 종 모양 분포다.
+```python
+mean_height = np.mean(nba13.Height)
+sd_height = np.std(nba13.Height)
+```
+
+강의 예:
+
+- 평균 키: 약 79.07 inch
+- SD: 약 3.45 inch
+- 최대 87 inch는 평균보다 약 2.3 SD 위
+- 최소 69 inch는 평균보다 약 2.92 SD 아래
+
+나이:
+
+```python
+ages = nba13["Age in 2013"]
+mean_age = np.mean(ages)
+sd_age = np.std(ages)
+```
+
+강의 예:
+
+- 평균 나이: 약 26.19
+- SD: 약 4.32
+- 40세는 평균보다 약 3.2 SD 위
+
+### 4.12 Chebyshev's Inequality
+
+분포 모양과 관계없이 성립한다.
+
+공식:
+
+```text
+mean ± z SDs 범위 안의 비율 >= 1 - 1/z^2
+```
+
+예:
+
+- 평균 ± 2 SD: 최소 `1 - 1/4 = 3/4 = 75%`
+- 평균 ± 3 SD: 최소 `1 - 1/9 = 8/9 = 88.88...%`
+- 평균 ± 4 SD: 최소 `1 - 1/16 = 15/16 = 93.75%`
+- 평균 ± 5 SD: 최소 `1 - 1/25 = 96%`
+
+주의:
+
+- Chebyshev는 최소 보장값이다.
+- 실제 데이터에서는 이보다 더 많은 값이 범위 안에 있을 수 있다.
+
+함수:
+
+```python
+def chebyshev(num_SDs):
+    return 1 - 1 / (num_SDs ** 2)
+```
+
+### 4.13 baby.csv 예제
+
+데이터:
+
+- mother-baby pair 1174개
+- Birth Weight, Maternal Age, Maternal Height, Maternal Pregnancy Weight 등
+
+특정 열에서 `z` SD 안 비율:
+
+```python
+def cheby_says(table, label, z):
+    temp = table[label]
+    mean = np.mean(temp)
+    sd = np.std(temp)
+    chosen = table[
+        (mean - z * sd < table[label]) &
+        (table[label] < mean + z * sd)
+    ]
+    proportion = len(chosen) / len(table)
+    percent = round(proportion * 100, 2)
+    print("Average plus or minus", z, "SDs:", percent, "%")
+```
+
+### 4.14 Standard Units
+
+표준단위, standard units:
+
+```text
+z = (value - average) / SD
+```
+
+의미:
+
+- 평균보다 몇 SD만큼 위/아래에 있는가
+- `z = 0`: 평균과 같음
+- `z > 0`: 평균보다 큼
+- `z < 0`: 평균보다 작음
+
+변환 함수:
+
+```python
+def standard_units(x):
+    return (x - np.mean(x)) / np.std(x)
+```
+
+표준화 후:
+
+- 평균 = 0
+- SD = 1
+
+### 4.15 Bell-shaped Curve와 Inflection Point
+
+히스토그램이 종 모양이면:
+
+- 평균이 중심, 가장 높은 부분 근처에 있다.
+- SD는 평균에서 변곡점까지의 거리로 볼 수 있다.
+- 표준정규분포에서는 변곡점이 `z = -1`, `z = 1`에 있다.
+
+주의:
+
+- 히스토그램만 보고 SD를 정확히 추정하기는 어렵다.
+- 종 모양일 때만 변곡점 직관이 유용하다.
+
+### 4.16 Normal Distribution
+
+정규분포:
 
 ```text
 X ~ N(mu, sigma^2)
 ```
 
-- `mu`: 평균, 중심 위치
+구성:
+
+- `mu`: 평균, 대칭 중심
 - `sigma^2`: 분산
-- `sigma`: 표준편차, 퍼짐 정도
+- `sigma`: 표준편차
 
-정규분포에서는 평균과 중앙값이 같다.
+특징:
 
-### 중심극한정리, CLT
+- 평균과 중앙값이 같다.
+- 곡선 아래 전체 면적은 1이다.
+- 표준정규분포는 `Z ~ N(0, 1)`이다.
+- 표준정규분포의 변곡점은 `-1`, `1`이다.
 
-중심극한정리는 표본평균의 분포에 대한 정리다.
+정규분포에서 비율:
+
+- 평균 ± 1 SD: 약 68%
+- 평균 ± 2 SD: 약 95%
+- 평균 ± 3 SD: 약 99.73%
+
+### 4.17 Central Limit Theorem, CLT
+
+중심극한정리는 원자료 분포가 아니라 표본평균의 분포에 대한 정리다.
 
 핵심:
 
-- 모집단 분포가 정규분포가 아니어도,
-- 표본 크기 `n`이 충분히 크고,
-- 독립적으로 무작위 표본을 뽑으면,
-- 표본평균들의 분포는 대략 정규분포에 가까워진다.
+- 표본이 충분히 크다.
+- 독립적으로 동일한 분포에서 뽑힌다.
+- 모집단 분포가 무엇이든 표본평균들의 분포는 대략 정규분포에 가까워진다.
 
-공식 감각:
+수식 감각:
 
 ```text
-X_i의 평균이 mu, 분산이 sigma^2이면
+X_i가 평균 mu, 분산 sigma^2를 가지면
 sum(X_i)는 대략 N(n*mu, n*sigma^2)
 sample mean은 대략 N(mu, sigma^2/n)
 ```
 
-중요 해석:
+표본평균의 SD:
 
-- 표본평균은 모평균을 추정하는 데 중요하다.
-- 표본 크기가 커질수록 표본평균의 변동성은 작아진다.
-- 표본평균의 표준편차는 대략 `population SD / sqrt(n)`이다.
+```text
+SD(sample mean) = population SD / sqrt(sample size)
+```
+
+### 4.18 United flight delay 예제
+
+데이터:
+
+- `united_summer2015.csv`
+- 비행기 delay 분포는 오른쪽 꼬리가 긴 형태일 수 있다.
+
+모집단 평균과 SD:
+
+```python
+mean_delay = np.mean(united.Delay)
+sd_delay = np.std(united.Delay)
+```
+
+강의 예:
+
+- 평균 delay: 약 16.66
+- SD: 약 39.48
+
+표본평균 함수:
+
+```python
+def one_sample_mean(sample_size):
+    sampled_flights = united.sample(sample_size, replace=True)
+    return np.mean(sampled_flights["Delay"])
+
+def ten_thousand_sample_means(sample_size):
+    means = np.array([])
+    for i in np.arange(10000):
+        means = np.append(means, one_sample_mean(sample_size))
+    return means
+```
+
+결과:
+
+- 원래 delay 분포가 정규분포가 아니어도
+- sample size 100, 400 등에서 표본평균 분포는 종 모양에 가까워진다.
+- sample size가 커질수록 표본평균 분포는 좁아진다.
+
+### 4.19 Distribution of Sample Average
+
+표본평균의 분포:
+
+```text
+같은 크기의 가능한 모든 무작위표본을 생각하고, 각 표본의 평균을 모은 분포
+```
+
+왜 분포가 생기는가:
+
+- 실제로는 표본이 하나뿐이다.
+- 하지만 표본은 다르게 뽑힐 수도 있었다.
+- 표본이 달라지면 표본평균도 달라진다.
+- 따라서 가능한 표본평균들이 분포를 이룬다.
+
+### 4.20 Square Root Law
+
+표본평균의 변동성:
+
+```text
+SD of sample means = population SD / sqrt(sample size)
+```
+
+성질:
+
+- 표본 크기 `n`이 커지면 표본평균의 SD는 작아진다.
+- 표본 크기 `n`이 작아지면 표본평균의 SD는 커진다.
+- 정확도를 `x`배 높이려면 표본 크기는 `x^2`배 필요하다.
+
+예:
+
+- population SD = 39.48
+- sample size = 100이면 sample mean SD 약 3.948
+- sample size = 400이면 sample mean SD 약 1.974
+- 표본 크기를 4배로 늘리면 SD는 1/2이 된다.
+
+### 4.21 Why the Mean Matters 결론
+
+평균이 중요한 이유:
+
+- 표본평균은 모평균을 추정한다.
+- 큰 무작위표본의 평균 분포는 거의 항상 종 모양이다.
+- 표본평균 분포의 중심은 모집단 평균이다.
+- 표본평균 분포의 폭은 `population SD / sqrt(n)`으로 조절된다.
+- 따라서 평균은 추론에서 강력한 도구가 된다.
 
 ---
 
-## 5. 추정과 Bootstrap
+## 5. W12L1 - Estimation
 
-### Parameter와 Statistic
+### 5.1 Parameter와 Statistic
 
-- Parameter: 모집단의 고정된 값. 예: 모집단 평균, 모집단 중앙값
-- Statistic: 표본에서 계산한 값. 예: 표본 평균, 표본 중앙값
+Parameter:
 
-현실에서는 모집단 전체를 모르는 경우가 많으므로 표본 statistic으로 parameter를 추정한다.
+- 모집단의 고정된 값
+- 예: 모집단 평균, 모집단 중앙값, 모집단 비율
+- 실제로는 알 수 없는 경우가 많다.
 
-### 추정의 변동성
+Statistic:
 
-무작위 표본은 매번 달라질 수 있다. 따라서 표본에서 계산한 추정치도 달라진다.
+- 표본에서 계산한 값
+- 예: 표본 평균, 표본 중앙값, 표본 비율
+- parameter의 추정치로 사용한다.
+
+예:
+
+```text
+전체 학생 GPA 평균 = parameter
+무작위 표본 학생들의 GPA 평균 = statistic
+```
+
+### 5.2 Estimation
+
+추정의 기본 구조:
+
+1. 모집단 전체 census를 알고 있으면 parameter를 직접 계산한다.
+2. census가 없으면 population에서 random sample을 뽑는다.
+3. sample에서 statistic을 계산한다.
+4. statistic을 parameter의 estimate로 사용한다.
 
 문제:
 
-- 모집단을 다시 샘플링할 수 없다.
-- 표본은 하나뿐이다.
-- 그래도 추정치의 불확실성을 알고 싶다.
+- random sample은 매번 다르게 나올 수 있다.
+- 따라서 statistic도 매번 다를 수 있다.
+- 추정치의 불확실성을 정량화해야 한다.
 
-해결:
+### 5.3 San Francisco 2019 Compensation 예제
 
-- Bootstrap
+데이터:
 
-### Bootstrap 원리
+- `san_francisco_2019.csv`
+- employee compensation
 
-원래 표본이 충분히 크고 무작위로 뽑혔다면, 원래 표본은 모집단을 어느 정도 닮았다고 본다. 그래서 원래 표본에서 다시 복원추출을 반복한다.
+이상치 제거:
 
-절차:
+```python
+min_salary = 15000
+sf2019 = sf2019[sf2019.Salary > min_salary]
+```
+
+이유:
+
+- 0 salary는 현실적으로 의미가 없을 수 있다.
+- 예: `$15/hour * 20 hours * 50 weeks = 15000`
+
+population median:
+
+```python
+pop_median = np.percentile(
+    sf2019["Total Compensation"],
+    50,
+    method="inverted_cdf"
+)
+```
+
+강의 예:
+
+- population median: 135747.0
+
+### 5.4 Variability of Estimate
+
+하나의 표본에서 중앙값 추정:
+
+```python
+our_sample = sf2019.sample(n=500, replace=False).reset_index(drop=True)
+
+est_median = np.percentile(
+    our_sample["Total Compensation"],
+    50,
+    method="inverted_cdf"
+)
+```
+
+핵심:
+
+- 한 표본의 median은 population median과 정확히 같지 않을 수 있다.
+- 다른 표본을 뽑았다면 다른 median이 나왔을 것이다.
+- 추정치의 변동성을 알고 싶다.
+
+문제:
+
+- 현실에서는 population을 다시 샘플링할 수 없다.
+- 시간과 비용이 부족하다.
+- 표본이 하나뿐이다.
+
+### 5.5 Bootstrap
+
+Bootstrap은 반복적인 random sampling을 시뮬레이션하는 방법이다.
+
+원리:
+
+```text
+Original random sample에서 다시 sampling하는 것 ≈ Population에서 sampling하는 것
+```
+
+조건:
+
+- original sample이 무작위로 뽑혔어야 한다.
+- original sample이 충분히 커야 한다.
+- 모든 상황에서 항상 성립하는 것은 아니다.
+
+### 5.6 Bootstrap 절차
 
 1. original sample을 준비한다.
-2. original sample에서 같은 크기로 복원추출한다.
-3. bootstrap sample마다 statistic을 계산한다.
-4. statistic의 empirical distribution을 만든다.
-5. 분포의 가운데 구간으로 confidence interval을 만든다.
+2. original sample에서 무작위로 뽑는다.
+3. 반드시 복원추출한다.
+4. bootstrap sample 크기는 original sample 크기와 같게 한다.
+5. 각 bootstrap sample마다 statistic을 계산한다.
+6. statistic들의 empirical distribution을 만든다.
+7. 이 분포로 추정치의 변동성과 confidence interval을 구한다.
 
-핵심 조건:
+왜 `replace=True`인가:
 
-- 반드시 복원추출한다: `replace=True`
-- bootstrap sample 크기는 원래 표본 크기와 같게 한다.
-- 각 bootstrap sample마다 statistic을 다시 계산한다.
+- 복원추출하지 않으면 원래 sample의 순서만 바뀌거나 같은 구성만 반복된다.
+- 추정치의 변동성을 만들 수 없다.
 
-### Bootstrap 코드 패턴
+왜 같은 sample size인가:
+
+- sample size가 달라지면 statistic의 변동성도 달라진다.
+- 원래 추정 문제와 같은 조건을 유지해야 한다.
+
+### 5.7 Bootstrap Median 코드
 
 ```python
 def bootstrap_median(original_sample, label, replications):
+    just_one_column = original_sample[label]
+    sample_size = len(original_sample)
     medians = np.array([])
 
     for i in np.arange(replications):
-        bootstrap_sample = original_sample.sample(
-            n=len(original_sample),
+        bootstrap_sample = just_one_column.sample(
+            n=sample_size,
             replace=True
-        )
-        bootstrap_median = np.percentile(
-            bootstrap_sample[label],
-            50,
+        ).reset_index(drop=True)
+
+        resampled_median = np.percentile(
+            bootstrap_sample,
+            q=50,
             method="inverted_cdf"
         )
-        medians = np.append(medians, bootstrap_median)
+
+        medians = np.append(medians, resampled_median)
 
     return medians
 ```
 
-### Confidence Interval
-
-Bootstrap 통계량 분포의 가운데 95%를 95% confidence interval로 사용한다.
+사용:
 
 ```python
-left = np.percentile(bootstrap_stats, 2.5, method="inverted_cdf")
-right = np.percentile(bootstrap_stats, 97.5, method="inverted_cdf")
+bstrap_medians = bootstrap_median(
+    our_sample,
+    "Total Compensation",
+    5000
+)
 ```
 
-해석:
+### 5.8 Confidence Interval
 
-- 95% CI는 "모수가 95% 확률로 이 구간 안에 있다"는 뜻이 아니다.
-- 같은 절차를 아주 많이 반복하면, 만들어진 구간들 중 약 95%가 진짜 parameter를 포함한다는 의미다.
+Bootstrap statistic 분포의 가운데 95%를 95% confidence interval로 사용한다.
 
-### CI를 이용한 검정
+```python
+left = np.percentile(bstrap_medians, q=2.5, method="inverted_cdf")
+right = np.percentile(bstrap_medians, q=97.5, method="inverted_cdf")
+```
 
-양측 검정에서:
+95% confidence interval:
 
-- 귀무가설: population average = x
-- 대립가설: population average != x
-- 95% CI 안에 x가 없으면 5% 유의수준에서 귀무가설 기각
-- 95% CI 안에 x가 있으면 귀무가설 기각 불가
+```text
+[2.5th percentile, 97.5th percentile]
+```
+
+신뢰수준:
+
+- 95%는 confidence level이다.
+- 0과 100 사이 어떤 값도 가능하다.
+- 신뢰수준이 높을수록 구간은 넓어진다.
+
+### 5.9 Confidence의 정확한 의미
+
+잘못된 해석:
+
+```text
+모수가 이 구간 안에 있을 확률이 95%다.
+```
+
+왜 틀렸는가:
+
+- parameter는 고정된 값이다.
+- 한 번 계산된 interval도 고정된 구간이다.
+- parameter는 그 구간 안에 있거나 없거나 둘 중 하나다.
+
+정확한 해석:
+
+```text
+같은 sampling + CI 계산 절차를 아주 많이 반복하면,
+만들어진 구간들 중 약 95%가 진짜 parameter를 포함한다.
+```
+
+즉, confidence는 하나의 구간 자체가 아니라 구간을 만드는 과정에 대한 신뢰다.
+
+### 5.10 100개 Bootstrap CI 예제
+
+강의에서는 population에서 sample을 100번 새로 뽑고, 각 sample마다 bootstrap CI를 만든다.
+
+결과:
+
+- 100개의 yellow interval
+- green dot은 고정된 population parameter
+- 약 95개의 interval이 parameter를 포함한다.
+
+핵심:
+
+- parameter는 움직이지 않는다.
+- interval이 sampling에 의해 움직인다.
+- 95% confidence는 반복 절차의 장기적 성공률이다.
+
+### 5.11 Bootstrap을 쓰면 안 좋은 경우
+
+주의해야 하는 경우:
+
+- parameter가 population의 희귀한 요소에 크게 영향받는 경우
+  - 매우 높은 percentile
+  - 매우 낮은 percentile
+  - minimum
+  - maximum
+- statistic의 bootstrap 분포가 대략 bell-shaped가 아닌 경우
+- original sample이 매우 작은 경우
+- original sample이 population을 대표하지 못하는 경우
+
+실무 원칙:
+
+- bootstrap 분포를 반드시 그려서 모양을 확인한다.
+- 이상하게 치우치거나 여러 peak가 있으면 해석에 주의한다.
+
+### 5.12 Average Age of Mom 예제
+
+데이터:
+
+- `baby.csv`
+- mother-newborn pair 1174개
+
+Parameter:
+
+```text
+population에서 첫 자식 출생 시 산모의 평균 나이
+```
+
+Statistic:
+
+```text
+sample에서 산모의 평균 나이
+```
+
+bootstrap 함수:
+
+```python
+def bootstrapper(sample, statistics, num_repetitions):
+    bstrap_stats = np.array([])
+
+    for i in np.arange(num_repetitions):
+        bstrap_sample = sample.sample(len(sample), replace=True)
+        bstrap_stat = statistics(bstrap_sample)
+        bstrap_stats = np.append(bstrap_stats, bstrap_stat)
+
+    return bstrap_stats
+
+def avg_age(sample):
+    return np.average(sample["Maternal Age"])
+```
+
+CI 계산:
+
+```python
+bootstrap_means = bootstrapper(births, avg_age, 3000)
+ci = compute_ci(bootstrap_means, 95)
+```
+
+강의 예:
+
+```text
+95% CI ≈ (26.9, 27.5)
+```
+
+올바른 해석:
+
+- population의 산모 평균 나이를 약 26.9세에서 27.5세 사이로 추정한다.
+
+틀린 해석:
+
+- 산모의 95%가 26.9세에서 27.5세 사이라는 뜻이 아니다.
+- population 평균이 이 구간 안에 있을 확률이 95%라는 뜻도 아니다.
+
+### 5.13 Confidence Interval로 검정하기
+
+양측 검정:
+
+```text
+Null hypothesis: population average = x
+Alternative hypothesis: population average != x
+```
+
+p-value cutoff가 `p%`라면:
+
+- `(100-p)%` confidence interval을 만든다.
+- `x`가 interval 안에 없으면 귀무가설을 기각한다.
+- `x`가 interval 안에 있으면 귀무가설을 기각할 수 없다.
+
+예:
+
+- Null: 산모 평균 나이는 25세다.
+- Alternative: 산모 평균 나이는 25세가 아니다.
+- 95% CI가 `(26.9, 27.6)`이면 25가 포함되지 않는다.
+- 따라서 5% 유의수준에서 귀무가설 기각.
+
+### 5.14 부산대역 승하차 인원 예제
+
+문제:
+
+- Population: 2026년 부산대역 하루 승하차 인원
+- Sample: 2026년 1월-3월 관측 데이터
+- Null: 모집단 평균 승하차 인원은 25000명이다.
+- Alternative: 모집단 평균 승하차 인원은 25000명이 아니다.
+
+데이터 처리:
+
+```python
+data = pd.read_csv(
+    "부산교통공사_시간대별 승하차인원_20260331.csv",
+    encoding="cp949"
+)
+
+pnu = data[data["역명"] == "부산대"].copy()
+
+population = pnu.pivot_table(
+    index="년월일",
+    columns="구분",
+    values="합계",
+    aggfunc="sum"
+).reset_index()
+
+population["승하차합계"] = population["승차"] + population["하차"]
+```
+
+bootstrap:
+
+```python
+sample_size = 30
+our_sample = population.sample(
+    n=sample_size,
+    replace=False,
+    random_state=0
+).reset_index(drop=True)
+
+bootstrap_means = np.array([])
+
+for i in range(10000):
+    bootstrap_sample = our_sample.sample(n=sample_size, replace=True)
+    bootstrap_mean = np.average(bootstrap_sample["승하차합계"])
+    bootstrap_means = np.append(bootstrap_means, bootstrap_mean)
+```
 
 ---
 
-## 6. 선형회귀
+## 6. W12L2 - Linear Regression
 
-### 회귀분석
+### 6.1 AI, Machine Learning, Regression의 위치
 
-회귀분석은 독립변수 `X`와 종속변수 `Y` 사이의 관계를 추정하는 방법이다.
+지능:
 
-선형회귀는 관계를 1차식으로 가정한다.
+- 학습 능력
+- 추론 능력
+- 지각 능력
+- 언어 이해 능력
+
+인공지능:
+
+- 인간의 학습, 추론, 지각 능력을 인공적으로 구현한 것
+- 데이터를 기반으로 스스로 학습하게 만드는 접근
+
+Machine Learning:
+
+```text
+학습을 통해 어떤 일의 성능을 점점 향상시키는 방법
+```
+
+용어:
+
+- parameter: 프로그램의 동작을 결정하는 변수
+- model: parameter에 따라 동작이 결정되는 융통성 있는 프로그램
+- training: 좋은 결과가 나오도록 데이터를 공급해 parameter를 바꾸는 과정
+
+학습 종류:
+
+- supervised learning: 데이터와 label 제공
+- unsupervised learning: label 없이 구조나 패턴 발견
+- reinforcement learning: 보상으로 정책을 수정
+
+선형회귀는 대표적인 supervised learning 알고리즘이다.
+
+### 6.2 Regression Analysis
+
+회귀분석:
+
+```text
+관측 데이터를 통해 독립변수 X와 종속변수 Y 사이의 숨은 관계를 추정하는 것
+```
+
+예:
+
+- 주택 면적 X, 거래 가격 Y
+- 키 X, 몸무게 Y
+- 꽃잎 너비 X, 꽃잎 길이 Y
+
+목표:
+
+```text
+데이터를 가장 잘 설명하는 수학 함수를 찾는다.
+```
+
+### 6.3 Linear Regression
+
+선형회귀는 X와 Y의 관계를 1차식으로 가정한다.
 
 ```text
 Y = wX + b
 ```
 
-- `w`: 기울기, X가 1 증가할 때 Y가 얼마나 변하는지
-- `b`: 절편, X가 0일 때 예측되는 Y
-- 목표: 오차가 가장 작은 `w`, `b` 찾기
+의미:
 
-### 선형회귀의 기본 가정
+- `w`: weight, slope, coefficient, 기울기
+- `b`: bias, intercept, 절편
+- `w`는 X가 1 증가할 때 Y가 평균적으로 얼마나 변하는지 나타낸다.
+- `b`는 X가 0일 때 예측되는 Y다.
 
-- 선형성: X와 Y의 관계가 선형이다.
-- 독립성: 관측치 또는 독립변수 사이의 의존성이 낮다.
-- 등분산성: 잔차의 퍼짐이 특정 구간에 몰리지 않는다.
-- 정규성: 통계적 추론을 위해 잔차가 정규분포를 따른다고 가정한다.
+목표:
 
-주의:
+- 예측값과 실제값의 차이를 작게 만드는 `w`, `b`를 찾는다.
 
-- 모델 학습 자체에는 잔차 정규성이 반드시 필요한 것은 아니다.
-- p-value, 신뢰구간, 유의성 검정에는 정규성 가정이 중요하다.
-
-### scikit-learn 기본 패턴
+### 6.4 기본 예제
 
 ```python
+import numpy as np
 from sklearn.linear_model import LinearRegression
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 X = [163, 179, 166, 169, 171]
 y = [54, 63, 57, 56, 58]
 
-X = [[x] for x in X]  # scikit-learn은 2차원 입력 필요
+sns.scatterplot(x=X, y=y)
+```
 
+scikit-learn 입력 형태:
+
+```python
+X = [[x] for x in X]
+```
+
+왜 2차원인가:
+
+- scikit-learn은 feature matrix 형태를 기대한다.
+- sample 수와 feature 수를 구분해야 한다.
+- 단일 feature도 `[[163], [179], ...]`처럼 넣는다.
+
+모델 학습:
+
+```python
 model = LinearRegression()
 model.fit(X, y)
 y_pred = model.predict(X)
+```
 
+기울기와 절편:
+
+```python
 print(model.coef_[0])
 print(model.intercept_)
 ```
 
-중요:
+### 6.5 Regression Plot
 
-- `X`는 반드시 2차원이어야 한다.
-- 단일 변수도 `[163]`, `[179]`처럼 넣어야 한다.
-- `y`는 1차원이어도 된다.
+```python
+def make_reg_plot(X, y, y_pred):
+    plt.scatter(X, y, color="blue", label="Data points")
+    plt.plot(X, y_pred, color="red", linewidth=2, label="Regression line")
 
-### make_regression
+    plt.legend()
+    plt.xlabel("$X$")
+    plt.ylabel("$y$", rotation=0)
+    plt.title("Linear Regression")
+    plt.show()
+```
+
+### 6.6 make_regression
+
+인공 회귀 데이터를 만든다.
 
 ```python
 from sklearn.datasets import make_regression
@@ -713,162 +2438,5551 @@ X, y = make_regression(
 )
 ```
 
+옵션:
+
 - `n_samples`: 데이터 개수
 - `n_features`: 독립변수 개수
 - `noise`: 잡음 크기
 - `random_state`: 재현 가능한 난수 고정
 
-### ravel과 flatten
-
-- `ravel()`: 다차원 배열을 1차원 view로 변환
-- `flatten()`: 다차원 배열을 1차원 copy로 변환
-
-시각화할 때:
+시각화:
 
 ```python
 sns.scatterplot(x=X.ravel(), y=y)
 ```
 
-### 회귀 평가 지표
+### 6.7 ravel과 flatten
 
-#### MAE
+둘 다 다차원 배열을 1차원으로 바꾼다.
 
-Mean Absolute Error.
+- `ravel()`: 가능하면 view 반환
+- `flatten()`: copy 반환
+
+시각화에서는 `X`가 `(100, 1)` 형태일 때 `x`축에 넣기 위해 `X.ravel()`을 자주 사용한다.
+
+### 6.8 선형회귀 기본 가정
+
+선형성:
+
+- X와 Y의 관계가 선형이다.
+
+독립성:
+
+- 관측치 또는 독립변수 사이의 의존성이 낮다.
+
+등분산성:
+
+- 잔차의 퍼짐이 특정 구간에서만 커지거나 작아지지 않는다.
+
+정규성:
+
+- 통계적 추론을 위해 잔차가 정규분포를 따른다고 가정한다.
+
+주의:
+
+- 모델을 fit하는 것 자체에 잔차 정규성이 항상 필수는 아니다.
+- p-value, 신뢰구간, 유의성 검정에는 정규성 가정이 중요해진다.
+
+### 6.9 MAE
+
+Mean Absolute Error:
 
 ```text
-MAE = 평균(|실제값 - 예측값|)
+MAE = mean(|actual - predicted|)
 ```
+
+코드:
 
 ```python
 from sklearn.metrics import mean_absolute_error
+
 mae = mean_absolute_error(y, y_pred)
 ```
 
 특징:
 
-- 단위가 원래 y와 같다.
-- 오차 크기를 직관적으로 해석하기 쉽다.
+- 원래 y와 같은 단위다.
+- 평균적으로 얼마나 틀렸는지 직관적으로 해석하기 쉽다.
+- 큰 오차에 대한 추가 패널티는 MSE보다 작다.
 
-#### MSE
+### 6.10 MSE
 
-Mean Squared Error.
+Mean Squared Error:
 
 ```text
-MSE = 평균((실제값 - 예측값)^2)
+MSE = mean((actual - predicted)^2)
 ```
+
+코드:
 
 ```python
 from sklearn.metrics import mean_squared_error
+
 mse = mean_squared_error(y, y_pred)
 ```
 
 특징:
 
 - 큰 오차에 더 큰 패널티를 준다.
-- 미분 가능해서 최적화에 자주 쓰인다.
+- 단위가 y의 제곱 단위가 된다.
+- 미분 가능하고 최적화에서 많이 사용된다.
 
-#### R-square
+강의 예:
 
-결정계수. 전체 변동 중 모델이 설명한 비율이다.
+```python
+X = np.array([1, 2, 3, 4, 5])
+y = np.array([1.2, 1.9, 3.0, 4.1, 5.1])
+
+w_list = np.linspace(0.75, 1.25, 50)
+mse_list = [mean_squared_error(y, w * X) for w in w_list]
+```
+
+`w`에 따라 MSE를 그리면, MSE가 가장 작은 지점이 좋은 parameter다.
+
+### 6.11 R-square
+
+결정계수:
 
 ```text
 R^2 = 1 - SSR / SST
 ```
 
-- SST: 실제 y가 평균에서 얼마나 떨어져 있는지의 총합
-- SSR: 실제 y와 예측 y의 차이의 제곱합
+의미:
+
+- 전체 y 변동 중 모델이 설명한 비율
+
+용어:
+
+- SST: 실제 y가 평균에서 떨어진 전체 변동
+- SSR 또는 SSE: 실제 y와 예측 y의 차이, residual sum of squares
+
+코드:
 
 ```python
 from sklearn.metrics import r2_score
+
 r2 = r2_score(y, y_pred)
 ```
 
 해석:
 
 - `R^2 = 1`: 완벽한 예측
-- `R^2 = 0`: 평균으로 예측하는 것과 비슷
-- 높을수록 설명력이 크지만, 항상 좋은 모델이라는 뜻은 아니다.
+- `R^2 = 0`: y 평균으로 예측하는 것과 비슷
+- 음수 가능: 평균 예측보다도 못할 수 있음
 
 주의:
 
+- 높다고 인과관계가 증명되는 것은 아니다.
+- feature가 늘어나면 올라가는 경향이 있다.
 - 이상치에 민감하다.
-- 변수가 늘면 올라가는 경향이 있다.
-- 비선형 관계에서는 해석에 주의해야 한다.
+- 비선형 관계에서는 낮거나 오해를 줄 수 있다.
 
----
-
-## 7. 시험 직전 체크리스트
-
-### 반드시 설명할 수 있어야 하는 것
-
-- 귀무가설과 대립가설의 차이
-- p-value의 정확한 의미
-- TVD가 왜 categorical distribution 비교에 적합한지
-- percentile 계산에서 `inverted_cdf`와 `linear`의 차이
-- 평균이 outlier에 민감한 이유
-- 표준편차 계산 절차
-- Chebyshev 부등식의 의미
-- 중심극한정리가 말하는 대상은 원자료 분포가 아니라 표본평균 분포라는 점
-- bootstrap에서 복원추출을 해야 하는 이유
-- confidence interval의 올바른 해석
-- 선형회귀에서 `X`를 2차원으로 넣어야 하는 이유
-- MAE, MSE, R-square의 차이
-
-### 자주 틀리는 포인트
-
-- p-value를 "귀무가설이 참일 확률"로 해석하면 안 된다.
-- CI를 "모수가 95% 확률로 들어 있는 구간"이라고 말하면 안 된다.
-- bootstrap에서 `replace=False`를 쓰면 원래 표본을 섞는 것에 가깝고 bootstrap이 아니다.
-- 표본평균의 분포가 정규분포에 가까워지는 것이지, 원래 데이터가 정규분포가 되는 것은 아니다.
-- 지도 좌표는 `[위도, 경도]` 순서다.
-- `LinearRegression`의 `X`는 2차원 배열이어야 한다.
-- R-square가 높다고 인과관계가 증명되는 것은 아니다.
-
-### 코드 암기 우선순위
+### 6.12 Iris 예제
 
 ```python
-# 1. categorical sampling
-np.random.multinomial(sample_size, probabilities) / sample_size
+df = sns.load_dataset("iris")
 
-# 2. TVD
-sum(abs(p - q)) / 2
+X = df[["petal_width"]]
+y = df["petal_length"]
 
-# 3. percentile
-np.percentile(data, q, method="inverted_cdf")
-
-# 4. bootstrap sample
-sample.sample(n=len(sample), replace=True)
-
-# 5. confidence interval
-np.percentile(stats, 2.5)
-np.percentile(stats, 97.5)
-
-# 6. linear regression
 model = LinearRegression()
 model.fit(X, y)
 y_pred = model.predict(X)
 
-# 7. regression metrics
-mean_absolute_error(y, y_pred)
-mean_squared_error(y, y_pred)
-r2_score(y, y_pred)
+r2 = r2_score(y, y_pred)
+
+sns.jointplot(
+    data=df,
+    x="petal_width",
+    y="petal_length",
+    kind="reg"
+)
+```
+
+해석:
+
+- 꽃잎 너비로 꽃잎 길이를 예측한다.
+- `kind="reg"`는 산점도와 회귀선을 함께 보여준다.
+
+### 6.13 Penguins 예제
+
+```python
+penguins = sns.load_dataset("penguins").dropna()
+
+X = penguins[["bill_length_mm"]]
+y = penguins["flipper_length_mm"]
+
+model = LinearRegression()
+model.fit(X, y)
+y_pred = model.predict(X)
+
+r2 = r2_score(y, y_pred)
+
+sns.jointplot(
+    data=penguins,
+    x="bill_length_mm",
+    y="flipper_length_mm",
+    kind="reg"
+)
+```
+
+주의:
+
+- `dropna()`로 결측치를 제거한다.
+- 데이터셋 전체에서 선형관계가 있어 보여도 종별 차이가 섞여 있을 수 있다.
+
+### 6.14 W12L2 시험 포인트
+
+- 회귀는 X와 Y 사이의 관계를 추정한다.
+- 선형회귀는 `Y = wX + b`를 사용한다.
+- scikit-learn의 `X`는 2차원 feature matrix다.
+- `model.fit(X, y)`로 학습하고 `model.predict(X)`로 예측한다.
+- `coef_`는 기울기, `intercept_`는 절편이다.
+- MAE는 절대오차 평균이다.
+- MSE는 제곱오차 평균이며 큰 오차를 강하게 벌한다.
+- R-square는 설명된 변동 비율이다.
+
+---
+
+## 7. W13L2 - Comparing Two Samples
+
+### 7.1 Comparing Two Samples
+
+두 sample을 비교하는 질문:
+
+```text
+Group A의 값들과 Group B의 값들이 같은 population에서 나온 것인가?
+```
+
+현대 데이터 분석에서 두 numerical samples가 같은 underlying distribution에서 나왔는지 검정하는 것을 A/B testing이라고 부른다.
+
+### 7.2 Smokers and Nonsmokers 예제
+
+데이터:
+
+- `baby.csv`
+- 1174 mother-baby pairs
+- birth weight 단위: ounce
+- 1 ounce = 28.35 gram
+
+비교:
+
+- A: 임신 중 흡연하지 않은 산모의 아기 birth weight
+- B: 임신 중 흡연한 산모의 아기 birth weight
+
+질문:
+
+```text
+두 집단의 birth weight 차이가 우연만으로 설명될 수 있는가?
+```
+
+중요:
+
+- numerical variable: Birth Weight
+- categorical group label: Maternal Smoker
+- observational study다.
+- randomized experiment가 아니다.
+
+### 7.3 Smokers Hypotheses
+
+귀무가설:
+
+```text
+Population에서 smoker group과 non-smoker group의 birth weight 분포는 같다.
+sample에서 보이는 차이는 우연 때문이다.
+```
+
+대립가설:
+
+```text
+Population에서 smoker 산모의 아기들이 non-smoker 산모의 아기들보다 평균적으로 더 적게 나간다.
+```
+
+### 7.4 Test Statistic
+
+Group A:
+
+- non-smokers
+
+Group B:
+
+- smokers
+
+검정통계량:
+
+```text
+Group B average - Group A average
+= smokers average - non-smokers average
+```
+
+대립가설 방향:
+
+- smoker babies가 더 가볍다면 `B - A`는 음수다.
+- 따라서 작은 값, 특히 음수 방향이 대립가설을 지지한다.
+
+관측 통계량:
+
+```python
+smoking_and_birthweight = births[["Maternal Smoker", "Birth Weight"]]
+
+means_table = smoking_and_birthweight.groupby("Maternal Smoker")["Birth Weight"].mean()
+observed_difference = means_table.iloc[1] - means_table.iloc[0]
+```
+
+강의 예:
+
+```text
+observed_difference = -9.266142572024918
+```
+
+### 7.5 Difference of Means 함수
+
+```python
+def difference_of_means(df, variable, group_label):
+    reduced = df.loc[:, [variable, group_label]]
+    means_table = reduced.groupby(group_label)[variable].mean() \
+        .reset_index(name=variable + " average")
+    means = means_table.iloc[:, 1]
+    return means[1] - means[0]
+```
+
+주의:
+
+- group label 정렬 순서에 따라 `means[1] - means[0]`가 어떤 그룹 차이인지 달라질 수 있다.
+- 시험에서는 "어느 그룹 평균에서 어느 그룹 평균을 뺐는지" 명확히 써야 한다.
+
+### 7.6 Shuffling Labels under the Null
+
+귀무가설이 참이면:
+
+```text
+birth weight 분포는 smoker/non-smoker label과 관련이 없다.
+```
+
+따라서 label을 무작위로 섞어도 귀무가설 아래에서는 가능한 배정이다.
+
+시뮬레이션 계획:
+
+1. 모든 group label을 shuffle한다.
+2. shuffled label을 기존 birth weight에 붙인다.
+3. shuffled group 간 평균 차이를 계산한다.
+4. 반복해서 귀무가설 아래 검정통계량의 경험적 분포를 만든다.
+
+이 방법:
+
+- permutation test
+- label shuffling
+- A/B testing의 핵심
+
+### 7.7 One Simulated Difference
+
+```python
+def one_simulated_difference(df, variable, group_label):
+    shuffled_labels = df[group_label].sample(
+        n=len(df),
+        replace=False
+    ).reset_index(drop=True)
+
+    shuffled_table = df.copy()
+    shuffled_table["Shuffled Label"] = shuffled_labels
+
+    return difference_of_means(
+        shuffled_table,
+        variable,
+        "Shuffled Label"
+    )
+```
+
+왜 `replace=False`인가:
+
+- label을 재배치하는 것이므로 기존 label 개수를 그대로 유지해야 한다.
+- smoker 수와 non-smoker 수가 변하면 원래 실험/표본 구조가 바뀐다.
+- bootstrap의 복원추출과 다르다.
+
+### 7.8 Permutation Test
+
+```python
+differences = np.array([])
+repetitions = 5000
+
+for i in np.arange(repetitions):
+    new_difference = one_simulated_difference(
+        births,
+        "Birth Weight",
+        "Maternal Smoker"
+    )
+    differences = np.append(differences, new_difference)
+
+differences = pd.DataFrame({"Difference": differences})
+```
+
+p-value:
+
+```python
+empirical_p = np.count_nonzero(
+    differences["Difference"] <= observed_difference
+) / repetitions
+```
+
+해석:
+
+- 관측값이 귀무분포의 왼쪽 꼬리에 있으면 smoker group의 평균 birth weight가 낮다는 대립가설을 지지한다.
+- empirical p-value가 0으로 나와도 실제 확률이 정확히 0이라는 뜻은 아니다.
+- 시뮬레이션 반복 수 안에서 관측값만큼 극단적인 값이 안 나왔다는 뜻이다.
+
+### 7.9 Association과 Causation
+
+Smoker/non-smoker 예제에서 검정 결과가 유의하더라도:
+
+```text
+흡연이 낮은 birth weight를 원인으로 만들었다고 단정할 수는 없다.
+```
+
+이유:
+
+- 산모들이 smoker/non-smoker에 random assignment된 것이 아니다.
+- 흡연 여부는 income, geography, diet, 건강 상태 등 다른 요인과 관련될 수 있다.
+- observational study에서는 association은 말할 수 있어도 causation은 조심해야 한다.
+
+정리:
+
+- 관찰연구: association 중심
+- randomized controlled experiment: causal conclusion 가능
+
+### 7.10 Random Assignment
+
+Randomized controlled experiment에서는:
+
+- control group과 treatment group이 무작위로 배정된다.
+- 두 집단의 차이는 chance 또는 treatment 때문이라고 볼 수 있다.
+- 무작위 배정이 confounding variable을 평균적으로 균형 맞춘다.
+
+따라서 treatment/control 그룹이 random assignment되었다면 causal conclusion이 가능하다.
+
+### 7.11 BTA Low-Back Pain 예제
+
+배경:
+
+- Botulinum Toxin A, BTA가 low-back pain에 효과가 있는지 연구
+- 31명의 LBP 환자
+- control group: normal saline, 16명
+- treatment group: BTA, 15명
+- double-blind study
+- 8주 후 pain improvement 여부 측정
+
+Double-blind:
+
+- 의사도 환자도 어느 그룹인지 모른다.
+- 기대효과나 평가 편향을 줄인다.
+
+### 7.12 Potential Outcomes 관점
+
+각 참가자에게는 두 개의 잠재적 결과가 있다고 생각할 수 있다.
+
+- treatment를 받았을 때 결과
+- control을 받았을 때 결과
+
+하지만 실제로는 한 사람에게 둘 중 하나만 관측된다.
+
+Random assignment 때문에:
+
+- 어떤 16명이 control이 되고 어떤 15명이 treatment가 되는지는 우연이다.
+- 귀무가설 아래에서는 group label을 섞어도 가능한 배정이다.
+
+### 7.13 BTA Hypotheses
+
+귀무가설:
+
+```text
+Population에서 potential control scores 분포와 potential treatment scores 분포는 같다.
+즉, treatment 효과가 없다.
+```
+
+대립가설:
+
+```text
+Treatment group에서 pain improves = 1 비율이 control group보다 높다.
+```
+
+Group A:
+
+- control
+
+Group B:
+
+- treatment
+
+검정통계량:
+
+```text
+Group B average - Group A average
+= treatment improvement proportion - control improvement proportion
+```
+
+대립가설 방향:
+
+- positive values가 대립가설을 지지한다.
+
+강의 예:
+
+```text
+observed_diff = 0.475
+```
+
+### 7.14 BTA 코드
+
+```python
+bta = pd.read_csv("bta.csv")
+
+observed_proportions = bta.groupby("Group")["Result"].mean() \
+    .reset_index(name="Result average").iloc[:, 1]
+
+observed_diff = observed_proportions[1] - observed_proportions[0]
+```
+
+평균 차이 함수:
+
+```python
+def mean_diff(df, label, group_label):
+    proportions = df.groupby(group_label)[label].mean() \
+        .reset_index(name="Result average").iloc[:, 1]
+    return proportions[1] - proportions[0]
+```
+
+시뮬레이션:
+
+```python
+def one_simulated_diff(df, label, group_label):
+    shuffled_labels = df[group_label].sample(
+        n=len(df),
+        replace=False
+    ).reset_index(drop=True)
+
+    shuffled_df = df.copy()
+    shuffled_df["Shuffled Label"] = shuffled_labels
+
+    return mean_diff(shuffled_df, label, "Shuffled Label")
+
+diffs = np.array([])
+repetitions = 20000
+
+for i in np.arange(repetitions):
+    new_diff = one_simulated_diff(bta, "Result", "Group")
+    diffs = np.append(diffs, new_diff)
+```
+
+p-value:
+
+```python
+empirical_p = np.count_nonzero(diffs >= observed_diff) / repetitions
+```
+
+### 7.15 W13 시험 포인트
+
+- A/B testing은 두 sample이 같은 distribution에서 나왔는지 검정한다# 데이터과학입문 기말 시험 준비 정리
+
+현재 디렉토리 강의자료 기준 정리 범위:
+
+- W9L1: Testing Hypothesis 1
+- W9L2: Testing Hypothesis 2
+- W10L1: Map Visualization
+- W11L1: Why the Mean Matters?
+- W12L1: Estimation
+- W12L2: Linear Regression
+- W13L2: Comparing Two Samples
+- W14L1: Outro, AI 시대의 데이터과학
+
+---
+
+## 0. 큰 범주별 전체 목차
+
+기말 PDF 전체 내용은 주차 순서보다 다음 큰 범주로 묶어 이해하는 것이 좋다.
+
+### 0.1 가설검정
+
+해당 자료:
+
+- W9L1: Testing Hypothesis 1
+- W9L2: Testing Hypothesis 2
+
+핵심 질문:
+
+```text
+관측된 데이터가 어떤 모델 또는 귀무가설 아래에서 자연스럽게 나올 수 있는가?
+```
+
+주요 내용:
+
+- 모델은 데이터 생성 과정에 대한 가정이다.
+- 귀무가설은 시뮬레이션 가능한 chance model이다.
+- 대립가설은 귀무가설과 다른 설명이다.
+- 검정통계량은 귀무가설과 대립가설을 구분하도록 정한다.
+- 귀무가설 아래에서 검정통계량의 경험적 분포를 만든다.
+- 관측 통계량이 분포의 꼬리에 있으면 귀무가설과 일관되지 않는다고 본다.
+- p-value는 귀무가설 아래에서 관측값과 같거나 더 극단적인 값이 나올 확률이다.
+- p-value cutoff는 데이터를 보기 전에 정하는 오류확률 기준이다.
+
+대표 예제:
+
+- Swain 배심원 선정 사례
+- Mendel 완두콩 유전 모델
+- Alameda County jury panel과 TVD
+- Section 3 중간고사 평균
+- 공정한 동전과 error probability
+
+### 0.2 지도 시각화와 공간데이터
+
+해당 자료:
+
+- W10L1: Map Visualization
+
+핵심 질문:
+
+```text
+위도·경도와 지역 경계가 있는 데이터를 지도 위에서 어떻게 표현할 것인가?
+```
+
+주요 내용:
+
+- Folium으로 지도 객체를 만든다.
+- Marker, Popup, Tooltip으로 위치 정보를 표현한다.
+- MarkerCluster로 많은 점을 묶어 보여준다.
+- PolyLine으로 경로나 노선을 그린다.
+- GeoJSON으로 행정구역 같은 polygon 경계를 표현한다.
+- Choropleth map으로 지역별 값을 색으로 나타낸다.
+- groupby, pivot table, join으로 지도에 올릴 데이터를 정리한다.
+- 공간 인덱싱은 좌표를 cell ID로 바꾸어 근접 검색과 공간 집계를 빠르게 한다.
+- Geohash는 직사각형 격자 기반, H3는 육각형 격자 기반이다.
+
+대표 예제:
+
+- 부산 지도와 부산 지하철 노선
+- 부산 구별 choropleth
+- Bay Area bike sharing 데이터
+- 인기 자전거 대여소 지도
+- Geohash와 H3 cell 시각화
+
+### 0.3 평균 문제와 표본평균의 분포
+
+해당 자료:
+
+- W11L1: Why the Mean Matters?
+
+핵심 질문:
+
+```text
+평균은 왜 중요한가, 그리고 표본평균은 모집단 평균을 얼마나 잘 추정하는가?
+```
+
+주요 내용:
+
+- percentile은 순위 기반 요약값이다.
+- median은 50th percentile이다.
+- mean은 histogram의 balance point이며 outlier와 skewness에 민감하다.
+- standard deviation은 평균으로부터의 대표적 거리다.
+- Chebyshev 부등식은 모든 분포에서 평균 ± z SD 안의 최소 비율을 보장한다.
+- standard unit은 값이 평균에서 몇 SD 떨어져 있는지 나타낸다.
+- 정규분포에서는 평균 ± 1, 2, 3 SD가 대략 68%, 95%, 99.7%를 포함한다.
+- 중심극한정리, CLT는 큰 무작위표본의 평균 분포가 대략 정규분포가 된다는 정리다.
+- 표본평균 분포의 중심은 population mean이다.
+- 표본평균 분포의 SD는 `population SD / sqrt(sample size)`이다.
+
+대표 예제:
+
+- scores by section의 percentile
+- San Francisco salary의 mean과 median
+- NBA height/age와 standard unit
+- baby.csv와 Chebyshev
+- United flight delay와 CLT
+- sample size 100, 400, 625의 표본평균 분포 비교
+
+### 0.4 추정과 신뢰구간
+
+해당 자료:
+
+- W12L1: Estimation
+
+핵심 질문:
+
+```text
+표본 하나만 가지고 모수를 어떻게 추정하고, 그 불확실성을 어떻게 표현할 것인가?
+```
+
+주요 내용:
+
+- parameter는 모집단의 고정된 값이고, statistic은 표본에서 계산한 값이다.
+- statistic은 parameter의 추정치로 사용된다.
+- 표본이 달라지면 statistic도 달라지므로 추정치에는 variability가 있다.
+- bootstrap은 original sample에서 같은 크기로 복원추출을 반복하는 방법이다.
+- bootstrap distribution으로 추정치의 변동성을 본다.
+- confidence interval은 bootstrap statistic의 가운데 구간으로 만들 수 있다.
+- 95% confidence interval은 같은 절차를 반복했을 때 약 95%의 구간이 parameter를 포함한다는 뜻이다.
+- CI에 null value가 포함되는지로 양측 가설검정을 할 수 있다.
+
+대표 예제:
+
+- San Francisco 2019 compensation median
+- bootstrap median
+- 100개 confidence interval
+- 산모 평균 나이 추정
+- 부산대역 승하차 인원 평균 검정
+
+### 0.5 선형회귀와 예측 모델
+
+해당 자료:
+
+- W12L2: Linear Regression
+
+핵심 질문:
+
+```text
+독립변수 X와 종속변수 Y 사이의 관계를 직선으로 모델링하고 예측할 수 있는가?
+```
+
+주요 내용:
+
+- machine learning은 데이터를 통해 모델 parameter를 조정하는 과정이다.
+- regression은 입력 X로 출력 Y를 예측하는 supervised learning 문제다.
+- linear regression은 `Y = wX + b` 형태의 직선을 찾는다.
+- 좋은 모델은 관측값과 예측값의 오차가 작다.
+- scikit-learn의 `LinearRegression`에서 X는 2차원 배열이어야 한다.
+- MAE는 절대오차 평균이며 원래 단위로 해석하기 쉽다.
+- MSE는 제곱오차 평균이며 큰 오차를 강하게 벌한다.
+- R-square는 전체 변동 중 모델이 설명한 비율이다.
+- R-square가 높아도 인과관계를 뜻하지는 않는다.
+
+대표 예제:
+
+- 키와 몸무게 간단 회귀
+- `make_regression` 데이터
+- MSE로 w 조정하기
+- Iris petal width와 petal length
+- Penguins bill length와 flipper length
+
+### 0.6 두 표본 비교와 A/B Testing
+
+해당 자료:
+
+- W13L2: Comparing Two Samples
+
+핵심 질문:
+
+```text
+두 집단의 차이가 우연인지, 실제 집단 차이 또는 처치 효과인지 어떻게 판단할 것인가?
+```
+
+주요 내용:
+
+- A/B testing은 두 sample이 같은 underlying distribution에서 왔는지 검정한다.
+- numerical variable과 group label을 구분해야 한다.
+- 검정통계량으로 두 집단 평균 차이를 자주 사용한다.
+- 귀무가설 아래에서는 group label과 관측값의 연결이 의미 없다고 본다.
+- permutation test는 label을 비복원으로 섞어 귀무분포를 만든다.
+- observational study에서는 association만 조심스럽게 말할 수 있다.
+- randomized controlled experiment에서는 random assignment 덕분에 causation을 더 강하게 말할 수 있다.
+
+대표 예제:
+
+- 흡연 산모와 비흡연 산모의 아기 출생체중
+- label shuffling
+- empirical p-value
+- association vs causation
+- BTA low-back pain randomized controlled trial
+- potential outcomes 관점
+
+### 0.7 AI 시대의 데이터과학
+
+해당 자료:
+
+- W14L1: Outro
+
+핵심 질문:
+
+```text
+AI가 많은 작업을 대신하는 시대에 데이터과학을 왜 배우고 어떻게 써야 하는가?
+```
+
+주요 내용:
+
+- AI 시대에는 작업 수행 능력보다 작업 정의 능력이 중요해진다.
+- 데이터과학은 AI 답변을 검증하고 좋은 질문을 만들기 위한 기초다.
+- LLM은 다음 단어를 확률적으로 예측하는 모델이므로 그럴듯하지만 틀릴 수 있다.
+- 사실 확인, 교차검증, 최신 정보 확인, 짧은 대화 관리가 중요하다.
+- 프롬프트에는 목표, 맥락, 형식, 제약조건, 평가 기준이 들어가야 한다.
+- AI 결과는 bias, hallucination, overconfidence, accountability 문제를 가질 수 있다.
+- 데이터과학자는 문제를 정의하고, 데이터를 의심하고, 결과를 검증하고, 사람에게 설명해야 한다.
+
+대표 예제:
+
+- 같은 부산 지하철 데이터에서 다른 질문 만들기
+- 좋은 프롬프트와 나쁜 프롬프트 비교
+- 큰 작업을 단계별로 쪼개기
+- AI 답변 교차검증
+- 작은 반복 문제부터 자동화하기
+
+---
+
+## 0.8 범주 간 전체 흐름
+
+기말 범위의 큰 흐름은 다음과 같다.
+
+1. 데이터와 모델을 비교한다.
+2. 무작위성을 시뮬레이션한다.
+3. 통계량의 경험적 분포를 만든다.
+4. 관측값이 그 분포에서 자연스러운지 판단한다.
+5. 표본으로 모집단의 값을 추정한다.
+6. 추정치의 불확실성을 bootstrap과 confidence interval로 표현한다.
+7. 두 집단을 비교할 때는 label shuffling, permutation test, A/B testing을 사용한다.
+8. 지도 시각화, 회귀분석, AI 활용까지 데이터 분석 과정을 실제 문제에 연결한다.
+
+시험에서 자주 묻기 좋은 축:
+
+- 모델, 귀무가설, 대립가설의 차이
+- 검정통계량을 왜 그렇게 정하는지
+- p-value와 유의수준의 정확한 의미
+- bootstrap과 confidence interval의 정확한 해석
+- 평균, 표준편차, CLT, square root law의 연결
+- permutation test에서 label을 섞는 이유
+- 관찰연구와 randomized controlled experiment의 차이
+- 회귀분석 평가 지표와 해석
+- 지도 시각화에서 folium, GeoJSON, choropleth, spatial indexing의 역할
+
+---
+
+## 1. W9L1 - Testing Hypothesis 1
+
+### 1.1 Model
+
+모델은 데이터가 어떻게 만들어졌는지에 대한 가정들의 집합이다.
+
+데이터과학에서 많은 모델은 randomness를 포함한다.
+
+- 동전 던지기: 앞면 확률 1/2
+- 주사위 던지기: 각 눈 확률 1/6
+- 배심원 선정: 적격 인구에서 무작위로 선정
+- 멘델 유전 모델: 보라색 꽃 확률 75%, 흰색 꽃 확률 25%
+
+핵심 질문:
+
+```text
+Does the model fit the data?
+```
+
+즉, 모델이 예측하는 결과와 실제 관측 데이터가 일관적인지 확인한다.
+
+### 1.2 모델 평가 접근법
+
+1. 모델의 가정에 따라 데이터를 시뮬레이션한다.
+2. 모델이 예측하는 통계량 분포를 얻는다.
+3. 실제 관측 데이터에서 계산한 통계량과 비교한다.
+4. 관측값이 모델 예측과 일관되지 않으면 모델에 반하는 증거가 된다.
+
+중요:
+
+- 데이터는 실제로 관측된 것이다.
+- 모델은 가정이다.
+- 데이터와 모델이 충돌하면, 보통 모델을 의심한다.
+
+### 1.3 Jury Selection 예제
+
+미국 헌법은 공정한 배심원 재판을 보장한다.
+
+Robert Swain 사례:
+
+- Talladega County의 적격 배심원 중 Black 비율: 26%
+- 실제 jury panel 100명 중 Black: 8명
+- 실제 jury 12명 중 Black: 0명
+
+법원은 8/100이 26%보다 낮지만, 체계적 배제를 입증할 정도로 충분히 다르지 않다고 보았다.
+
+데이터과학 질문:
+
+```text
+정말 무작위로 100명을 뽑았다면 Black panelist가 8명 이하가 나오는 일이 현실적인가?
+```
+
+### 1.4 Discrete Probability Distribution
+
+강의에서 다룬 이산분포:
+
+- Bernoulli distribution: 어떤 사건이 발생할 확률 `p`, 발생하지 않을 확률 `1-p`
+- Binomial distribution: 같은 성공확률 `p`를 가지는 시행을 `n`번 반복
+- Multinomial distribution: binomial의 다항 확장, 여러 카테고리 중 하나가 선택됨
+
+`sample_proportions`는 categorical distribution에서 표본을 무작위 추출하고, 표본의 경험적 비율을 반환한다.
+
+```python
+import numpy as np
+
+def sample_proportions(sample_size, probabilities):
+    return np.random.multinomial(sample_size, probabilities) / sample_size
+```
+
+예:
+
+```python
+sample_size = 100
+eligible_population = [0.26, 0.74]  # Black, non-Black
+sample_distribution = sample_proportions(sample_size, eligible_population)
+```
+
+### 1.5 Swain 배심원 시뮬레이션
+
+검정통계량:
+
+```text
+100명 jury panel 중 Black panelist 수
+```
+
+귀무모델:
+
+- 적격 인구의 26%가 Black이다.
+- jury panel은 이 인구에서 무작위로 뽑힌다.
+
+시뮬레이션 함수:
+
+```python
+sample_size = 100
+eligible_population = [0.26, 0.74]
+
+def one_simulated_count():
+    return sample_size * sample_proportions(sample_size, eligible_population).item(0)
+
+counts = np.array([])
+repetitions = 10000
+
+for i in np.arange(repetitions):
+    counts = np.append(counts, one_simulated_count())
+```
+
+해석:
+
+- 시뮬레이션된 count들의 히스토그램이 귀무모델의 예측이다.
+- 관측값 8이 히스토그램의 극단적인 왼쪽 꼬리에 있으면, 무작위 선정 모델과 일관적이지 않다.
+- 이 경우 데이터는 "Black panelist가 체계적으로 적게 뽑혔다"는 대립 관점을 지지한다.
+
+### 1.6 Mendel 유전 모델 예제
+
+멘델 모델:
+
+- 특정 완두콩 식물은 보라색 꽃일 확률 75%
+- 흰색 꽃일 확률 25%
+- 각 식물의 색은 다른 식물과 독립
+
+관측:
+
+- 전체 929개 식물
+- 보라색 꽃: 709개
+- 관측 보라색 비율: `709 / 929`
+
+검정통계량:
+
+```text
+abs(관측 보라색 비율 - 75%)
+```
+
+대립가설은 "75%보다 크다" 또는 "75%보다 작다" 한쪽이 아니라, 모델의 예측인 75%에서 멀리 떨어져 있다는 것이다. 따라서 절대거리 통계량을 사용한다.
+
+```python
+observed_purples = 709 / 929
+predicted_proportions = np.array([0.75, 0.25])
+
+def purple_flowers():
+    return sample_proportions(929, predicted_proportions).item(0) * 100
+
+distances = np.array([])
+for i in np.arange(10000):
+    simulated_percent = purple_flowers()
+    distances = np.append(distances, abs(simulated_percent - 75))
+
+observed_distance = abs(observed_purples * 100 - 75)
+```
+
+### 1.7 W9L1 핵심 결론
+
+가설검정의 기본 구조:
+
+1. 모델을 세운다.
+2. 모델과 데이터의 차이를 측정할 통계량을 고른다.
+3. 모델이 참이라고 가정하고 통계량을 반복 시뮬레이션한다.
+4. 관측 통계량을 시뮬레이션 분포와 비교한다.
+5. 관측값이 꼬리에 있으면 모델이 데이터와 일관되지 않는다고 판단한다.
+
+---
+
+## 2. W9L2 - Testing Hypothesis 2
+
+### 2.1 Alameda County Jury Panels
+
+자료:
+
+- Alameda County jury service에 보고한 사람 수: 1453명
+- 여러 ethnicity category에 대해 적격 인구 비율과 실제 panel 비율 비교
+
+예시 데이터:
+
+```python
+jury = pd.DataFrame({
+    'Ethnicity': np.array(['Asian/PI', 'Black/AA', 'Caucasian', 'Hispanic', 'Other']),
+    'Eligible': np.array([0.15, 0.18, 0.54, 0.12, 0.01]),
+    'Panels': np.array([0.26, 0.08, 0.54, 0.08, 0.04])
+})
+```
+
+해석:
+
+- Asian/PI와 Other는 panel에서 더 높게 나타난다.
+- Black/AA와 Hispanic은 panel에서 낮게 나타난다.
+- 여러 카테고리 전체의 차이를 하나의 숫자로 요약해야 한다.
+
+### 2.2 DataFrame melt
+
+wide format을 long format으로 바꾼다.
+
+```python
+jury_mdf = jury.melt(id_vars="Ethnicity")
+```
+
+사용 이유:
+
+- seaborn의 `hue`를 이용해 `Eligible`과 `Panels`를 나란히 비교하기 좋다.
+- barplot에서 여러 변수 열을 하나의 categorical column으로 바꿀 수 있다.
+
+### 2.3 Total Variation Distance, TVD
+
+여러 카테고리 분포의 차이를 측정하기 위해 TVD를 사용한다.
+
+공식:
+
+```text
+TVD(P, Q) = 1/2 * sum(|P_i - Q_i|)
+```
+
+코드:
+
+```python
+def tvd(p, q):
+    return sum(abs(p - q)) / 2
+
+observed_tvd = tvd(jury["Panels"], jury["Eligible"])
+```
+
+왜 2로 나누는가:
+
+- 한 카테고리에서 줄어든 비율은 다른 카테고리에서 늘어난 비율로 나타난다.
+- 절대차를 모두 더하면 같은 이동이 두 번 계산된다.
+- 따라서 2로 나누어 실제 분포 간 이동량으로 해석한다.
+
+해석:
+
+- `TVD = 0`: 두 분포가 완전히 같다.
+- 값이 클수록 분포 차이가 크다.
+- 여러 카테고리를 동시에 비교하는 검정통계량으로 적합하다.
+
+### 2.4 Alameda Jury 가설검정
+
+귀무가설:
+
+```text
+jury panel은 적격 인구의 ethnicity 분포에서 무작위로 뽑혔다.
+```
+
+대립가설:
+
+```text
+jury panel은 적격 인구에서 무작위로 뽑힌 것이 아니며, ethnicity 구성이 다르다.
+```
+
+시뮬레이션:
+
+```python
+eligible_population = np.array([0.15, 0.18, 0.54, 0.12, 0.01])
+
+def one_simulated_tvd():
+    sample_distribution = sample_proportions(1453, eligible_population)
+    return tvd(sample_distribution, eligible_population)
+
+tvds = np.array([])
+for i in np.arange(10000):
+    tvds = np.append(tvds, one_simulated_tvd())
+```
+
+판단:
+
+- 관측 TVD가 시뮬레이션 TVD 분포의 오른쪽 꼬리에 있으면 무작위 선정 모델과 일관적이지 않다.
+- categorical distribution 비교에는 count 하나보다 TVD가 더 적합하다.
+
+### 2.5 Hypotheses
+
+가설검정은 데이터가 생성된 방식에 대한 두 관점 중 하나를 고르는 절차다.
+
+귀무가설, null hypothesis:
+
+- 명확한 chance model이다.
+- 시뮬레이션 가능해야 한다.
+- 보통 "차이는 우연 때문이다", "무작위로 발생했다", "효과가 없다" 형태다.
+
+대립가설, alternative hypothesis:
+
+- 귀무가설과 반대되는 관점이다.
+- 관측된 차이가 우연만으로 설명되지 않는다는 주장이다.
+- 단측 또는 양측 방향을 가질 수 있다.
+
+중요:
+
+- 시뮬레이션은 귀무가설 아래에서 수행한다.
+- 대립가설은 검정통계량의 어느 방향이 증거인지 결정한다.
+
+### 2.6 Test Statistic 고르는 법
+
+검정통계량을 고를 때 물어야 할 질문:
+
+- 어떤 값이 귀무가설을 지지하는가?
+- 어떤 값이 대립가설을 지지하는가?
+- 대립가설 방향이 큰 값인가, 작은 값인가, 양쪽 끝인가?
+
+예:
+
+- Swain jury: Black panelist 수가 너무 작으면 대립가설 지지
+- Mendel: 75%에서 너무 멀면 대립가설 지지
+- Alameda jury: TVD가 너무 크면 대립가설 지지
+- Section score: section 평균이 너무 낮으면 대립가설 지지
+
+### 2.7 Section Score 예제
+
+상황:
+
+- 큰 통계 수업이 12개 discussion section으로 나뉨
+- Section 3 학생들이 중간고사 평균이 낮다고 느낀다.
+- Section 3의 평균이 정말 낮은지, 아니면 우연히 낮은 것인지 판단한다.
+
+귀무가설:
+
+```text
+Section 3은 전체 수업에서 같은 크기의 학생들을 무작위로 뽑은 것과 같다.
+```
+
+대립가설:
+
+```text
+Section 3 평균은 우연만으로 보기 어렵게 낮다.
+```
+
+검정통계량:
+
+```text
+section 평균 점수
+```
+
+대립가설 방향:
+
+- 평균이 작을수록 대립가설을 지지한다.
+
+시뮬레이션:
+
+```python
+def random_sample_midterm_avg():
+    random_sample = scores.sample(n=27, replace=False)
+    return random_sample.Midterm.mean()
+
+sample_averages = np.array([])
+repetitions = 50000
+
+for i in np.arange(repetitions):
+    sample_averages = np.append(sample_averages, random_sample_midterm_avg())
+```
+
+관측값:
+
+```python
+observed_average = 13.666667
+```
+
+p-value:
+
+```python
+p_value = np.count_nonzero(sample_averages <= observed_average) / 50000
+```
+
+### 2.8 Statistical Significance
+
+관측 통계량이 귀무가설 아래의 경험적 분포 꼬리에 있으면, 데이터는 귀무가설과 일관되지 않는다.
+
+관습:
+
+- p-value < 5%: statistically significant
+- p-value < 1%: highly statistically significant
+
+주의:
+
+- 5%와 1%는 절대 법칙이 아니라 관습적 기준이다.
+- cutoff는 데이터를 보기 전에 정해야 한다.
+
+### 2.9 P-value
+
+정의:
+
+```text
+p-value는 귀무가설이 참일 때, 관측 통계량과 같거나 대립가설 방향으로 더 극단적인 값이 나올 확률이다.
+```
+
+정확한 표현:
+
+- under the null hypothesis
+- test statistic
+- equal to the observed value
+- or even further in the direction of the alternative
+
+틀린 해석:
+
+- p-value는 귀무가설이 참일 확률이 아니다.
+- p-value는 대립가설이 참일 확률이 아니다.
+- p-value가 크다고 귀무가설이 참이라고 증명되는 것은 아니다.
+
+### 2.10 P-value와 Error Probability
+
+동전 예제:
+
+- 학생 10,000명이 각각 공정한 동전을 2000번 던진다.
+- 검정통계량: `abs(number of heads - 1000)`
+- 5% cutoff를 사용한다.
+- 모든 동전이 공정해도 약 5%의 학생은 동전이 불공정하다고 잘못 결론 내릴 수 있다.
+
+의미:
+
+- 유의수준 5%는 귀무가설이 참일 때 잘못 기각할 확률을 약 5%로 제한하는 기준이다.
+- p-value cutoff는 error probability와 연결된다.
+
+구분:
+
+- p-value cutoff: 데이터 보기 전에 정하는 기준
+- p-value: 관측 데이터와 시뮬레이션 결과로 계산되는 값
+
+---
+
+## 3. W10L1 - Map Visualization
+
+### 3.1 지도 시각화의 목적
+
+지도 시각화는 지리정보가 포함된 데이터를 공간적으로 이해하기 위한 방법이다.
+
+활용 예:
+
+- 길찾기
+- 맛집 탐색
+- 버스/지하철 위치
+- 공용 자전거 대여소
+- 지역별 가격, 인구, 수요 분포
+- 반경 검색, 근접 검색
+
+데이터과학에서 중요한 이유:
+
+- 위도와 경도가 있는 데이터를 빠르게 시각화할 수 있다.
+- 공간 패턴을 직관적으로 파악할 수 있다.
+- 지도 위에서 marker, line, polygon, color scale로 다양한 정보를 표현할 수 있다.
+
+### 3.2 Folium
+
+Folium은 Python에서 지도 시각화를 만드는 패키지다.
+
+특징:
+
+- OpenStreetMap 기반
+- marker, popup, tooltip, layer, polyline, GeoJSON, choropleth 지원
+- Jupyter/Colab에서 HTML 지도로 출력 가능
+- 국내 지도 서비스보다 품질이 떨어질 수 있지만 데이터 분석용으로 편리하다.
+
+기본 지도:
+
+```python
+import folium
+
+busan = [35.1797957, 129.0727983]
+m = folium.Map(location=busan, zoom_start=12, width=800, height=500)
+m
+```
+
+좌표 순서:
+
+```text
+[latitude, longitude] = [위도, 경도]
+```
+
+### 3.3 branca Figure
+
+Colab/Jupyter에서 지도와 셀 사이의 여백, 지도 크기를 조정할 때 사용한다.
+
+```python
+from branca.element import Figure
+
+fig = Figure(width=600, height=400)
+m = folium.Map(location=busan, zoom_start=12)
+fig.add_child(m)
+```
+
+### 3.4 Tile Layer
+
+지도 배경 스타일을 바꿀 수 있다.
+
+```python
+m = folium.Map(location=busan, zoom_start=12)
+folium.TileLayer("cartodbpositron").add_to(m)
+folium.TileLayer("cartodbdark_matter").add_to(m)
+folium.LayerControl().add_to(m)
+```
+
+중요:
+
+- 기본은 OpenStreetMap
+- 여러 tile을 추가하면 `LayerControl`로 선택 가능
+- tile은 데이터가 아니라 지도 배경이다.
+
+### 3.5 Marker, Popup, Tooltip, Icon
+
+```python
+pnu = [35.23379098528912, 129.08090997889803]
+pnu_station = [35.22884833731382, 129.09063225747852]
+
+folium.Marker(
+    pnu,
+    popup="PNU",
+    tooltip="Click here to see Popup",
+    icon=folium.Icon(icon="bookmark", color="red", prefix="fa")
+).add_to(m)
+```
+
+구분:
+
+- Marker: 지도 위 위치 표시
+- Popup: marker를 클릭했을 때 보이는 내용
+- Tooltip: hover할 때 보이는 짧은 설명
+- Icon: marker의 모양과 색
+
+### 3.6 MarkerCluster
+
+많은 지점을 한 지도에 표시하면 겹쳐 보인다. MarkerCluster는 가까운 marker들을 묶어 가독성을 높인다.
+
+```python
+from folium import Marker
+from folium.plugins import MarkerCluster
+
+cluster = MarkerCluster()
+
+for _, row in df.iterrows():
+    cluster.add_child(
+        Marker(
+            location=[row["Lat"], row["Long"]],
+            popup=row["Name"]
+        )
+    )
+
+cluster.add_to(m)
+```
+
+시험 포인트:
+
+- marker 수가 많을 때 cluster를 사용한다.
+- zoom in하면 cluster가 개별 marker로 풀린다.
+
+### 3.7 PolyLine
+
+좌표들을 순서대로 연결해 선을 그린다.
+
+```python
+from folium import PolyLine
+
+for line_name, group in df.groupby("LineName"):
+    latlongs = group[["Lat", "Long"]].values.tolist()
+    PolyLine(latlongs, tooltip=line_name).add_to(m)
+```
+
+사용 예:
+
+- 지하철 노선
+- 버스 경로
+- 이동 궤적
+- GPS trajectory
+
+주의:
+
+- 좌표 순서가 의미 있다.
+- group 안의 행 순서가 잘못되어 있으면 선이 엉뚱하게 연결될 수 있다.
+
+### 3.8 GeoJSON
+
+GeoJSON은 지리공간 객체를 JSON 형식으로 저장하는 표준이다.
+
+예:
+
+- 구/군 경계
+- 행정동 경계
+- 도로망
+- 다각형 영역
+
+Folium에서 GeoJSON 표시:
+
+```python
+import json
+
+with open("busan_gu.json", encoding="utf-8") as f:
+    busan_geojson = json.load(f)
+
+m = folium.Map(location=busan, zoom_start=10)
+folium.GeoJson(busan_geojson).add_to(m)
+```
+
+GeoJSON feature 구조:
+
+- `type`: Feature
+- `id`: 행정구역 이름 등
+- `properties`: code, name, name_eng, base_year 등 속성
+- `geometry`: Polygon 또는 MultiPolygon 좌표
+
+### 3.9 Choropleth Map
+
+Choropleth map은 지역별 값을 색으로 표현하는 지도다.
+
+질문 예:
+
+- 특정 변수가 지역별로 어떻게 분포하는가?
+- 가격, 인구, 거리, 위험도, 수요가 어디서 높고 낮은가?
+
+기본 코드:
+
+```python
+busan_map = folium.Map(location=busan, zoom_start=10)
+
+folium.Choropleth(
+    geo_data=busan_geojson,
+    data=busan_df["price"],
+    fill_color="PuRd",
+    key_on="feature.id"
+).add_to(busan_map)
+```
+
+중요 옵션:
+
+- `geo_data`: 경계 정보를 담은 GeoJSON
+- `data`: 색으로 표현할 값
+- `columns`: key와 value가 있는 DataFrame 열
+- `key_on`: GeoJSON의 어떤 속성과 DataFrame key를 연결할지
+- `fill_color`: ColorBrewer palette
+
+### 3.10 ColorBrewer
+
+ColorBrewer는 지도 시각화에 자주 쓰이는 predefined color palette다.
+
+색 선택 주의:
+
+- 순서형 데이터: 밝은 색에서 진한 색으로 변화
+- 범주형 데이터: 서로 구분되는 색
+- 양쪽 방향으로 차이가 있는 데이터: diverging palette
+
+### 3.11 Bike Sharing 데이터
+
+Bay Area bike sharing 자료:
+
+- 2014년 9월부터 2015년 8월까지 354,152건의 대여
+- 주요 attribute:
+  - 대여 ID
+  - 대여 기간, 초 단위
+  - 대여 시작 날짜/시간
+  - 시작 대여소 이름과 코드
+  - 반납 대여소 이름과 코드
+  - 자전거 serial number
+  - 사용자 타입
+  - zip code
+
+데이터 로드:
+
+```python
+url = "https://raw.githubusercontent.com/data-8/textbook/main/assets/data/trip.csv"
+trip = pd.read_csv(url)
+```
+
+추가 요금이 발생하지 않는 30분 이내 대여만 필터링:
+
+```python
+commute = trip[trip.Duration < 1800]
+```
+
+히스토그램:
+
+```python
+sns.histplot(data=commute, x="Duration", bins=60)
+```
+
+### 3.12 groupby
+
+가장 많이 대여가 발생한 station 찾기:
+
+```python
+starts = commute.groupby("Start Station")["Start Station"].count()
+starts = starts.reset_index(name="count").sort_values(by="count", ascending=False)
+```
+
+대여/반납 station pair:
+
+```python
+commute.groupby(["Start Station", "End Station"])["End Station"].count()
+```
+
+핵심:
+
+- groupby는 같은 값을 가진 행들을 묶어 집계한다.
+- 결과가 Series이면 `reset_index`로 DataFrame으로 바꾸면 다루기 쉽다.
+
+### 3.13 Pivot Table
+
+대여소와 반납소 조합을 행/열 표로 바꾼다.
+
+```python
+pd.pivot_table(
+    commute,
+    columns="Start Station",
+    index="End Station",
+    aggfunc="count"
+).fillna(0).apply(np.int64)
+```
+
+최단 이동 시간:
+
+```python
+pd.pivot_table(
+    commute,
+    columns="Start Station",
+    index="End Station",
+    values="Duration",
+    aggfunc="min"
+).fillna(0).apply(np.int64)
+```
+
+### 3.14 Station Map
+
+station 위치 데이터:
+
+```python
+url = "https://raw.githubusercontent.com/data-8/textbook/main/assets/data/station.csv"
+stations = pd.read_csv(url)
+```
+
+지도 중심을 평균 좌표로 설정:
+
+```python
+cityMap = folium.Map(
+    location=[stations["lat"].mean(), stations["long"].mean()],
+    zoom_start=10
+)
+```
+
+원형 marker:
+
+```python
+folium.CircleMarker(
+    location=[lat, long],
+    radius=5,
+    color="blue",
+    fill=True
+).add_to(cityMap)
+```
+
+### 3.15 join 활용
+
+도시별 색상 정보를 station 데이터에 결합한다.
+
+```python
+cities = stations.groupby("landmark")["landmark"].count()
+cities = cities.reset_index(name="count").rename(columns={"landmark": "city"})
+
+colors = cities.copy()
+colors["color"] = np.array(["blue", "red", "green", "orange", "purple"])
+
+joined = stations.join(colors.set_index("city"), on="landmark", how="inner")
+colored = joined.loc[:, ["lat", "long", "name", "color"]]
+```
+
+join 의미:
+
+- 한 DataFrame에 있는 위치 데이터와 다른 DataFrame에 있는 색/집계 정보를 key 기준으로 합친다.
+- 지도 시각화에서는 위치 테이블에 count, category, color 등을 붙이는 데 자주 사용한다.
+
+### 3.16 인기 대여소 지도
+
+절차:
+
+1. 대여 시작 station별 count 계산
+2. station 위치 데이터와 count를 join
+3. count에 따라 marker 크기 또는 색 설정
+4. Folium CircleMarker로 지도 표시
+
+색상 함수:
+
+```python
+def color_select(areas):
+    if areas > 3000:
+        return "red"
+    elif areas > 2000:
+        return "yellow"
+    elif areas > 1000:
+        return "green"
+    else:
+        return "dodgerblue"
+```
+
+### 3.17 Spatial Indexing System
+
+공간 인덱싱은 위치 데이터에 대한 효율적 질의를 위해 사용한다.
+
+질의 예:
+
+- k-NN: 가장 가까운 k개 찾기
+- range query: 반경 r 이내 지점 찾기
+- 근접 검색
+- 공간 집계
+
+기본 아이디어:
+
+- 공간을 계층적 cell로 나눈다.
+- 위도/경도를 cell ID로 encoding한다.
+- 가까운 지점들은 같거나 인접한 cell에 있을 가능성이 높다.
+
+대표 방식:
+
+- Geohash: 위도/경도 기반 직사각형 격자
+- H3: Uber가 개발한 육각형 격자
+
+### 3.18 Geohash
+
+Geohash는 지구 표면을 직사각형 격자로 나누고, 각 격자를 문자열로 표현한다.
+
+특징:
+
+- 문자열 길이가 길수록 더 작은 영역
+- parent geohash에 base32 문자를 붙이면 child cell을 만들 수 있다.
+
+코드:
+
+```python
+import pygeohash as pgh
+
+pnu_lat = 35.230753
+pnu_lng = 129.083263
+
+cell_container = []
+for precision in range(1, 13):
+    cell = pgh.encode(pnu_lat, pnu_lng, precision=precision)
+    cell_container.append(cell)
+```
+
+bounding box:
+
+```python
+pgh.get_bounding_box(cell)
+```
+
+Geohash cell을 Folium polygon으로 그릴 수 있다.
+
+### 3.19 H3
+
+H3는 Uber가 개발한 육각형 기반 공간 인덱싱 시스템이다.
+
+특징:
+
+- 위도/경도를 H3 cell ID로 변환
+- resolution이 높을수록 작은 육각형
+- parent-child cell 구조
+- 육각형은 이웃 관계를 다루기 좋다.
+
+코드:
+
+```python
+import h3
+
+pnu_lat = 35.230753
+pnu_lng = 129.083263
+
+cell_container = []
+for resolution in range(16):
+    cell = h3.latlng_to_cell(pnu_lat, pnu_lng, resolution)
+    cell_container.append(cell)
+```
+
+cell boundary:
+
+```python
+h3.cell_to_boundary(cell)
+```
+
+child cells:
+
+```python
+h3.cell_to_children(parent_cell, child_res)
+```
+
+### 3.20 W10 시험 포인트
+
+- Folium은 지도 객체를 만들고 marker, line, polygon을 추가하는 도구다.
+- 좌표 순서는 `[위도, 경도]`다.
+- popup은 클릭, tooltip은 hover다.
+- MarkerCluster는 많은 marker의 겹침을 줄인다.
+- PolyLine은 순서 있는 좌표를 선으로 연결한다.
+- GeoJSON은 행정구역 등 지리 경계를 담는다.
+- Choropleth는 지역별 값을 색으로 표현한다.
+- groupby, pivot, join은 지도 시각화 전 데이터 정리에 핵심이다.
+- Geohash는 직사각형 격자, H3는 육각형 격자 기반 공간 인덱싱이다.
+
+---
+
+## 4. W11L1 - Why the Mean Matters?
+
+### 4.1 Percentile
+
+수치형 데이터는 정렬할 수 있으므로 rank를 기준으로 값을 설명할 수 있다.
+
+백분위수:
+
+- `p`번째 percentile은 데이터에서 특정 비율 위치의 값이다.
+- 50th percentile은 median이다.
+- 95th percentile은 대략 데이터의 95%가 그 값 이하라는 뜻이다.
+
+주의할 모호성:
+
+- 모든 값이 같으면 같은 값이 여러 percentile로 해석될 수 있다.
+- index가 정수로 떨어지지 않으면 정의 방식에 따라 결과가 달라진다.
+
+### 4.2 Nearest-Rank 방식
+
+예:
+
+```python
+s = [12, 17, 6, 9, 7]
+np.sort(s)  # [6, 7, 9, 12, 17]
+```
+
+80th percentile:
+
+- 원소 5개
+- 5개의 80% = 4개
+- 4번째 값 = 12
+
+70th percentile:
+
+- 5개의 70% = 3.5
+- 올림해서 4번째 값
+- 결과 = 12
+
+강의 정의:
+
+```text
+p번째 percentile은 데이터의 원소 중 p% 이상에 해당하는 값 중 가장 작은 값이다.
+```
+
+계산 절차:
+
+1. 리스트를 오름차순으로 정렬한다.
+2. `k = p/100 * (n - 1)`을 계산한다.
+3. `k`가 정수이면 해당 위치의 원소를 선택한다.
+4. `k`가 정수가 아니면 다음 정수로 올림한 위치의 원소를 선택한다.
+
+### 4.3 Continuous Percentile
+
+통계학의 일반적 정의에서는 percentile 값이 반드시 데이터의 원소일 필요가 없다.
+
+보간, interpolation:
+
+- `p`가 정확한 index에 해당하지 않을 때 가까운 두 값 사이를 보간한다.
+- 따라서 실제 데이터에 없는 값이 나올 수 있다.
+
+Numpy 비교:
+
+```python
+import numpy as np
+
+s = [12, 17, 6, 9, 7]
+
+np.percentile(s, 85, method="inverted_cdf")  # nearest-rank에 가까움
+np.percentile(s, 85, method="linear")        # 보간
+```
+
+예:
+
+- 정렬: `[6, 7, 9, 12, 17]`
+- `k = 0.85 * 4 = 3.4`
+- `inverted_cdf`: 올림 위치 값 17
+- `linear`: `12 + 0.4 * (17 - 12) = 14`
+
+시험 포인트:
+
+- `inverted_cdf`는 실제 데이터 값 중 하나를 반환한다.
+- `linear`는 데이터에 없는 보간값을 반환할 수 있다.
+
+### 4.4 scores_and_sections 예제
+
+데이터:
+
+- 한 학기 수업 데이터
+- 학생 359명
+- 열: discussion section, midterm score
+
+85th percentile 예:
+
+- `0.85 * (359 - 1) = 304.3`
+- nearest-rank 관점에서 305번째 근처 값
+- 강의 예시 결과: 22
+
+히스토그램:
+
+```python
+fig, ax = plt.subplots()
+ax.hist(
+    scores_and_sections["Midterm"],
+    bins=np.arange(-0.5, 25.6, 1),
+    density=True,
+    linewidth=0.5,
+    edgecolor="white"
+)
+```
+
+### 4.5 Mean
+
+평균은 데이터 합을 개수로 나눈 값이다.
+
+예:
+
+```text
+Data: 2, 3, 3, 9
+Average = (2 + 3 + 3 + 9) / 4 = 4.25
+```
+
+기본 성질:
+
+- 데이터 안에 실제로 있는 값일 필요가 없다.
+- 데이터가 정수여도 평균은 소수일 수 있다.
+- 최솟값과 최댓값 사이에 있다.
+- 반드시 정중앙은 아니다.
+- 데이터와 같은 단위를 가진다.
+- 모든 값을 한 그릇에 모아 균등하게 나눈 값으로 볼 수 있다.
+
+코드:
+
+```python
+np.average(data)
+np.mean(data)
+```
+
+### 4.6 Mean과 Median 비교
+
+평균:
+
+- 히스토그램의 균형점
+- 물리학의 질량중심과 비슷하다.
+- outlier와 긴 꼬리에 민감하다.
+
+중앙값:
+
+- 50th percentile
+- 순서상 가운데 값
+- outlier에 평균보다 덜 민감하다.
+
+분포 형태별 관계:
+
+- 대칭 분포: 평균과 중앙값이 비슷하거나 같다.
+- 오른쪽으로 치우친 분포: 평균이 오른쪽 꼬리 방향으로 끌려가 중앙값보다 커진다.
+- 왼쪽으로 치우친 분포: 평균이 왼쪽 꼬리 방향으로 끌려가 중앙값보다 작아진다.
+
+예:
+
+```python
+not_symmetric = np.array([2, 3, 3, 9])
+np.mean(not_symmetric)  # 4.25
+```
+
+### 4.7 San Francisco Salary 예제
+
+데이터:
+
+- 2015년 San Francisco 시공무원 급여 및 복지 데이터
+- `Total Compensation` 사용
+
+히스토그램:
+
+```python
+bins = np.arange(10000, 700000, 25000)
+sns.histplot(
+    data=sf2015,
+    x="Total Compensation",
+    bins=bins,
+    stat="percent"
+)
+```
+
+Median과 mean:
+
+```python
+compensation = sf2015["Total Compensation"]
+
+sf_median = np.percentile(compensation, q=50, method="higher")
+sf_avg = np.mean(compensation)
+```
+
+강의 예:
+
+- median: 110305.79
+- mean: 114725.984...
+
+해석:
+
+- 급여 분포는 오른쪽 꼬리가 길기 쉽다.
+- 높은 급여 outlier가 평균을 중앙값보다 크게 만든다.
+
+### 4.8 Variability
+
+데이터의 퍼짐을 측정해야 한다.
+
+Plan A:
+
+```text
+max - min
+```
+
+장점:
+
+- 쉽다.
+
+단점:
+
+- 분포의 전체 모양을 잘 설명하지 못한다.
+- outlier 두 개에 지나치게 의존한다.
+
+Plan B:
+
+- 평균 주변의 변동성을 측정한다.
+- 분산과 표준편차를 사용한다.
+
+### 4.9 Standard Deviation
+
+표준편차는 데이터가 평균에서 대략 얼마나 떨어져 있는지 측정한다.
+
+정의:
+
+```text
+SD = Root Mean Square of Deviations from Average
+```
+
+계산 단계:
+
+1. 평균을 구한다.
+2. 각 값에서 평균을 뺀 deviation을 구한다.
+3. deviation을 제곱한다.
+4. 제곱 deviation의 평균을 구한다. 이것이 variance다.
+5. variance의 제곱근을 구한다. 이것이 SD다.
+
+예:
+
+```python
+any_numbers = np.array([1, 2, 2, 10])
+
+mean = np.mean(any_numbers)
+deviations = any_numbers - mean
+squared_deviations = deviations ** 2
+variance = np.mean(squared_deviations)
+sd = variance ** 0.5
+```
+
+Numpy:
+
+```python
+np.std(any_numbers)
+```
+
+특징:
+
+- 데이터와 같은 단위를 가진다.
+- 모든 값이 같으면 SD는 0이다.
+- 이상치가 있으면 SD가 커진다.
+
+### 4.10 Why Use SD?
+
+분포 모양과 무관하게 많은 데이터는 평균 주변 몇 SD 범위 안에 있다.
+
+정규분포형 데이터에서는 경험적으로:
+
+- 평균 ± 1 SD: 약 68%
+- 평균 ± 2 SD: 약 95%
+- 평균 ± 3 SD: 약 99.7%
+
+모든 분포에 대해 보장되는 것은 Chebyshev's Inequality다.
+
+### 4.11 NBA height/age 예제
+
+NBA 2013 데이터에서 키:
+
+```python
+mean_height = np.mean(nba13.Height)
+sd_height = np.std(nba13.Height)
+```
+
+강의 예:
+
+- 평균 키: 약 79.07 inch
+- SD: 약 3.45 inch
+- 최대 87 inch는 평균보다 약 2.3 SD 위
+- 최소 69 inch는 평균보다 약 2.92 SD 아래
+
+나이:
+
+```python
+ages = nba13["Age in 2013"]
+mean_age = np.mean(ages)
+sd_age = np.std(ages)
+```
+
+강의 예:
+
+- 평균 나이: 약 26.19
+- SD: 약 4.32
+- 40세는 평균보다 약 3.2 SD 위
+
+### 4.12 Chebyshev's Inequality
+
+분포 모양과 관계없이 성립한다.
+
+공식:
+
+```text
+mean ± z SDs 범위 안의 비율 >= 1 - 1/z^2
+```
+
+예:
+
+- 평균 ± 2 SD: 최소 `1 - 1/4 = 3/4 = 75%`
+- 평균 ± 3 SD: 최소 `1 - 1/9 = 8/9 = 88.88...%`
+- 평균 ± 4 SD: 최소 `1 - 1/16 = 15/16 = 93.75%`
+- 평균 ± 5 SD: 최소 `1 - 1/25 = 96%`
+
+주의:
+
+- Chebyshev는 최소 보장값이다.
+- 실제 데이터에서는 이보다 더 많은 값이 범위 안에 있을 수 있다.
+
+함수:
+
+```python
+def chebyshev(num_SDs):
+    return 1 - 1 / (num_SDs ** 2)
+```
+
+### 4.13 baby.csv 예제
+
+데이터:
+
+- mother-baby pair 1174개
+- Birth Weight, Maternal Age, Maternal Height, Maternal Pregnancy Weight 등
+
+특정 열에서 `z` SD 안 비율:
+
+```python
+def cheby_says(table, label, z):
+    temp = table[label]
+    mean = np.mean(temp)
+    sd = np.std(temp)
+    chosen = table[
+        (mean - z * sd < table[label]) &
+        (table[label] < mean + z * sd)
+    ]
+    proportion = len(chosen) / len(table)
+    percent = round(proportion * 100, 2)
+    print("Average plus or minus", z, "SDs:", percent, "%")
+```
+
+### 4.14 Standard Units
+
+표준단위, standard units:
+
+```text
+z = (value - average) / SD
+```
+
+의미:
+
+- 평균보다 몇 SD만큼 위/아래에 있는가
+- `z = 0`: 평균과 같음
+- `z > 0`: 평균보다 큼
+- `z < 0`: 평균보다 작음
+
+변환 함수:
+
+```python
+def standard_units(x):
+    return (x - np.mean(x)) / np.std(x)
+```
+
+표준화 후:
+
+- 평균 = 0
+- SD = 1
+
+### 4.15 Bell-shaped Curve와 Inflection Point
+
+히스토그램이 종 모양이면:
+
+- 평균이 중심, 가장 높은 부분 근처에 있다.
+- SD는 평균에서 변곡점까지의 거리로 볼 수 있다.
+- 표준정규분포에서는 변곡점이 `z = -1`, `z = 1`에 있다.
+
+주의:
+
+- 히스토그램만 보고 SD를 정확히 추정하기는 어렵다.
+- 종 모양일 때만 변곡점 직관이 유용하다.
+
+### 4.16 Normal Distribution
+
+정규분포:
+
+```text
+X ~ N(mu, sigma^2)
+```
+
+구성:
+
+- `mu`: 평균, 대칭 중심
+- `sigma^2`: 분산
+- `sigma`: 표준편차
+
+특징:
+
+- 평균과 중앙값이 같다.
+- 곡선 아래 전체 면적은 1이다.
+- 표준정규분포는 `Z ~ N(0, 1)`이다.
+- 표준정규분포의 변곡점은 `-1`, `1`이다.
+
+정규분포에서 비율:
+
+- 평균 ± 1 SD: 약 68%
+- 평균 ± 2 SD: 약 95%
+- 평균 ± 3 SD: 약 99.73%
+
+### 4.17 Central Limit Theorem, CLT
+
+중심극한정리는 원자료 분포가 아니라 표본평균의 분포에 대한 정리다.
+
+핵심:
+
+- 표본이 충분히 크다.
+- 독립적으로 동일한 분포에서 뽑힌다.
+- 모집단 분포가 무엇이든 표본평균들의 분포는 대략 정규분포에 가까워진다.
+
+수식 감각:
+
+```text
+X_i가 평균 mu, 분산 sigma^2를 가지면
+sum(X_i)는 대략 N(n*mu, n*sigma^2)
+sample mean은 대략 N(mu, sigma^2/n)
+```
+
+표본평균의 SD:
+
+```text
+SD(sample mean) = population SD / sqrt(sample size)
+```
+
+### 4.18 United flight delay 예제
+
+데이터:
+
+- `united_summer2015.csv`
+- 비행기 delay 분포는 오른쪽 꼬리가 긴 형태일 수 있다.
+
+모집단 평균과 SD:
+
+```python
+mean_delay = np.mean(united.Delay)
+sd_delay = np.std(united.Delay)
+```
+
+강의 예:
+
+- 평균 delay: 약 16.66
+- SD: 약 39.48
+
+표본평균 함수:
+
+```python
+def one_sample_mean(sample_size):
+    sampled_flights = united.sample(sample_size, replace=True)
+    return np.mean(sampled_flights["Delay"])
+
+def ten_thousand_sample_means(sample_size):
+    means = np.array([])
+    for i in np.arange(10000):
+        means = np.append(means, one_sample_mean(sample_size))
+    return means
+```
+
+결과:
+
+- 원래 delay 분포가 정규분포가 아니어도
+- sample size 100, 400 등에서 표본평균 분포는 종 모양에 가까워진다.
+- sample size가 커질수록 표본평균 분포는 좁아진다.
+
+### 4.19 Distribution of Sample Average
+
+표본평균의 분포:
+
+```text
+같은 크기의 가능한 모든 무작위표본을 생각하고, 각 표본의 평균을 모은 분포
+```
+
+왜 분포가 생기는가:
+
+- 실제로는 표본이 하나뿐이다.
+- 하지만 표본은 다르게 뽑힐 수도 있었다.
+- 표본이 달라지면 표본평균도 달라진다.
+- 따라서 가능한 표본평균들이 분포를 이룬다.
+
+### 4.20 Square Root Law
+
+표본평균의 변동성:
+
+```text
+SD of sample means = population SD / sqrt(sample size)
+```
+
+성질:
+
+- 표본 크기 `n`이 커지면 표본평균의 SD는 작아진다.
+- 표본 크기 `n`이 작아지면 표본평균의 SD는 커진다.
+- 정확도를 `x`배 높이려면 표본 크기는 `x^2`배 필요하다.
+
+예:
+
+- population SD = 39.48
+- sample size = 100이면 sample mean SD 약 3.948
+- sample size = 400이면 sample mean SD 약 1.974
+- 표본 크기를 4배로 늘리면 SD는 1/2이 된다.
+
+### 4.21 Why the Mean Matters 결론
+
+평균이 중요한 이유:
+
+- 표본평균은 모평균을 추정한다.
+- 큰 무작위표본의 평균 분포는 거의 항상 종 모양이다.
+- 표본평균 분포의 중심은 모집단 평균이다.
+- 표본평균 분포의 폭은 `population SD / sqrt(n)`으로 조절된다.
+- 따라서 평균은 추론에서 강력한 도구가 된다.
+
+---
+
+## 5. W12L1 - Estimation
+
+### 5.1 Parameter와 Statistic
+
+Parameter:
+
+- 모집단의 고정된 값
+- 예: 모집단 평균, 모집단 중앙값, 모집단 비율
+- 실제로는 알 수 없는 경우가 많다.
+
+Statistic:
+
+- 표본에서 계산한 값
+- 예: 표본 평균, 표본 중앙값, 표본 비율
+- parameter의 추정치로 사용한다.
+
+예:
+
+```text
+전체 학생 GPA 평균 = parameter
+무작위 표본 학생들의 GPA 평균 = statistic
+```
+
+### 5.2 Estimation
+
+추정의 기본 구조:
+
+1. 모집단 전체 census를 알고 있으면 parameter를 직접 계산한다.
+2. census가 없으면 population에서 random sample을 뽑는다.
+3. sample에서 statistic을 계산한다.
+4. statistic을 parameter의 estimate로 사용한다.
+
+문제:
+
+- random sample은 매번 다르게 나올 수 있다.
+- 따라서 statistic도 매번 다를 수 있다.
+- 추정치의 불확실성을 정량화해야 한다.
+
+### 5.3 San Francisco 2019 Compensation 예제
+
+데이터:
+
+- `san_francisco_2019.csv`
+- employee compensation
+
+이상치 제거:
+
+```python
+min_salary = 15000
+sf2019 = sf2019[sf2019.Salary > min_salary]
+```
+
+이유:
+
+- 0 salary는 현실적으로 의미가 없을 수 있다.
+- 예: `$15/hour * 20 hours * 50 weeks = 15000`
+
+population median:
+
+```python
+pop_median = np.percentile(
+    sf2019["Total Compensation"],
+    50,
+    method="inverted_cdf"
+)
+```
+
+강의 예:
+
+- population median: 135747.0
+
+### 5.4 Variability of Estimate
+
+하나의 표본에서 중앙값 추정:
+
+```python
+our_sample = sf2019.sample(n=500, replace=False).reset_index(drop=True)
+
+est_median = np.percentile(
+    our_sample["Total Compensation"],
+    50,
+    method="inverted_cdf"
+)
+```
+
+핵심:
+
+- 한 표본의 median은 population median과 정확히 같지 않을 수 있다.
+- 다른 표본을 뽑았다면 다른 median이 나왔을 것이다.
+- 추정치의 변동성을 알고 싶다.
+
+문제:
+
+- 현실에서는 population을 다시 샘플링할 수 없다.
+- 시간과 비용이 부족하다.
+- 표본이 하나뿐이다.
+
+### 5.5 Bootstrap
+
+Bootstrap은 반복적인 random sampling을 시뮬레이션하는 방법이다.
+
+원리:
+
+```text
+Original random sample에서 다시 sampling하는 것 ≈ Population에서 sampling하는 것
+```
+
+조건:
+
+- original sample이 무작위로 뽑혔어야 한다.
+- original sample이 충분히 커야 한다.
+- 모든 상황에서 항상 성립하는 것은 아니다.
+
+### 5.6 Bootstrap 절차
+
+1. original sample을 준비한다.
+2. original sample에서 무작위로 뽑는다.
+3. 반드시 복원추출한다.
+4. bootstrap sample 크기는 original sample 크기와 같게 한다.
+5. 각 bootstrap sample마다 statistic을 계산한다.
+6. statistic들의 empirical distribution을 만든다.
+7. 이 분포로 추정치의 변동성과 confidence interval을 구한다.
+
+왜 `replace=True`인가:
+
+- 복원추출하지 않으면 원래 sample의 순서만 바뀌거나 같은 구성만 반복된다.
+- 추정치의 변동성을 만들 수 없다.
+
+왜 같은 sample size인가:
+
+- sample size가 달라지면 statistic의 변동성도 달라진다.
+- 원래 추정 문제와 같은 조건을 유지해야 한다.
+
+### 5.7 Bootstrap Median 코드
+
+```python
+def bootstrap_median(original_sample, label, replications):
+    just_one_column = original_sample[label]
+    sample_size = len(original_sample)
+    medians = np.array([])
+
+    for i in np.arange(replications):
+        bootstrap_sample = just_one_column.sample(
+            n=sample_size,
+            replace=True
+        ).reset_index(drop=True)
+
+        resampled_median = np.percentile(
+            bootstrap_sample,
+            q=50,
+            method="inverted_cdf"
+        )
+
+        medians = np.append(medians, resampled_median)
+
+    return medians
+```
+
+사용:
+
+```python
+bstrap_medians = bootstrap_median(
+    our_sample,
+    "Total Compensation",
+    5000
+)
+```
+
+### 5.8 Confidence Interval
+
+Bootstrap statistic 분포의 가운데 95%를 95% confidence interval로 사용한다.
+
+```python
+left = np.percentile(bstrap_medians, q=2.5, method="inverted_cdf")
+right = np.percentile(bstrap_medians, q=97.5, method="inverted_cdf")
+```
+
+95% confidence interval:
+
+```text
+[2.5th percentile, 97.5th percentile]
+```
+
+신뢰수준:
+
+- 95%는 confidence level이다.
+- 0과 100 사이 어떤 값도 가능하다.
+- 신뢰수준이 높을수록 구간은 넓어진다.
+
+### 5.9 Confidence의 정확한 의미
+
+잘못된 해석:
+
+```text
+모수가 이 구간 안에 있을 확률이 95%다.
+```
+
+왜 틀렸는가:
+
+- parameter는 고정된 값이다.
+- 한 번 계산된 interval도 고정된 구간이다.
+- parameter는 그 구간 안에 있거나 없거나 둘 중 하나다.
+
+정확한 해석:
+
+```text
+같은 sampling + CI 계산 절차를 아주 많이 반복하면,
+만들어진 구간들 중 약 95%가 진짜 parameter를 포함한다.
+```
+
+즉, confidence는 하나의 구간 자체가 아니라 구간을 만드는 과정에 대한 신뢰다.
+
+### 5.10 100개 Bootstrap CI 예제
+
+강의에서는 population에서 sample을 100번 새로 뽑고, 각 sample마다 bootstrap CI를 만든다.
+
+결과:
+
+- 100개의 yellow interval
+- green dot은 고정된 population parameter
+- 약 95개의 interval이 parameter를 포함한다.
+
+핵심:
+
+- parameter는 움직이지 않는다.
+- interval이 sampling에 의해 움직인다.
+- 95% confidence는 반복 절차의 장기적 성공률이다.
+
+### 5.11 Bootstrap을 쓰면 안 좋은 경우
+
+주의해야 하는 경우:
+
+- parameter가 population의 희귀한 요소에 크게 영향받는 경우
+  - 매우 높은 percentile
+  - 매우 낮은 percentile
+  - minimum
+  - maximum
+- statistic의 bootstrap 분포가 대략 bell-shaped가 아닌 경우
+- original sample이 매우 작은 경우
+- original sample이 population을 대표하지 못하는 경우
+
+실무 원칙:
+
+- bootstrap 분포를 반드시 그려서 모양을 확인한다.
+- 이상하게 치우치거나 여러 peak가 있으면 해석에 주의한다.
+
+### 5.12 Average Age of Mom 예제
+
+데이터:
+
+- `baby.csv`
+- mother-newborn pair 1174개
+
+Parameter:
+
+```text
+population에서 첫 자식 출생 시 산모의 평균 나이
+```
+
+Statistic:
+
+```text
+sample에서 산모의 평균 나이
+```
+
+bootstrap 함수:
+
+```python
+def bootstrapper(sample, statistics, num_repetitions):
+    bstrap_stats = np.array([])
+
+    for i in np.arange(num_repetitions):
+        bstrap_sample = sample.sample(len(sample), replace=True)
+        bstrap_stat = statistics(bstrap_sample)
+        bstrap_stats = np.append(bstrap_stats, bstrap_stat)
+
+    return bstrap_stats
+
+def avg_age(sample):
+    return np.average(sample["Maternal Age"])
+```
+
+CI 계산:
+
+```python
+bootstrap_means = bootstrapper(births, avg_age, 3000)
+ci = compute_ci(bootstrap_means, 95)
+```
+
+강의 예:
+
+```text
+95% CI ≈ (26.9, 27.5)
+```
+
+올바른 해석:
+
+- population의 산모 평균 나이를 약 26.9세에서 27.5세 사이로 추정한다.
+
+틀린 해석:
+
+- 산모의 95%가 26.9세에서 27.5세 사이라는 뜻이 아니다.
+- population 평균이 이 구간 안에 있을 확률이 95%라는 뜻도 아니다.
+
+### 5.13 Confidence Interval로 검정하기
+
+양측 검정:
+
+```text
+Null hypothesis: population average = x
+Alternative hypothesis: population average != x
+```
+
+p-value cutoff가 `p%`라면:
+
+- `(100-p)%` confidence interval을 만든다.
+- `x`가 interval 안에 없으면 귀무가설을 기각한다.
+- `x`가 interval 안에 있으면 귀무가설을 기각할 수 없다.
+
+예:
+
+- Null: 산모 평균 나이는 25세다.
+- Alternative: 산모 평균 나이는 25세가 아니다.
+- 95% CI가 `(26.9, 27.6)`이면 25가 포함되지 않는다.
+- 따라서 5% 유의수준에서 귀무가설 기각.
+
+### 5.14 부산대역 승하차 인원 예제
+
+문제:
+
+- Population: 2026년 부산대역 하루 승하차 인원
+- Sample: 2026년 1월-3월 관측 데이터
+- Null: 모집단 평균 승하차 인원은 25000명이다.
+- Alternative: 모집단 평균 승하차 인원은 25000명이 아니다.
+
+데이터 처리:
+
+```python
+data = pd.read_csv(
+    "부산교통공사_시간대별 승하차인원_20260331.csv",
+    encoding="cp949"
+)
+
+pnu = data[data["역명"] == "부산대"].copy()
+
+population = pnu.pivot_table(
+    index="년월일",
+    columns="구분",
+    values="합계",
+    aggfunc="sum"
+).reset_index()
+
+population["승하차합계"] = population["승차"] + population["하차"]
+```
+
+bootstrap:
+
+```python
+sample_size = 30
+our_sample = population.sample(
+    n=sample_size,
+    replace=False,
+    random_state=0
+).reset_index(drop=True)
+
+bootstrap_means = np.array([])
+
+for i in range(10000):
+    bootstrap_sample = our_sample.sample(n=sample_size, replace=True)
+    bootstrap_mean = np.average(bootstrap_sample["승하차합계"])
+    bootstrap_means = np.append(bootstrap_means, bootstrap_mean)
 ```
 
 ---
 
-## 8. 1페이지 압축 요약
+## 6. W12L2 - Linear Regression
 
-- 가설검정: 귀무가설 아래에서 통계량을 시뮬레이션하고, 관측 통계량이 얼마나 극단적인지 본다.
-- p-value: 귀무가설이 참일 때 관측값 이상으로 극단적인 값이 나올 확률.
-- TVD: 두 categorical distribution 차이의 절대값 합을 2로 나눈 값.
-- 평균: 균형점, outlier에 민감.
-- 중앙값: 50th percentile, outlier에 평균보다 강함.
-- 표준편차: 평균으로부터의 대표적 거리.
-- Chebyshev: 평균 ± z SD 안에 최소 `1 - 1/z^2` 비율 존재.
-- CLT: 표본 크기가 크면 표본평균들의 분포는 대략 정규분포.
-- Bootstrap: 원표본에서 같은 크기로 복원추출을 반복해 statistic의 변동성을 추정.
-- CI: 반복 절차로 만든 구간들이 장기적으로 parameter를 포함하는 비율.
-- 선형회귀: `Y = wX + b` 형태로 X와 Y의 관계를 예측.
-- MAE: 절대오차 평균.
-- MSE: 제곱오차 평균, 큰 오차에 민감.
-- R-square: 모델이 y의 전체 변동을 설명하는 비율.
+### 6.1 AI, Machine Learning, Regression의 위치
+
+지능:
+
+- 학습 능력
+- 추론 능력
+- 지각 능력
+- 언어 이해 능력
+
+인공지능:
+
+- 인간의 학습, 추론, 지각 능력을 인공적으로 구현한 것
+- 데이터를 기반으로 스스로 학습하게 만드는 접근
+
+Machine Learning:
+
+```text
+학습을 통해 어떤 일의 성능을 점점 향상시키는 방법
+```
+
+용어:
+
+- parameter: 프로그램의 동작을 결정하는 변수
+- model: parameter에 따라 동작이 결정되는 융통성 있는 프로그램
+- training: 좋은 결과가 나오도록 데이터를 공급해 parameter를 바꾸는 과정
+
+학습 종류:
+
+- supervised learning: 데이터와 label 제공
+- unsupervised learning: label 없이 구조나 패턴 발견
+- reinforcement learning: 보상으로 정책을 수정
+
+선형회귀는 대표적인 supervised learning 알고리즘이다.
+
+### 6.2 Regression Analysis
+
+회귀분석:
+
+```text
+관측 데이터를 통해 독립변수 X와 종속변수 Y 사이의 숨은 관계를 추정하는 것
+```
+
+예:
+
+- 주택 면적 X, 거래 가격 Y
+- 키 X, 몸무게 Y
+- 꽃잎 너비 X, 꽃잎 길이 Y
+
+목표:
+
+```text
+데이터를 가장 잘 설명하는 수학 함수를 찾는다.
+```
+
+### 6.3 Linear Regression
+
+선형회귀는 X와 Y의 관계를 1차식으로 가정한다.
+
+```text
+Y = wX + b
+```
+
+의미:
+
+- `w`: weight, slope, coefficient, 기울기
+- `b`: bias, intercept, 절편
+- `w`는 X가 1 증가할 때 Y가 평균적으로 얼마나 변하는지 나타낸다.
+- `b`는 X가 0일 때 예측되는 Y다.
+
+목표:
+
+- 예측값과 실제값의 차이를 작게 만드는 `w`, `b`를 찾는다.
+
+### 6.4 기본 예제
+
+```python
+import numpy as np
+from sklearn.linear_model import LinearRegression
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+X = [163, 179, 166, 169, 171]
+y = [54, 63, 57, 56, 58]
+
+sns.scatterplot(x=X, y=y)
+```
+
+scikit-learn 입력 형태:
+
+```python
+X = [[x] for x in X]
+```
+
+왜 2차원인가:
+
+- scikit-learn은 feature matrix 형태를 기대한다.
+- sample 수와 feature 수를 구분해야 한다.
+- 단일 feature도 `[[163], [179], ...]`처럼 넣는다.
+
+모델 학습:
+
+```python
+model = LinearRegression()
+model.fit(X, y)
+y_pred = model.predict(X)
+```
+
+기울기와 절편:
+
+```python
+print(model.coef_[0])
+print(model.intercept_)
+```
+
+### 6.5 Regression Plot
+
+```python
+def make_reg_plot(X, y, y_pred):
+    plt.scatter(X, y, color="blue", label="Data points")
+    plt.plot(X, y_pred, color="red", linewidth=2, label="Regression line")
+
+    plt.legend()
+    plt.xlabel("$X$")
+    plt.ylabel("$y$", rotation=0)
+    plt.title("Linear Regression")
+    plt.show()
+```
+
+### 6.6 make_regression
+
+인공 회귀 데이터를 만든다.
+
+```python
+from sklearn.datasets import make_regression
+
+X, y = make_regression(
+    n_samples=100,
+    n_features=1,
+    noise=10,
+    random_state=42
+)
+```
+
+옵션:
+
+- `n_samples`: 데이터 개수
+- `n_features`: 독립변수 개수
+- `noise`: 잡음 크기
+- `random_state`: 재현 가능한 난수 고정
+
+시각화:
+
+```python
+sns.scatterplot(x=X.ravel(), y=y)
+```
+
+### 6.7 ravel과 flatten
+
+둘 다 다차원 배열을 1차원으로 바꾼다.
+
+- `ravel()`: 가능하면 view 반환
+- `flatten()`: copy 반환
+
+시각화에서는 `X`가 `(100, 1)` 형태일 때 `x`축에 넣기 위해 `X.ravel()`을 자주 사용한다.
+
+### 6.8 선형회귀 기본 가정
+
+선형성:
+
+- X와 Y의 관계가 선형이다.
+
+독립성:
+
+- 관측치 또는 독립변수 사이의 의존성이 낮다.
+
+등분산성:
+
+- 잔차의 퍼짐이 특정 구간에서만 커지거나 작아지지 않는다.
+
+정규성:
+
+- 통계적 추론을 위해 잔차가 정규분포를 따른다고 가정한다.
+
+주의:
+
+- 모델을 fit하는 것 자체에 잔차 정규성이 항상 필수는 아니다.
+- p-value, 신뢰구간, 유의성 검정에는 정규성 가정이 중요해진다.
+
+### 6.9 MAE
+
+Mean Absolute Error:
+
+```text
+MAE = mean(|actual - predicted|)
+```
+
+코드:
+
+```python
+from sklearn.metrics import mean_absolute_error
+
+mae = mean_absolute_error(y, y_pred)
+```
+
+특징:
+
+- 원래 y와 같은 단위다.
+- 평균적으로 얼마나 틀렸는지 직관적으로 해석하기 쉽다.
+- 큰 오차에 대한 추가 패널티는 MSE보다 작다.
+
+### 6.10 MSE
+
+Mean Squared Error:
+
+```text
+MSE = mean((actual - predicted)^2)
+```
+
+코드:
+
+```python
+from sklearn.metrics import mean_squared_error
+
+mse = mean_squared_error(y, y_pred)
+```
+
+특징:
+
+- 큰 오차에 더 큰 패널티를 준다.
+- 단위가 y의 제곱 단위가 된다.
+- 미분 가능하고 최적화에서 많이 사용된다.
+
+강의 예:
+
+```python
+X = np.array([1, 2, 3, 4, 5])
+y = np.array([1.2, 1.9, 3.0, 4.1, 5.1])
+
+w_list = np.linspace(0.75, 1.25, 50)
+mse_list = [mean_squared_error(y, w * X) for w in w_list]
+```
+
+`w`에 따라 MSE를 그리면, MSE가 가장 작은 지점이 좋은 parameter다.
+
+### 6.11 R-square
+
+결정계수:
+
+```text
+R^2 = 1 - SSR / SST
+```
+
+의미:
+
+- 전체 y 변동 중 모델이 설명한 비율
+
+용어:
+
+- SST: 실제 y가 평균에서 떨어진 전체 변동
+- SSR 또는 SSE: 실제 y와 예측 y의 차이, residual sum of squares
+
+코드:
+
+```python
+from sklearn.metrics import r2_score
+
+r2 = r2_score(y, y_pred)
+```
+
+해석:
+
+- `R^2 = 1`: 완벽한 예측
+- `R^2 = 0`: y 평균으로 예측하는 것과 비슷
+- 음수 가능: 평균 예측보다도 못할 수 있음
+
+주의:
+
+- 높다고 인과관계가 증명되는 것은 아니다.
+- feature가 늘어나면 올라가는 경향이 있다.
+- 이상치에 민감하다.
+- 비선형 관계에서는 낮거나 오해를 줄 수 있다.
+
+### 6.12 Iris 예제
+
+```python
+df = sns.load_dataset("iris")
+
+X = df[["petal_width"]]
+y = df["petal_length"]
+
+model = LinearRegression()
+model.fit(X, y)
+y_pred = model.predict(X)
+
+r2 = r2_score(y, y_pred)
+
+sns.jointplot(
+    data=df,
+    x="petal_width",
+    y="petal_length",
+    kind="reg"
+)
+```
+
+해석:
+
+- 꽃잎 너비로 꽃잎 길이를 예측한다.
+- `kind="reg"`는 산점도와 회귀선을 함께 보여준다.
+
+### 6.13 Penguins 예제
+
+```python
+penguins = sns.load_dataset("penguins").dropna()
+
+X = penguins[["bill_length_mm"]]
+y = penguins["flipper_length_mm"]
+
+model = LinearRegression()
+model.fit(X, y)
+y_pred = model.predict(X)
+
+r2 = r2_score(y, y_pred)
+
+sns.jointplot(
+    data=penguins,
+    x="bill_length_mm",
+    y="flipper_length_mm",
+    kind="reg"
+)
+```
+
+주의:
+
+- `dropna()`로 결측치를 제거한다.
+- 데이터셋 전체에서 선형관계가 있어 보여도 종별 차이가 섞여 있을 수 있다.
+
+### 6.14 W12L2 시험 포인트
+
+- 회귀는 X와 Y 사이의 관계를 추정한다.
+- 선형회귀는 `Y = wX + b`를 사용한다.
+- scikit-learn의 `X`는 2차원 feature matrix다.
+- `model.fit(X, y)`로 학습하고 `model.predict(X)`로 예측한다.
+- `coef_`는 기울기, `intercept_`는 절편이다.
+- MAE는 절대오차 평균이다.
+- MSE는 제곱오차 평균이며 큰 오차를 강하게 벌한다.
+- R-square는 설명된 변동 비율이다.
+
+---
+
+## 7. W13L2 - Comparing Two Samples
+
+### 7.1 Comparing Two Samples
+
+두 sample을 비교하는 질문:
+
+```text
+Group A의 값들과 Group B의 값들이 같은 population에서 나온 것인가?
+```
+
+현대 데이터 분석에서 두 numerical samples가 같은 underlying distribution에서 나왔는지 검정하는 것을 A/B testing이라고 부른다.
+
+### 7.2 Smokers and Nonsmokers 예제
+
+데이터:
+
+- `baby.csv`
+- 1174 mother-baby pairs
+- birth weight 단위: ounce
+- 1 ounce = 28.35 gram
+
+비교:
+
+- A: 임신 중 흡연하지 않은 산모의 아기 birth weight
+- B: 임신 중 흡연한 산모의 아기 birth weight
+
+질문:
+
+```text
+두 집단의 birth weight 차이가 우연만으로 설명될 수 있는가?
+```
+
+중요:
+
+- numerical variable: Birth Weight
+- categorical group label: Maternal Smoker
+- observational study다.
+- randomized experiment가 아니다.
+
+### 7.3 Smokers Hypotheses
+
+귀무가설:
+
+```text
+Population에서 smoker group과 non-smoker group의 birth weight 분포는 같다.
+sample에서 보이는 차이는 우연 때문이다.
+```
+
+대립가설:
+
+```text
+Population에서 smoker 산모의 아기들이 non-smoker 산모의 아기들보다 평균적으로 더 적게 나간다.
+```
+
+### 7.4 Test Statistic
+
+Group A:
+
+- non-smokers
+
+Group B:
+
+- smokers
+
+검정통계량:
+
+```text
+Group B average - Group A average
+= smokers average - non-smokers average
+```
+
+대립가설 방향:
+
+- smoker babies가 더 가볍다면 `B - A`는 음수다.
+- 따라서 작은 값, 특히 음수 방향이 대립가설을 지지한다.
+
+관측 통계량:
+
+```python
+smoking_and_birthweight = births[["Maternal Smoker", "Birth Weight"]]
+
+means_table = smoking_and_birthweight.groupby("Maternal Smoker")["Birth Weight"].mean()
+observed_difference = means_table.iloc[1] - means_table.iloc[0]
+```
+
+강의 예:
+
+```text
+observed_difference = -9.266142572024918
+```
+
+### 7.5 Difference of Means 함수
+
+```python
+def difference_of_means(df, variable, group_label):
+    reduced = df.loc[:, [variable, group_label]]
+    means_table = reduced.groupby(group_label)[variable].mean() \
+        .reset_index(name=variable + " average")
+    means = means_table.iloc[:, 1]
+    return means[1] - means[0]
+```
+
+주의:
+
+- group label 정렬 순서에 따라 `means[1] - means[0]`가 어떤 그룹 차이인지 달라질 수 있다.
+- 시험에서는 "어느 그룹 평균에서 어느 그룹 평균을 뺐는지" 명확히 써야 한다.
+
+### 7.6 Shuffling Labels under the Null
+
+귀무가설이 참이면:
+
+```text
+birth weight 분포는 smoker/non-smoker label과 관련이 없다.
+```
+
+따라서 label을 무작위로 섞어도 귀무가설 아래에서는 가능한 배정이다.
+
+시뮬레이션 계획:
+
+1. 모든 group label을 shuffle한다.
+2. shuffled label을 기존 birth weight에 붙인다.
+3. shuffled group 간 평균 차이를 계산한다.
+4. 반복해서 귀무가설 아래 검정통계량의 경험적 분포를 만든다.
+
+이 방법:
+
+- permutation test
+- label shuffling
+- A/B testing의 핵심
+
+### 7.7 One Simulated Difference
+
+```python
+def one_simulated_difference(df, variable, group_label):
+    shuffled_labels = df[group_label].sample(
+        n=len(df),
+        replace=False
+    ).reset_index(drop=True)
+
+    shuffled_table = df.copy()
+    shuffled_table["Shuffled Label"] = shuffled_labels
+
+    return difference_of_means(
+        shuffled_table,
+        variable,
+        "Shuffled Label"
+    )
+```
+
+왜 `replace=False`인가:
+
+- label을 재배치하는 것이므로 기존 label 개수를 그대로 유지해야 한다.
+- smoker 수와 non-smoker 수가 변하면 원래 실험/표본 구조가 바뀐다.
+- bootstrap의 복원추출과 다르다.
+
+### 7.8 Permutation Test
+
+```python
+differences = np.array([])
+repetitions = 5000
+
+for i in np.arange(repetitions):
+    new_difference = one_simulated_difference(
+        births,
+        "Birth Weight",
+        "Maternal Smoker"
+    )
+    differences = np.append(differences, new_difference)
+
+differences = pd.DataFrame({"Difference": differences})
+```
+
+p-value:
+
+```python
+empirical_p = np.count_nonzero(
+    differences["Difference"] <= observed_difference
+) / repetitions
+```
+
+해석:
+
+- 관측값이 귀무분포의 왼쪽 꼬리에 있으면 smoker group의 평균 birth weight가 낮다는 대립가설을 지지한다.
+- empirical p-value가 0으로 나와도 실제 확률이 정확히 0이라는 뜻은 아니다.
+- 시뮬레이션 반복 수 안에서 관측값만큼 극단적인 값이 안 나왔다는 뜻이다.
+
+### 7.9 Association과 Causation
+
+Smoker/non-smoker 예제에서 검정 결과가 유의하더라도:
+
+```text
+흡연이 낮은 birth weight를 원인으로 만들었다고 단정할 수는 없다.
+```
+
+이유:
+
+- 산모들이 smoker/non-smoker에 random assignment된 것이 아니다.
+- 흡연 여부는 income, geography, diet, 건강 상태 등 다른 요인과 관련될 수 있다.
+- observational study에서는 association은 말할 수 있어도 causation은 조심해야 한다.
+
+정리:
+
+- 관찰연구: association 중심
+- randomized controlled experiment: causal conclusion 가능
+
+### 7.10 Random Assignment
+
+Randomized controlled experiment에서는:
+
+- control group과 treatment group이 무작위로 배정된다.
+- 두 집단의 차이는 chance 또는 treatment 때문이라고 볼 수 있다.
+- 무작위 배정이 confounding variable을 평균적으로 균형 맞춘다.
+
+따라서 treatment/control 그룹이 random assignment되었다면 causal conclusion이 가능하다.
+
+### 7.11 BTA Low-Back Pain 예제
+
+배경:
+
+- Botulinum Toxin A, BTA가 low-back pain에 효과가 있는지 연구
+- 31명의 LBP 환자
+- control group: normal saline, 16명
+- treatment group: BTA, 15명
+- double-blind study
+- 8주 후 pain improvement 여부 측정
+
+Double-blind:
+
+- 의사도 환자도 어느 그룹인지 모른다.
+- 기대효과나 평가 편향을 줄인다.
+
+### 7.12 Potential Outcomes 관점
+
+각 참가자에게는 두 개의 잠재적 결과가 있다고 생각할 수 있다.
+
+- treatment를 받았을 때 결과
+- control을 받았을 때 결과
+
+하지만 실제로는 한 사람에게 둘 중 하나만 관측된다.
+
+Random assignment 때문에:
+
+- 어떤 16명이 control이 되고 어떤 15명이 treatment가 되는지는 우연이다.
+- 귀무가설 아래에서는 group label을 섞어도 가능한 배정이다.
+
+### 7.13 BTA Hypotheses
+
+귀무가설:
+
+```text
+Population에서 potential control scores 분포와 potential treatment scores 분포는 같다.
+즉, treatment 효과가 없다.
+```
+
+대립가설:
+
+```text
+Treatment group에서 pain improves = 1 비율이 control group보다 높다.
+```
+
+Group A:
+
+- control
+
+Group B:
+
+- treatment
+
+검정통계량:
+
+```text
+Group B average - Group A average
+= treatment improvement proportion - control improvement proportion
+```
+
+대립가설 방향:
+
+- positive values가 대립가설을 지지한다.
+
+강의 예:
+
+```text
+observed_diff = 0.475
+```
+
+### 7.14 BTA 코드
+
+```python
+bta = pd.read_csv("bta.csv")
+
+observed_proportions = bta.groupby("Group")["Result"].mean() \
+    .reset_index(name="Result average").iloc[:, 1]
+
+observed_diff = observed_proportions[1] - observed_proportions[0]
+```
+
+평균 차이 함수:
+
+```python
+def mean_diff(df, label, group_label):
+    proportions = df.groupby(group_label)[label].mean() \
+        .reset_index(name="Result average").iloc[:, 1]
+    return proportions[1] - proportions[0]
+```
+
+시뮬레이션:
+
+```python
+def one_simulated_diff(df, label, group_label):
+    shuffled_labels = df[group_label].sample(
+        n=len(df),
+        replace=False
+    ).reset_index(drop=True)
+
+    shuffled_df = df.copy()
+    shuffled_df["Shuffled Label"] = shuffled_labels
+
+    return mean_diff(shuffled_df, label, "Shuffled Label")
+
+diffs = np.array([])
+repetitions = 20000
+
+for i in np.arange(repetitions):
+    new_diff = one_simulated_diff(bta, "Result", "Group")
+    diffs = np.append(diffs, new_diff)
+```
+
+p-value:
+
+```python
+empirical_p = np.count_nonzero(diffs >= observed_diff) / repetitions
+```
+
+### 7.15 W13 시험 포인트
+
+- A/B testing은 두 sample이 같은 distribution에서 나왔는지 검정한다.
+- numerical variable과 categorical group label을 구분해야 한다.
+- 귀무가설 아래에서는 label과 numerical value의 연결이 의미 없으므로 label을 shuffle한다.
+- permutation test는 `replace=False`다.
+- bootstrap은 표본에서 복원추출하는 것이고, permutation test는 label을 비복원 재배치하는 것이다.
+- 대립가설 방향에 따라 p-value의 부등호가 달라진다.
+- observational study에서는 causal conclusion을 조심해야 한다.
+- randomized controlled experiment에서는 random assignment 덕분에 causal conclusion이 가능하다.
+
+---
+
+## 8. W14L1 - Outro, AI 시대의 데이터과학
+
+### 8.1 이번 학기에서 다룬 것
+
+강의에서 다룬 주요 내용:
+
+- 데이터 수집과 정리
+- 상관관계와 인과관계
+- 탐색적 데이터 분석, EDA
+- 평균, 분산, 표준편차
+- 시각화와 그래프 해석
+- 가설검정과 신뢰구간
+- 지도 시각화
+- 회귀분석
+
+### 8.2 AI 시대에 데이터과학을 배우는 이유
+
+AI는 많은 작업을 대신할 수 있다.
+
+- 코드 초안 작성
+- 데이터 분석 방향 제안
+- 그래프와 보고서 초안 생성
+- 문서 요약
+- 이미지 생성
+- 의사결정 보조
+
+하지만 중요한 변화:
+
+```text
+작업을 수행하는 능력보다 작업을 정의하는 능력이 더 중요해진다.
+```
+
+데이터과학은 AI를 이기기 위한 기술이 아니라, AI의 답을 검증하고 더 좋은 질문을 만들기 위한 기초다.
+
+### 8.3 AI가 잘하는 일
+
+AI가 잘하는 일:
+
+- 패턴 찾기
+  - 추천 시스템
+  - 의료 영상 이상 탐지
+  - 이상 결제 탐지
+  - 학습 위험군 예측
+- 빠르고 많은 작업
+  - 대량 이미지 분류
+  - 긴 문서 요약
+  - 번역
+  - 24시간 고객 응답
+- 반복 작업
+  - 공장 검사
+  - 이메일 분류
+  - CCTV 객체 탐지
+  - 엑셀 데이터 정리
+
+### 8.4 AI가 못하거나 약한 일
+
+AI의 한계:
+
+- 사실 검증
+  - 그럴듯한 거짓말, hallucination 가능
+  - 존재하지 않는 자료나 뉴스 생성 가능
+  - 틀린 수식을 자신 있게 설명 가능
+- 새로운 가치 판단
+  - 공정성, 윤리, 책임 문제
+  - 문화와 사회마다 다른 기준 이해 한계
+- 최종 책임
+  - AI는 결과에 대한 책임을 지지 않는다.
+
+### 8.5 같은 데이터, 다른 질문
+
+예: 부산 지하철 승하차 데이터
+
+가능한 질문:
+
+- 부산 지하철의 하루 평균 승객 수는 얼마인가?
+- 부산대역은 평일과 주말 이용 패턴이 다른가?
+- 시험 기간에 대학가 주변 역의 승하차 인원이 증가하는가?
+- 추가 열차를 배치한다면 어느 시간대가 우선인가?
+
+핵심:
+
+```text
+데이터는 하나여도 질문에 따라 분석 방향은 완전히 달라진다.
+```
+
+AI에게 "이 데이터 분석해줘"라고만 하면 답은 나오지만, 그 답이 유용한지는 질문의 품질에 달려 있다.
+
+### 8.6 데이터과학의 핵심 과정
+
+데이터과학의 기본 흐름:
+
+```text
+문제정의
+→ 데이터수집
+→ 데이터정리
+→ 탐색적 분석
+→ 모델 생성
+→ 결과 해석
+→ 의사결정에 활용
+```
+
+AI가 도와줄 수 있는 부분:
+
+- 코드 작성
+- 요약
+- 시각화 초안
+- 분석 아이디어 제안
+- 문서 작성
+
+사람이 책임져야 하는 부분:
+
+- 문제 정의
+- 데이터 선택
+- 해석
+- 검증
+- 의사결정
+
+### 8.7 좋은 프롬프트는 좋은 질문
+
+AI에게 일을 시키기 전에 물어야 할 질문:
+
+- 내가 무엇을 원하는가?
+- 어떤 조건이 있는가?
+- 어떤 형식으로 결과를 받을 것인가?
+- 결과를 어떤 기준으로 평가할 것인가?
+- 결과를 어떻게 검증할 것인가?
+
+### 8.8 LLM의 4가지 특성과 활용 원칙
+
+LLM은 다음 단어를 확률적으로 예측하는 모델이다.
+
+특성 1: 그럴듯하지만 틀릴 수 있다.
+
+- 활용 원칙: 사실은 반드시 검증한다.
+
+특성 2: 같은 질문에도 답이 달라질 수 있다.
+
+- 활용 원칙: 여러 번 물어보거나 다른 모델로 교차검증한다.
+
+특성 3: 학습 시점 이후의 일은 모른다.
+
+- 활용 원칙: 최신 정보는 검색, 뉴스, 공식자료로 확인한다.
+
+특성 4: 컨텍스트 길이에 한계가 있다.
+
+- 활용 원칙: 대화를 짧게 유지하고 큰 작업은 쪼갠다.
+
+### 8.9 프롬프트 원칙
+
+원칙 1. 사실 확인을 명시적으로 지시하라.
+
+예:
+
+```text
+검색해서 출처와 함께 알려주고, 확실하지 않으면 확실하지 않다고 말해줘.
+```
+
+원칙 2. 큰 작업은 쪼개서 시켜라.
+
+예:
+
+1. 각 챕터 핵심 3줄 요약
+2. 발표에 쓸 핵심 메시지 5개 선택
+3. 메시지별 슬라이드 구성안 작성
+
+원칙 3. 대화는 짧게, 주제가 바뀌면 새 창을 사용하라.
+
+원칙 4. 한 답변을 그대로 믿지 마라.
+
+검증 방법:
+
+- 다른 모델에 물어보기
+- 자기 검토 시키기
+- 반대 입장 물어보기
+
+### 8.10 Prompt Engineering
+
+프롬프트 엔지니어링:
+
+```text
+생성형 AI가 원하는 결과를 출력하도록 입력 문장을 체계적으로 설계하는 방법
+```
+
+단순 질문이 아니라 다음 요소를 포함한다.
+
+- 지시
+- 맥락
+- 형식
+- 제약조건
+- 역할
+- 평가 기준
+
+왜 중요한가:
+
+- 모호한 지시는 모호한 결과를 낳는다.
+- 시행착오를 줄인다.
+- AI를 검색 도구가 아니라 협업 파트너로 쓰게 해준다.
+
+### 8.11 프롬프트 전략
+
+전략 1. 명확한 목표, 형식, 독자를 설정한다.
+
+포함할 것:
+
+- 작업 동사: 설명해, 비교해, 요약해, 분류해
+- 출력 길이와 형식: 3줄, 표, Markdown
+- 대상 독자: 대학생, 비전공자, 전문가
+
+전략 2. 맥락과 배경 정보를 제공한다.
+
+- 관련 사실
+- 데이터
+- 문서
+- 출처
+- 용어 정의
+
+전략 3. Few-shot 예시를 준다.
+
+- 원하는 입력-출력 예시 1-2개를 제공한다.
+- 톤, 스타일, 형식 맞추기에 유용하다.
+
+전략 4. 구체적으로 쓰고 큰 작업은 나눈다.
+
+- "잘 정리해줘"보다 "200자 이내, 3개 항목"이 낫다.
+- 측정 가능한 기준을 준다.
+
+전략 5. 단계별로 생각하게 한다.
+
+- 수학, 논리, 복잡한 의사결정에서 유용하다.
+- 단, 최종 답이 사실인지 별도로 검증해야 한다.
+
+### 8.12 AI를 사용할 때 고려할 위험
+
+위험 요소:
+
+- hallucination
+- bias
+- overconfidence
+- context 부족
+- accountability 부재
+
+데이터 분석에서 더 중요해지는 감각:
+
+- 평균이 대표값으로 적절한가?
+- 표본은 모집단을 잘 대표하는가?
+- 이상치는 오류인가 중요한 신호인가?
+- 상관관계를 인과관계처럼 해석하고 있지 않은가?
+- 모델이 training data에만 잘 맞는 것은 아닌가?
+- 그래프가 오해를 유도하고 있지 않은가?
+
+### 8.13 AI 시대의 데이터과학자
+
+AI 시대의 데이터과학자는 도구를 많이 아는 사람만을 뜻하지 않는다.
+
+필요한 역할:
+
+- 문제를 정의하는 사람
+- 데이터를 의심하는 사람
+- 분석 과정을 설계하는 사람
+- 결과를 검증하는 사람
+- 사람에게 설명하는 사람
+- 잘못된 사용을 막는 사람
+- 좋은 질문을 만드는 사람
+
+좋은 데이터 사용자의 태도:
+
+- 의심하기
+- 확인하기
+- 설명하기
+- 책임지기
+- 계속 배우기
+
+### 8.14 작은 진짜 문제부터 시작하기
+
+AI 활용은 거창한 시스템보다 실제로 반복되는 작은 문제에서 출발하는 것이 좋다.
+
+예:
+
+- 중복 파일 정리
+- 문서 내용 비교
+- 반복 입력 줄이기
+- 데이터 복사/붙여넣기 자동화
+- 자주 하는 분석 템플릿화
+
+물어볼 질문:
+
+- 내가 자주 반복하는 일은 무엇인가?
+- 어디에서 시간이 낭비되는가?
+- AI에게 일부라도 맡길 수 있는가?
+- 실제로 시간이 줄었는가?
+- 실수가 줄었는가?
+- 다시 쓰고 싶은가?
+
+---
+
+## 9. 핵심 코드 패턴 모음
+
+### 9.1 Categorical Sampling
+
+```python
+def sample_proportions(sample_size, probabilities):
+    return np.random.multinomial(sample_size, probabilities) / sample_size
+```
+
+### 9.2 TVD
+
+```python
+def tvd(p, q):
+    return sum(abs(p - q)) / 2
+```
+
+### 9.3 가설검정 시뮬레이션 기본형
+
+```python
+statistics = np.array([])
+
+for i in np.arange(repetitions):
+    simulated_stat = one_simulated_statistic()
+    statistics = np.append(statistics, simulated_stat)
+```
+
+### 9.4 p-value
+
+왼쪽 꼬리:
+
+```python
+p_value = np.count_nonzero(simulated_stats <= observed_stat) / repetitions
+```
+
+오른쪽 꼬리:
+
+```python
+p_value = np.count_nonzero(simulated_stats >= observed_stat) / repetitions
+```
+
+양쪽 꼬리 또는 거리 통계량:
+
+```python
+p_value = np.count_nonzero(simulated_distances >= observed_distance) / repetitions
+```
+
+### 9.5 Percentile
+
+```python
+np.percentile(data, q, method="inverted_cdf")
+np.percentile(data, q, method="linear")
+```
+
+### 9.6 Standard Units
+
+```python
+def standard_units(x):
+    return (x - np.mean(x)) / np.std(x)
+```
+
+### 9.7 Chebyshev
+
+```python
+def chebyshev(z):
+    return 1 - 1 / z**2
+```
+
+### 9.8 Bootstrap
+
+```python
+bootstrap_stats = np.array([])
+
+for i in np.arange(repetitions):
+    bootstrap_sample = original_sample.sample(
+        n=len(original_sample),
+        replace=True
+    )
+    bootstrap_stat = statistic(bootstrap_sample)
+    bootstrap_stats = np.append(bootstrap_stats, bootstrap_stat)
+```
+
+### 9.9 Confidence Interval
+
+```python
+left = np.percentile(bootstrap_stats, 2.5, method="inverted_cdf")
+right = np.percentile(bootstrap_stats, 97.5, method="inverted_cdf")
+```
+
+### 9.10 Permutation Test
+
+```python
+shuffled_labels = df[group_label].sample(
+    n=len(df),
+    replace=False
+).reset_index(drop=True)
+
+shuffled_df = df.copy()
+shuffled_df["Shuffled Label"] = shuffled_labels
+```
+
+### 9.11 Linear Regression
+
+```python
+from sklearn.linear_model import LinearRegression
+
+model = LinearRegression()
+model.fit(X, y)
+y_pred = model.predict(X)
+
+slope = model.coef_[0]
+intercept = model.intercept_
+```
+
+### 9.12 Regression Metrics
+
+```python
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+
+mae = mean_absolute_error(y, y_pred)
+mse = mean_squared_error(y, y_pred)
+r2 = r2_score(y, y_pred)
+```
+
+### 9.13 Folium 기본
+
+```python
+import folium
+
+m = folium.Map(location=[lat, long], zoom_start=12)
+
+folium.Marker(
+    location=[lat, long],
+    popup="popup",
+    tooltip="tooltip"
+).add_to(m)
+```
+
+---
+
+## 10. 헷갈리는 개념 비교
+
+### 10.1 Parameter vs Statistic
+
+Parameter:
+
+- population의 값
+- 고정되어 있음
+- 보통 모름
+
+Statistic:
+
+- sample의 값
+- sample에 따라 달라짐
+- parameter 추정에 사용
+
+### 10.2 p-value vs p-value cutoff
+
+p-value:
+
+- 데이터와 시뮬레이션으로 계산되는 값
+- 관측값 이상으로 극단적인 결과가 나올 확률
+
+p-value cutoff:
+
+- 사전에 정하는 기준
+- 보통 5% 또는 1%
+- 귀무가설이 참일 때 잘못 기각할 확률과 연결
+
+### 10.3 Bootstrap vs Permutation Test
+
+Bootstrap:
+
+- 목적: 추정치의 변동성, confidence interval
+- 표본에서 복원추출
+- `replace=True`
+- statistic의 sampling distribution을 근사
+
+Permutation Test:
+
+- 목적: 두 집단 차이가 우연인지 검정
+- group label을 비복원 shuffle
+- `replace=False`
+- 귀무가설 아래 test statistic 분포를 근사
+
+### 10.4 Confidence Interval vs Hypothesis Test
+
+Confidence Interval:
+
+- parameter가 있을 법한 구간을 추정
+- 반복 절차의 장기 포함률로 해석
+
+Hypothesis Test:
+
+- 귀무가설과 대립가설 중 어느 쪽이 데이터와 더 일관적인지 판단
+- p-value와 cutoff로 판단
+
+연결:
+
+- 양측 검정에서 95% CI가 null value를 포함하지 않으면 5% 수준에서 귀무가설 기각
+
+### 10.5 Association vs Causation
+
+Association:
+
+- 두 변수 또는 두 집단 사이에 관계가 있음
+- observational study에서 주로 말할 수 있음
+
+Causation:
+
+- 한 요인이 다른 결과의 원인임
+- randomized controlled experiment에서 더 강하게 말할 수 있음
+
+### 10.6 Mean vs Median
+
+Mean:
+
+- 균형점
+- outlier에 민감
+- CLT와 추론에서 중요
+
+Median:
+
+- 50th percentile
+- outlier에 강함
+- skewed distribution에서 대표값으로 유용
+
+### 10.7 SD vs Standard Units
+
+SD:
+
+- 평균에서 얼마나 퍼져 있는지 측정
+- 원래 데이터와 같은 단위
+
+Standard units:
+
+- 각 값이 평균에서 몇 SD 떨어져 있는지
+- 단위 없음
+- 평균 0, SD 1로 변환
+
+---
+
+## 11. 서술형 대비 문장
+
+### 11.1 p-value 설명
+
+```text
+p-value는 귀무가설이 참이라고 가정했을 때, 관측된 검정통계량과 같거나 대립가설 방향으로 더 극단적인 값이 나올 확률이다. 따라서 p-value가 작으면 관측 결과가 귀무가설 아래에서 드문 결과라는 뜻이며, 유의수준보다 작을 때 귀무가설을 기각한다.
+```
+
+### 11.2 Confidence Interval 설명
+
+```text
+95% 신뢰구간은 모수가 95% 확률로 그 구간 안에 있다는 뜻이 아니다. 같은 표본추출과 구간계산 절차를 반복했을 때, 만들어진 구간들 중 약 95%가 진짜 모수를 포함한다는 뜻이다.
+```
+
+### 11.3 Bootstrap 설명
+
+```text
+Bootstrap은 원래 표본이 모집단을 어느 정도 닮았다고 보고, 그 표본에서 같은 크기로 복원추출을 반복하여 통계량의 경험적 분포를 만드는 방법이다. 이를 통해 추정치의 변동성과 신뢰구간을 계산할 수 있다.
+```
+
+### 11.4 Permutation Test 설명
+
+```text
+Permutation test는 귀무가설 아래에서 group label과 관측값의 연결이 의미 없다고 보고, label을 비복원으로 섞어 검정통계량의 귀무분포를 만드는 방법이다. 관측 통계량이 이 분포의 꼬리에 있으면 두 집단 차이가 우연만으로 설명되기 어렵다고 판단한다.
+```
+
+### 11.5 CLT 설명
+
+```text
+중심극한정리는 모집단 분포가 어떤 모양이든 표본 크기가 충분히 크면 표본평균들의 분포가 대략 정규분포에 가까워진다는 정리다. 이 분포의 중심은 모집단 평균이고, 표본평균의 표준편차는 population SD / sqrt(sample size)이다.
+```
+
+### 11.6 관찰연구와 인과관계 설명
+
+```text
+관찰연구에서 두 집단의 차이가 유의하더라도 인과관계를 단정할 수 없다. 집단 배정이 무작위가 아니므로 흡연 여부, 소득, 건강 상태, 지역 등 다른 요인이 결과에 영향을 주었을 수 있다. 인과관계를 강하게 주장하려면 randomized controlled experiment가 필요하다.
+```
+
+---
+
+## 12. 시험 직전 체크리스트
+
+반드시 설명할 수 있어야 하는 것:
+
+- 모델은 데이터 생성 과정에 대한 가정이다.
+- 시뮬레이션은 귀무가설 아래에서 수행한다.
+- 검정통계량은 귀무가설과 대립가설을 구분하도록 정한다.
+- TVD는 여러 카테고리 분포 차이를 하나의 값으로 요약한다.
+- p-value는 귀무가설이 참일 확률이 아니다.
+- 유의수준은 데이터를 보기 전에 정한다.
+- 평균은 균형점이며 outlier에 민감하다.
+- SD는 평균으로부터의 대표적 거리다.
+- Chebyshev는 모든 분포에 대해 최소 비율을 보장한다.
+- standard unit은 평균으로부터 몇 SD 떨어졌는지를 뜻한다.
+- CLT는 원자료가 아니라 표본평균의 분포에 대한 정리다.
+- 표본평균의 SD는 `population SD / sqrt(n)`이다.
+- bootstrap은 복원추출이다.
+- permutation test는 label을 비복원으로 섞는다.
+- CI는 반복 절차의 장기 포함률로 해석한다.
+- CI로 양측 가설검정을 할 수 있다.
+- observational study는 association, RCT는 causation 판단에 적합하다.
+- Folium marker, popup, tooltip, polyline, GeoJSON, choropleth 차이를 안다.
+- LinearRegression의 X는 2차원이다.
+- MAE, MSE, R-square의 의미와 한계를 안다.
+- AI 결과는 검증해야 하며, 좋은 질문과 문제 정의가 중요하다.
+
+자주 틀리는 포인트:
+
+- p-value를 "귀무가설이 참일 확률"이라고 쓰면 틀림.
+- CI를 "모수가 95% 확률로 들어 있는 구간"이라고 쓰면 틀림.
+- bootstrap에서 `replace=False`를 쓰면 안 됨.
+- permutation test에서 label shuffle은 `replace=False`.
+- 표본평균 분포가 정규분포에 가까워지는 것이지 원자료가 정규분포가 되는 것이 아님.
+- R-square가 높다고 인과관계가 증명되는 것은 아님.
+- 관찰연구에서 유의한 차이가 나와도 원인이라고 단정하면 안 됨.
+- 지도 좌표 순서는 `[위도, 경도]`.
+- Choropleth는 GeoJSON key와 DataFrame key가 맞아야 함.
+
+---
+
+## 13. 1페이지 압축 요약
+
+- 가설검정은 귀무가설 아래 통계량을 시뮬레이션하고 관측값이 얼마나 극단적인지 보는 절차다.
+- 귀무가설은 시뮬레이션 가능한 chance model이어야 한다.
+- 대립가설은 관측 차이가 우연만으로 설명되지 않는다는 관점이다.
+- p-value는 귀무가설 아래에서 관측값 이상으로 극단적인 결과가 나올 확률이다.
+- TVD는 categorical distribution 차이를 측정한다.
+- 평균은 균형점이고, 중앙값은 50th percentile이다.
+- SD는 평균으로부터의 대표적 거리다.
+- Chebyshev는 분포 모양과 무관하게 평균 ± z SD 안의 최소 비율을 보장한다.
+- Standard unit은 값이 평균에서 몇 SD 떨어졌는지 나타낸다.
+- CLT는 큰 무작위표본의 평균 분포가 대략 정규분포가 된다는 정리다.
+- 표본평균 분포의 중심은 population mean, SD는 population SD / sqrt(n)이다.
+- Bootstrap은 원표본에서 같은 크기로 복원추출하여 추정치 분포와 CI를 만든다.
+- 95% CI는 반복 절차로 만든 구간 중 약 95%가 parameter를 포함한다는 뜻이다.
+- Permutation test는 귀무가설 아래 label을 섞어 두 집단 차이의 귀무분포를 만든다.
+- 관찰연구는 association만 조심스럽게 말하고, RCT는 causation 판단에 더 적합하다.
+- Folium은 지도 시각화, GeoJSON은 경계, choropleth는 지역별 색 표현, Geohash/H3는 공간 인덱싱이다.
+- 선형회귀는 `Y = wX + b`로 관계를 추정한다.
+- MAE는 절대오차 평균, MSE는 제곱오차 평균, R-square는 설명된 변동 비율이다.
+- AI 시대에는 분석을 수행하는 능력뿐 아니라 문제 정의, 데이터 검증, 결과 해석 능력이 중요하다.
+
+---
+
+## 14. PDF 세부 보강 노트
+
+이 절은 위 목차별 정리에 빠지기 쉬운 PDF 슬라이드의 세부 포인트를 보강한 것이다. 시험 직전에는 각 주차 본문을 먼저 보고, 이 절에서 숫자·코드·해석 포인트를 확인하면 된다.
+
+### 14.1 W9L1 Testing Hypothesis 1 보강
+
+Model assessment의 핵심 문장은 다음 순서로 기억한다.
+
+1. 데이터 생성에 대한 모델을 세운다.
+2. 모델과 데이터의 불일치를 숫자로 측정할 statistic을 정한다.
+3. 모델이 맞다고 가정하고 statistic을 여러 번 시뮬레이션한다.
+4. 관측 statistic이 시뮬레이션 분포의 어디에 있는지 본다.
+5. 관측값이 분포의 꼬리에 있으면 모델의 가정이 정당화되기 어렵다.
+
+Swain 배심원 예제의 논리:
+
+- 모델: jury panel이 적격 인구에서 무작위로 뽑혔다.
+- 적격 인구의 Black 비율: 26%.
+- 실제 panel 100명 중 Black: 8명.
+- statistic: `100명 중 Black panelist 수`.
+- 관측값 8은 시뮬레이션 히스토그램의 왼쪽 꼬리에 매우 멀리 있다.
+- 결론: 무작위 선정 모델은 실제 panel 데이터와 일관되지 않는다.
+
+Statistical bias:
+
+- bias는 단순히 error가 있다는 뜻이 아니다.
+- error가 한 방향으로 체계적으로 나타나는 것이다.
+- Swain 사례에서는 Black panelist 비율이 기대보다 반복적으로 낮게 나타난 것이 bias의 근거다.
+
+Mendel 예제에서 statistic을 `abs(sample percent - 75)`로 잡는 이유:
+
+- 대립 관점은 "보라색 비율이 반드시 높다" 또는 "반드시 낮다"가 아니다.
+- 모델이 예측한 75%에서 얼마나 멀리 떨어졌는지가 중요하다.
+- 따라서 양쪽 방향의 차이를 모두 잡는 distance statistic이 필요하다.
+
+`sample_proportions` 해석:
+
+```python
+np.random.multinomial(sample_size, probabilities) / sample_size
+```
+
+- `multinomial`은 여러 범주 중 하나가 선택되는 시행을 반복한다.
+- 반환값은 각 범주의 count이고, sample size로 나누면 sample proportion이 된다.
+- jury, Mendel, Alameda처럼 categorical distribution을 시뮬레이션할 때 반복적으로 쓰인다.
+
+### 14.2 W9L2 Testing Hypothesis 2 보강
+
+Alameda County jury panel:
+
+- panel 보고 인원: 1453명.
+- 여러 ethnicity category가 있으므로 Black count 하나만 보는 방식은 부족하다.
+- 전체 categorical distribution의 차이를 하나로 요약하기 위해 TVD를 쓴다.
+
+TVD 계산 절차:
+
+1. 각 category에서 `Panels - Eligible`을 계산한다.
+2. 차이에 절대값을 씌운다.
+3. 절대차를 모두 더한다.
+4. 2로 나눈다.
+
+```python
+jury_with_diffs = jury.copy()
+jury_with_diffs["Difference"] = jury.Panels - jury.Eligible
+jury_with_diffs["Absolute Difference"] = abs(jury_with_diffs.Difference)
+
+def tvd(p, q):
+    return sum(abs(p - q)) / 2
+```
+
+TVD 해석:
+
+- TVD가 0이면 두 분포가 같다.
+- TVD가 클수록 두 분포가 멀다.
+- Alameda 예제에서 관측 TVD는 시뮬레이션 TVD가 거의 도달하지 않는 오른쪽 꼬리에 있다.
+- 따라서 panel이 eligible population의 대표적인 무작위표본이라는 모델은 데이터와 일관되지 않는다.
+
+귀무가설과 대립가설을 쓸 때 주의:
+
+- 귀무가설은 반드시 시뮬레이션 가능한 chance model이어야 한다.
+- 대립가설은 귀무가설과 다른 데이터 생성 관점이다.
+- 시뮬레이션은 항상 귀무가설 아래에서 수행한다.
+- 검정통계량은 되도록 "큰 값이면 대립가설 지지"처럼 방향이 명확하게 잡히는 것이 좋다.
+
+Section score 예제:
+
+- Section 3 학생 수와 같은 크기인 27명을 전체 수업에서 비복원추출한다.
+- 각 무작위표본의 midterm average를 계산한다.
+- 관측 Section 3 평균 `13.666667`이 왼쪽 꼬리에 있는지 본다.
+- 대립가설이 "평균이 낮다"이므로 p-value는 `<= observed_average`의 비율이다.
+
+```python
+p_value = np.count_nonzero(sample_averages <= observed_average) / 50000
+```
+
+Tail area와 statistical significance:
+
+- p-value는 tail area다.
+- 5%보다 작으면 statistically significant라고 부르는 관습이 있다.
+- 1%보다 작으면 highly statistically significant라고 부르는 관습이 있다.
+- 이 기준은 데이터를 보기 전에 정해야 한다.
+
+P-value cutoff와 error probability:
+
+- 공정한 동전을 2000번 던지는 검정에서 statistic은 `abs(number of heads - 1000)`이다.
+- 예시 cutoff statistic은 약 45이고, 오른쪽 꼬리 면적이 약 5%다.
+- 모든 동전이 실제로 공정해도, 5% cutoff를 쓰면 약 5%는 잘못 기각될 수 있다.
+- 따라서 cutoff는 귀무가설이 참일 때 생길 수 있는 장기적 오류확률과 연결된다.
+
+### 14.3 W10L1 Map Visualization 보강
+
+Folium의 지도 객체와 레이어:
+
+- `folium.Map(location=[lat, long], zoom_start=...)`로 기본 지도를 만든다.
+- 기본 tile은 OpenStreetMap이다.
+- `TileLayer`는 데이터가 아니라 배경 지도 스타일이다.
+- 여러 tile을 추가하면 `LayerControl()`로 사용자가 선택할 수 있다.
+
+Marker 계열 구분:
+
+- `Marker`: 특정 지점 표시.
+- `Popup`: 클릭했을 때 나타나는 상세 정보.
+- `Tooltip`: 마우스를 올렸을 때 보이는 짧은 정보.
+- `Icon`: 마커의 색, 모양, 아이콘 종류.
+- `CircleMarker`: 반경이나 색을 데이터 값에 연결하기 좋다.
+
+Marker popup에 여러 정보를 넣을 때는 HTML 문자열을 쓸 수 있다.
+
+```python
+folium.Popup(
+    "<pre>"
+    + "LineName: " + str(row["LineName"])
+    + "<br>"
+    + "StationName: " + str(row["Name"])
+    + "</pre>",
+    max_width=300,
+    min_width=300
+)
+```
+
+PolyLine 주의점:
+
+- `groupby("LineName")`으로 노선별 좌표를 묶는다.
+- 좌표 순서가 노선 순서와 맞아야 자연스러운 선이 그려진다.
+- 색상은 노선 이름에 따라 조건문으로 지정할 수 있다.
+
+GeoJSON과 Folium 좌표 순서:
+
+- Folium의 marker location은 `[위도, 경도]` 순서다.
+- GeoJSON geometry coordinates는 보통 `[경도, 위도]` 순서다.
+- GeoJSON을 직접 파싱해 polygon vertex를 만들 때 이 차이를 혼동하면 지도 위치가 뒤집힌다.
+
+Choropleth 핵심 옵션:
+
+```python
+folium.Choropleth(
+    geo_data=busan_geojson,
+    data=busan_df["price"],
+    fill_color="PuRd",
+    key_on="feature.id"
+).add_to(busan_map)
+```
+
+- `geo_data`: 경계 데이터.
+- `data`: 색으로 표시할 값.
+- `key_on`: GeoJSON feature의 어떤 key와 데이터를 맞출지 지정.
+- `GeoJsonTooltip(["name"], labels=False)`를 추가하면 구 이름을 tooltip으로 보여줄 수 있다.
+
+AABB, Axis-Aligned Bounding Box:
+
+- 부산 구별 거리 계산 TODO에서 각 구의 vertex로 bounding box를 만든다.
+- `xmin, ymin, xmax, ymax`를 구한 뒤 중심을 근사한다.
+- 중심 좌표는 `((xmin + xmax) / 2, (ymin + ymax) / 2)`이다.
+- 정확한 행정구역 중심은 아니지만 choropleth나 거리 기반 실습에서는 근사값으로 사용할 수 있다.
+
+Bike sharing 데이터 분석 흐름:
+
+1. `trip.csv`를 읽는다.
+2. `Duration < 1800`으로 30분 이내 대여만 남긴다.
+3. histogram으로 대여 시간 분포를 본다.
+4. `groupby("Start Station")`으로 인기 대여소를 찾는다.
+5. `groupby(["Start Station", "End Station"])`으로 대여-반납 station pair를 센다.
+6. `pivot_table`로 모든 시작-도착 조합을 행렬 형태로 만든다.
+7. `station.csv`의 위도·경도와 join해서 지도에 표시한다.
+
+인기 대여소 지도:
+
+- station별 대여 count를 station 위치 데이터와 join한다.
+- `areas = count * 0.3`처럼 count를 원 크기로 변환한다.
+- radius는 너무 커지지 않게 `sqrt(area)` 계열로 줄인다.
+- 색은 임계값으로 나눌 수 있다.
+
+```python
+def color_select(areas):
+    if areas > 3000:
+        return "red"
+    elif areas > 2000:
+        return "yellow"
+    elif areas > 1000:
+        return "green"
+    else:
+        return "dodgerblue"
+```
+
+Spatial indexing:
+
+- 목적: 위치 데이터의 근접 검색, 반경 검색, k-NN, 공간 집계를 빠르게 처리.
+- 원리: 공간을 셀로 나누고 좌표를 cell ID로 encoding한다.
+- 가까운 위치는 같거나 인접한 cell에 들어갈 가능성이 높다.
+
+Geohash:
+
+- 위도·경도를 직사각형 격자의 문자열 ID로 변환한다.
+- 문자열 길이, 즉 precision이 길수록 더 작은 영역이다.
+- child cell은 parent 문자열 뒤에 Base32 문자를 붙여 만들 수 있다.
+
+```python
+GEOHASH_BASE32 = "0123456789bcdefghjkmnpqrstuvwxyz"
+
+def getChildren(parent):
+    return [parent + c for c in GEOHASH_BASE32]
+```
+
+H3:
+
+- Uber가 개발한 육각형 기반 공간 인덱싱이다.
+- `h3.latlng_to_cell(lat, lng, res)`는 좌표를 H3 cell ID로 바꾼다.
+- `h3.cell_to_boundary(cell)`은 cell boundary 좌표를 반환한다.
+- `h3.cell_to_children(parent_cell, child_res)`는 하위 resolution의 child cell들을 반환한다.
+- Geohash는 직사각형, H3는 육각형이라는 차이를 기억한다.
+
+### 14.4 W11L1 Why the Mean Matters 보강
+
+Percentile에서 헷갈리는 지점:
+
+- percentile은 rank 기반 개념이라 정의 방식에 따라 결과가 다를 수 있다.
+- 모든 값이 같으면 같은 값이 여러 percentile로 해석될 수 있다.
+- index가 정수로 떨어지지 않을 때 nearest-rank 방식과 interpolation 방식이 달라진다.
+
+Nearest-rank 방식:
+
+- 정렬된 데이터 `[6, 7, 9, 12, 17]`에서 80th percentile은 4번째 값 12다.
+- 70th percentile도 `5 * 70% = 3.5`를 올림해 4번째 값 12를 쓴다.
+- 항상 실제 데이터 안의 값이 나온다.
+
+Continuous percentile:
+
+- index가 정수가 아니면 가까운 두 값 사이를 보간한다.
+- 예를 들어 85th percentile에서 `k = 0.85 * (5 - 1) = 3.4`이면 12와 17 사이를 보간한다.
+- `np.percentile(..., method="inverted_cdf")`와 `method="linear"`의 결과가 달라질 수 있다.
+
+Mean의 성질:
+
+- 평균은 데이터 안에 실제로 존재하지 않아도 된다.
+- 정수 데이터의 평균이 소수일 수 있다.
+- 최솟값과 최댓값 사이에 있지만, 반드시 가운데 위치는 아니다.
+- 원래 데이터와 같은 단위를 가진다.
+- 모든 값을 한 그릇에 모아 균등하게 나누는 smoothing operator로 볼 수 있다.
+
+Mean과 median:
+
+- 평균은 histogram의 balance point, 물리적으로 center of mass다.
+- median은 50th percentile이다.
+- 대칭분포에서는 평균과 중앙값이 같다.
+- skewed distribution에서는 평균이 tail 방향으로 끌려간다.
+- San Francisco salary처럼 오른쪽 꼬리가 긴 데이터에서는 mean이 median보다 커지기 쉽다.
+
+SD 계산 절차:
+
+1. 평균을 구한다.
+2. 각 값에서 평균을 빼 deviation을 구한다.
+3. deviation을 제곱한다.
+4. 제곱편차의 평균, 즉 variance를 구한다.
+5. variance의 제곱근을 구한다.
+
+```text
+SD = root mean square of deviations from average
+```
+
+Chebyshev's inequality:
+
+```text
+mean ± z SD 안에 있는 값의 비율은 적어도 1 - 1/z^2
+```
+
+대표 값:
+
+- 평균 ± 2 SD: 최소 75%.
+- 평균 ± 3 SD: 최소 88.888...%.
+- 평균 ± 4 SD: 최소 93.75%.
+- 평균 ± 5 SD: 최소 96%.
+
+정규분포와 비교:
+
+| 범위 | 모든 분포에서 Chebyshev 최소 보장 | 정규분포 근사 |
+|---|---:|---:|
+| 평균 ± 1 SD | 최소 0% | 약 68% |
+| 평균 ± 2 SD | 최소 75% | 약 95% |
+| 평균 ± 3 SD | 최소 88.888...% | 약 99.73% |
+
+Standard units:
+
+```text
+z = (value - average) / SD
+```
+
+- z가 양수면 평균보다 큰 값이다.
+- z가 음수면 평균보다 작은 값이다.
+- z가 0이면 평균과 같은 값이다.
+- standard units로 바꾼 분포는 평균 0, SD 1이 된다.
+
+Bell-shaped histogram:
+
+- 일반적인 histogram만 보고 SD를 정확히 추정하기는 어렵다.
+- 하지만 bell-shaped curve에서는 평균이 중심 근처에 있고, 양쪽 inflection point까지의 거리가 약 1 SD다.
+- standard normal curve는 평균 0, SD 1, 변곡점 -1과 1을 가진다.
+
+Normal distribution:
+
+```text
+X ~ N(mu, sigma^2)
+```
+
+- 평균은 `mu`, 분산은 `sigma^2`다.
+- standard normal은 `Z ~ N(0, 1)`이다.
+- 곡선 아래 전체 면적은 1이다.
+- y축 값은 확률 그 자체가 아니라 density이며, 확률은 구간 아래 면적으로 해석한다.
+
+CLT 핵심:
+
+- CLT는 원자료의 분포가 정규분포가 된다는 말이 아니다.
+- 충분히 큰 무작위표본의 평균들이 이루는 분포가 대략 정규분포가 된다는 말이다.
+- 원 모집단이 skewed이거나 uniform에 가까워도 sample average distribution은 bell-shaped가 될 수 있다.
+
+수식 형태:
+
+```text
+X1, X2, ..., Xn이 i.i.d.이고 E[Xi] = mu, Var(Xi) = sigma^2이면
+sum Xi는 대략 N(n mu, n sigma^2)
+sample average는 대략 N(mu, sigma^2 / n)
+```
+
+United flight delay 예제:
+
+- delay의 모집단 평균은 약 16.66, SD는 약 39.48이다.
+- sample size 100이면 sample mean SD가 약 3.94다.
+- sample size 400이면 sample mean SD가 약 1.95다.
+- sample size 625이면 sample mean SD가 약 1.52다.
+- sample size가 커질수록 sample mean distribution은 더 좁고 높아진다.
+
+Square root law:
+
+```text
+SD of sample means = population SD / sqrt(sample size)
+```
+
+- 표본 크기를 키우면 표본평균의 변동성이 줄어든다.
+- 정확도를 x배 높이고 싶으면 표본 크기는 x^2배 필요하다.
+- 예: 표본평균의 SD를 절반으로 줄이려면 sample size를 4배로 늘려야 한다.
+
+### 14.5 W12L1 Estimation 보강
+
+Estimation의 기본 구분:
+
+- parameter: population의 고정된 값, 보통 모른다.
+- statistic: sample에서 계산한 값, sample에 따라 달라진다.
+- inference는 statistic으로 parameter를 추정하는 과정이다.
+
+San Francisco 2019 compensation 예제:
+
+- population: San Francisco employee compensation.
+- 0 salary는 현실적으로 의미가 없어 제거한다.
+- 최소 임금 기준 예시: `$15/hour * 20 hours * 50 weeks = 15000`.
+- `Salary > 15000`인 행만 남겨 새 population을 만든다.
+- population median은 예시에서 `135747.0`이다.
+- sample size 500의 한 sample median은 population median과 거의 같을 수도, 다를 수도 있다.
+
+추정치의 variability:
+
+- random sample은 매번 다르게 나올 수 있다.
+- 따라서 sample statistic도 매번 달라질 수 있다.
+- population을 다시 sampling할 수 없을 때, original sample 하나로 추정치의 변동성을 알아내야 한다.
+
+Bootstrap principle:
+
+```text
+original random sample에서 resampling하는 것 ≈ population에서 sampling하는 것
+```
+
+조건과 한계:
+
+- original sample이 충분히 크고 무작위로 뽑혔을수록 합리적이다.
+- 항상 성립하는 것은 아니다.
+- original sample이 population을 잘 대표하지 못하면 bootstrap도 그 편향을 고칠 수 없다.
+
+Bootstrap resampling 핵심:
+
+- original sample에서 뽑는다.
+- 복원추출한다.
+- original sample과 같은 크기로 뽑는다.
+- 각 bootstrap sample마다 statistic을 계산한다.
+- statistic들의 empirical distribution으로 variability와 CI를 본다.
+
+복원추출이 필요한 이유:
+
+- `replace=False`로 같은 크기만큼 뽑으면 매번 원래 sample과 같은 값들의 집합이 된다.
+- 순서만 바뀌므로 median, mean 같은 statistic은 변하지 않는다.
+- bootstrap은 반드시 `replace=True`가 핵심이다.
+
+Confidence interval:
+
+- bootstrap statistics의 가운데 95%를 잡으면 95% CI를 만들 수 있다.
+- 2.5 percentile과 97.5 percentile을 endpoints로 쓴다.
+- confidence level이 높을수록 interval은 넓어진다.
+
+CI 해석:
+
+- 틀린 말: "모수가 이 구간 안에 있을 확률이 95%다."
+- 맞는 말: "같은 sampling과 CI 계산 절차를 반복하면, 만들어진 구간들 중 약 95%가 진짜 parameter를 포함한다."
+- confidence는 특정 구간 하나가 아니라 구간을 만드는 절차에 대한 신뢰다.
+
+100개 bootstrap CI 예제:
+
+- population에서 새 sample 100개를 각각 뽑는다고 상상한다.
+- 각 sample마다 bootstrap CI를 만든다.
+- 100개의 interval 중 약 95개가 population median을 포함한다.
+- 초록 점 또는 수직선은 고정된 parameter, 노란 선들은 random interval이다.
+
+Bootstrap을 쓰기 조심해야 하는 경우:
+
+- 매우 높은/낮은 percentile, minimum, maximum처럼 rare element에 민감한 parameter.
+- statistic의 bootstrap distribution이 bell-shaped가 아닌 경우.
+- original sample이 매우 작은 경우.
+- 이 때문에 bootstrap distribution은 항상 시각화해서 모양을 확인해야 한다.
+
+Average age of mom 예제:
+
+- sample size: 1174 mother-newborn pairs.
+- parameter: 첫 자녀 출생 시 산모의 population average age.
+- statistic: sample average maternal age.
+- sample average는 약 `27.2282793867`.
+- bootstrap 95% CI 예시는 약 `(26.9, 27.5)`년이다.
+
+CI로 검정하기:
+
+- 귀무가설: population average = x.
+- 대립가설: population average != x.
+- p-value cutoff가 5%이면 95% CI를 만든다.
+- x가 95% CI 밖이면 5% 수준에서 귀무가설을 기각한다.
+- x가 95% CI 안이면 귀무가설을 기각할 수 없다.
+
+부산대역 승하차 인원 예제:
+
+- population: 2026년 부산대역 하루 승하차 인원.
+- sample: 2026년 1월~3월 관측 데이터에서 일부 날짜.
+- 날짜별 `승차 + 하차`를 `승하차합계`로 만든다.
+- sample size 30을 비복원추출한다.
+- bootstrap은 그 sample에서 sample size 30으로 복원추출해 평균을 반복 계산한다.
+- null value 25000이 95% CI 밖이면 귀무가설을 기각한다.
+
+### 14.6 W12L2 Linear Regression 보강
+
+AI, ML, regression 관계:
+
+- AI는 인간의 학습, 추론, 지각, 언어 이해 능력을 인공적으로 구현하려는 넓은 개념이다.
+- machine learning은 데이터를 통해 성능을 개선하는 방법이다.
+- model은 parameter에 의해 동작이 결정되는 유연한 프로그램이다.
+- learning은 좋은 결과가 나오도록 parameter를 조정하는 과정이다.
+- regression은 label이 있는 데이터를 이용하는 supervised learning의 대표 예다.
+
+Machine learning 종류:
+
+- supervised learning: 데이터와 정답 label이 함께 주어진다.
+- unsupervised learning: label 없이 데이터 구조나 패턴을 찾는다.
+- reinforcement learning: agent가 environment에서 action을 하고 reward를 받아 policy를 개선한다.
+
+Regression analysis:
+
+- 목표는 입력 `X`와 출력 `Y` 사이의 숨은 관계 `Y = f(X)`를 추정하는 것이다.
+- 선형회귀는 이 관계를 1차식 `Y = wX + b`로 가정한다.
+- 좋은 모델은 관측값과 예측값 사이의 error, residual이 작다.
+- 학습은 error를 줄이는 방향으로 `w`, `b`를 최적화하는 것이다.
+
+선형회귀 기본 가정:
+
+- 선형성: 독립변수와 종속변수 관계가 선형에 가깝다.
+- 독립성: 관측치 또는 독립변수 간 상관이 과도하지 않아야 한다.
+- 등분산성: residual의 분산이 특정 구간에서만 커지거나 작아지지 않는다.
+- 정규성: residual이 대체로 정규분포를 따른다는 가정을 둔다.
+
+scikit-learn 입력 형태:
+
+- `LinearRegression`의 `X`는 반드시 2차원 배열이어야 한다.
+- 단일 독립변수라도 `[163]`처럼 feature vector 형태가 필요하다.
+
+```python
+X = [163, 179, 166, 169, 171]
+y = [54, 63, 57, 56, 58]
+X = [[x] for x in X]
+
+model = LinearRegression()
+model.fit(X, y)
+y_pred = model.predict(X)
+```
+
+`ravel()`과 `flatten()`:
+
+- 둘 다 다차원 배열을 1차원으로 평탄화한다.
+- `ravel()`은 가능하면 원본에 대한 view를 반환하므로 빠르고 메모리 효율적이다.
+- `flatten()`은 복사본을 만든다.
+- scatterplot에서 `X`가 `(n, 1)` 형태이면 `X.ravel()`로 1차원 x값을 넘길 수 있다.
+
+MAE:
+
+- 예측값과 관측값 차이의 절대값 평균이다.
+- 원래 y와 같은 단위라 직관적이다.
+- 평균적으로 얼마나 틀리는지 설명하기 쉽다.
+- 절대값 때문에 오차 방향은 사라진다.
+- 미분 불가능한 지점이 있어 최적화에서는 별도 처리가 필요할 수 있다.
+
+MSE:
+
+- 예측값과 관측값 차이를 제곱한 뒤 평균낸다.
+- 큰 오차를 더 크게 벌한다.
+- 이상치에 민감하다.
+- 단위가 원래 y의 제곱 단위라 직관성은 MAE보다 낮다.
+- RMSE는 MSE에 제곱근을 씌워 원래 단위로 되돌린 것이다.
+
+MSE와 gradient descent:
+
+- 제곱오차는 보통 convex한 형태를 만들어 최솟값을 찾기 쉽다.
+- 여러 `w` 후보에 대해 MSE를 계산하고 가장 작은 MSE의 `w`를 선택하는 식으로 직관화할 수 있다.
+
+R-square:
+
+```text
+R^2 = 1 - SSR / SST
+```
+
+- SST: 관측값이 평균에서 떨어진 제곱합, total variation.
+- SSR: 관측값과 예측값 차이의 제곱합, unexplained variation.
+- `R^2 = 1`: 완벽 예측.
+- `R^2 = 0`: 평균으로 예측하는 것과 같다.
+- `R^2 < 0`: 평균 예측보다 못하다.
+- 변수 수가 늘면 올라가는 경향이 있고, 이상치와 비선형 관계에서는 주의해야 한다.
+- R-square가 높아도 인과관계가 증명되는 것은 아니다.
+
+강의 데이터셋 예:
+
+- Iris: `petal_width`로 `petal_length`를 예측, R-square 약 92.71%.
+- Penguins: `bill_length_mm`로 `flipper_length_mm`를 예측, R-square 약 42.65%.
+- 같은 선형회귀라도 데이터 관계의 선형성에 따라 설명력이 크게 달라진다.
+
+### 14.7 W13L2 Comparing Two Samples 보강
+
+A/B testing:
+
+- 두 numerical sample이 같은 underlying distribution에서 왔는지 검정한다.
+- group label은 A/B처럼 범주형이고, 비교 대상은 numerical variable이다.
+- 현대 데이터 분석에서 두 sample 비교를 A/B testing이라고 부른다.
+
+Smokers and nonsmokers 예제:
+
+- 데이터: `baby.csv`, 1174 mother-baby pairs.
+- numerical variable: `Birth Weight`, 단위는 ounce.
+- group label: `Maternal Smoker`.
+- observational study이지 randomized controlled experiment가 아니다.
+
+가설:
+
+- Null: population에서 smoker babies와 non-smoker babies의 birth weight distribution은 같다.
+- Alternative: smoker mothers의 babies가 non-smoker mothers의 babies보다 평균적으로 덜 나간다.
+
+검정통계량:
+
+```text
+Group B average - Group A average
+= smoker average - non-smoker average
+```
+
+- Group A: non-smokers.
+- Group B: smokers.
+- 대립가설은 smoker 쪽 평균이 더 낮다는 것이므로 negative value가 대립가설을 지지한다.
+- 관측 차이는 약 `-9.266142572` ounce다.
+
+Permutation test 절차:
+
+1. 귀무가설 아래에서는 label과 birth weight의 연결이 의미 없다고 본다.
+2. `Maternal Smoker` label을 비복원으로 shuffle한다.
+3. shuffled label을 원래 birth weight에 붙인다.
+4. shuffled group 간 mean difference를 계산한다.
+5. 반복해서 귀무가설 아래 mean difference의 경험적 분포를 만든다.
+6. 관측 차이가 왼쪽 꼬리에 얼마나 극단적인지 본다.
+
+```python
+empirical_p = np.count_nonzero(differences <= observed_difference) / repetitions
+```
+
+Empirical p-value가 0으로 나올 때:
+
+- "확률이 정확히 0"이라는 뜻이 아니다.
+- simulation repetitions 안에서 관측값만큼 극단적인 값이 한 번도 나오지 않았다는 뜻이다.
+- 경험적 분포는 진짜 확률분포의 근사다.
+- 모든 가능한 permutation을 다 계산하면 exact test가 된다.
+
+Association과 causation:
+
+- smoker 예제는 관찰연구라서 인과관계를 단정할 수 없다.
+- 엄마들이 smoking 여부에 무작위 배정된 것이 아니다.
+- income, geography, diet, health condition 같은 confounding factor가 있을 수 있다.
+- 결론은 "smoking group과 birth weight 사이 association이 있다" 정도로 조심해야 한다.
+
+Random assignment:
+
+- treatment/control group이 무작위로 배정되면 confounding이 평균적으로 균형 잡힌다.
+- 이 경우 outcome 차이는 chance 또는 treatment 때문이라고 볼 수 있다.
+- 그래서 randomized controlled experiment는 causal conclusion에 더 강하다.
+
+BTA low-back pain 예제:
+
+- RCT 배경: Botulinum Toxin A가 chronic low-back pain에 효과가 있는지 확인.
+- 참여자: 31명.
+- control group: 16명, normal saline.
+- treatment group: 15명, BTA.
+- double-blind: 의사와 환자 모두 누가 어떤 처치를 받았는지 모른다.
+- 8주 후 pain relieved 여부를 `1` 또는 `0`으로 기록한다.
+
+Potential outcomes 관점:
+
+- 각 사람에게는 control을 받았을 때 outcome과 treatment를 받았을 때 outcome이라는 두 potential outcome이 있다고 상상한다.
+- 실제로는 한 사람에게 둘 중 하나만 관측된다.
+- random assignment 덕분에 임의의 16명은 control, 나머지 15명은 treatment라고 볼 수 있다.
+
+BTA 가설:
+
+- Null: potential control score distribution과 potential treatment score distribution이 같다. 즉 treatment effect가 없다.
+- Alternative: treatment potential score에서 `1`, 즉 pain improves 비율이 control보다 높다.
+
+BTA 검정통계량:
+
+```text
+treatment improvement proportion - control improvement proportion
+```
+
+- positive value가 대립가설을 지지한다.
+- 관측 차이는 `0.475`다.
+- p-value는 오른쪽 꼬리이므로 `diffs >= observed_diff` 비율이다.
+
+```python
+empirical_p = np.count_nonzero(diffs >= observed_diff) / repetitions
+```
+
+### 14.8 W14L1 Outro 보강
+
+이번 학기 전체 흐름:
+
+- 데이터 수집과 정리.
+- association과 causation.
+- EDA.
+- 평균, 분산, 표준편차.
+- 시각화와 그래프 해석.
+- 가설검정과 신뢰구간.
+- 지도 시각화.
+- 회귀분석.
+
+AI 시대의 핵심 변화:
+
+```text
+작업을 수행하는 능력보다 작업을 정의하는 능력이 더 중요하다.
+```
+
+AI가 도와줄 수 있는 일:
+
+- 코드 초안 작성.
+- 데이터 분석 방향 제안.
+- 그래프와 보고서 초안 작성.
+- 설명과 요약.
+- 이미지 생성.
+- 의사결정 보조.
+
+사람이 책임져야 하는 일:
+
+- 문제 정의.
+- 데이터 선택.
+- 분석 결과 해석.
+- 사실 검증.
+- 의사결정.
+- 결과에 대한 책임.
+
+LLM의 원리와 특성:
+
+- LLM은 다음 단어를 확률적으로 예측하는 모델이다.
+- 수많은 빈칸 채우기 방식의 학습을 통해 언어 패턴, 문법, 상식, 추론 패턴을 익힌다.
+- 하지만 사실을 보장하는 기계는 아니다.
+
+LLM의 4가지 특성과 활용 원칙:
+
+| LLM 특성 | 활용 원칙 |
+|---|---|
+| 그럴듯하지만 틀릴 수 있음 | 사실은 반드시 검증 |
+| 같은 질문에도 답이 달라질 수 있음 | 여러 번 물어보기, 다른 모델로 교차검증 |
+| 학습 시점 이후의 일은 모를 수 있음 | 최신 정보는 검색·뉴스·공식자료로 확인 |
+| 컨텍스트 길이에 한계가 있음 | 대화는 짧게, 큰 작업은 쪼개기 |
+
+프롬프트를 잘 쓰는 원칙:
+
+- 사실 확인을 명시적으로 지시한다.
+- 큰 작업은 작은 단계로 나눈다.
+- 주제가 바뀌면 새 대화를 사용한다.
+- 한 답변을 그대로 믿지 않는다.
+- 다른 모델, 자기 검토, 반대 입장 질문으로 교차검증한다.
+
+Prompt engineering 구성 요소:
+
+- 지시.
+- 맥락.
+- 출력 형식.
+- 제약조건.
+- 역할.
+- 평가 기준.
+- few-shot 예시.
+
+Chain of thought 관련 시험 포인트:
+
+- 복잡한 수학, 논리, 의사결정에서는 단계별로 생각하게 하는 지시가 도움이 될 수 있다.
+- 다만 모델의 중간 추론이 그럴듯해 보여도 사실 검증은 별도로 해야 한다.
+- 최종 답이 데이터와 조건에 맞는지가 더 중요하다.
+
+AI 활용 위험:
+
+- hallucination.
+- bias.
+- overconfidence.
+- context 부족.
+- accountability 부재.
+
+AI 시대에 통계 감각이 더 중요한 이유:
+
+- 평균이 대표값으로 적절한지 판단해야 한다.
+- 표본이 모집단을 대표하는지 확인해야 한다.
+- 이상치가 오류인지 중요한 신호인지 구분해야 한다.
+- 상관관계를 인과관계로 과장하지 않아야 한다.
+- 모델이 training data에만 잘 맞는지 의심해야 한다.
+- 그래프가 오해를 유도하는지 봐야 한다.
+
+AI 시대의 데이터과학자:
+
+- 도구 이름을 많이 아는 사람보다 좋은 문제를 정의하는 사람이 중요하다.
+- 데이터를 의심하고 분석 과정을 설계해야 한다.
+- 결과를 검증하고 사람에게 설명할 수 있어야 한다.
+- 잘못된 사용을 막고 최종 책임을 이해해야 한다.
+
+강의의 마지막 메시지:
+
+```text
+AI는 답을 만들고, 사람은 질문을 만든다.
+```
+
+AI 활용은 거창한 자동화 시스템보다 작은 진짜 문제에서 시작하는 것이 좋다.
+
+- 중복 파일 정리.
+- 문서 내용 비교.
+- 반복 입력 줄이기.
+- 데이터 복사/붙여넣기 자동화.
+- 자주 쓰는 분석 템플릿화.
+
+생산성은 말로 주장하는 것이 아니라 실제 사용 경험으로 확인해야 한다.
+
+- 시간이 줄었는가?
+- 실수가 줄었는가?
+- 결과 품질이 좋아졌는가?
+- 사용자가 다시 쓰고 싶어 하는가?
+- 실제 의사결정에 도움이 되는가?
+
+---
+
+## 15. 핵심 키워드 사전
+
+시험 직전에 용어의 뜻과 쓰임을 빠르게 확인하기 위한 키워드 정리다.
+
+### 15.1 가설검정 키워드
+
+- Model: 데이터가 어떻게 생성되었는지에 대한 가정들의 집합.
+- Chance model: 무작위성을 포함하여 시뮬레이션할 수 있는 모델.
+- Null hypothesis: 귀무가설, 차이가 우연 때문이라고 보는 기본 가정.
+- Alternative hypothesis: 대립가설, 관측 차이가 우연만으로 설명되지 않는다는 관점.
+- Test statistic: 귀무가설과 대립가설을 구분하기 위해 계산하는 숫자.
+- Observed statistic: 실제 데이터에서 계산한 검정통계량.
+- Empirical distribution: 반복 시뮬레이션으로 얻은 통계량의 경험적 분포.
+- Simulation under the null: 귀무가설이 참이라고 가정하고 데이터를 반복 생성하는 절차.
+- Tail: 귀무가설 아래에서 드문 극단적 값들이 있는 분포의 끝부분.
+- P-value: 귀무가설 아래에서 관측값과 같거나 더 극단적인 값이 나올 확률.
+- P-value cutoff: 귀무가설 기각 기준으로 미리 정하는 값, 보통 5% 또는 1%.
+- Statistical significance: p-value가 cutoff보다 작아 귀무가설과 일관되지 않는다고 보는 상태.
+- Error probability: 귀무가설이 참인데도 잘못 기각할 장기적 확률.
+- Bias: 오차가 한 방향으로 체계적으로 발생하는 현상.
+- One-sided test: 대립가설 방향이 한쪽인 검정.
+- Two-sided test: 대립가설이 양쪽 방향의 차이를 모두 보는 검정.
+- Distance statistic: 예측값에서 얼마나 멀리 떨어졌는지 측정하는 통계량.
+- Categorical distribution: 여러 범주 중 하나가 선택되는 확률분포.
+- Multinomial distribution: 여러 범주에 대한 반복 시행의 count 분포.
+- `sample_proportions`: categorical distribution에서 표본 비율을 시뮬레이션하는 함수.
+- TVD: Total Variation Distance, 두 categorical distribution의 차이를 재는 거리.
+- Representative sample: 모집단 구성을 잘 반영하는 표본.
+- Random sample: 모집단에서 무작위로 뽑은 표본.
+- Consistency with null: 관측값이 귀무분포에서 자연스럽게 나올 수 있는지의 판단.
+- Reject the null: 귀무가설을 기각한다는 뜻, 귀무가설이 거짓임을 증명한다는 뜻은 아님.
+- Fail to reject the null: 귀무가설을 기각할 증거가 부족하다는 뜻, 귀무가설이 참이라는 뜻은 아님.
+
+### 15.2 지도 시각화와 공간데이터 키워드
+
+- Map visualization: 위치 정보를 지도 위에 표현하는 시각화.
+- Latitude: 위도, 남북 방향 위치.
+- Longitude: 경도, 동서 방향 위치.
+- Folium: Python에서 지도 시각화를 만드는 패키지.
+- OpenStreetMap: Folium의 기본 지도 배경으로 쓰이는 오픈소스 지도.
+- Tile layer: 지도 배경 스타일 레이어.
+- LayerControl: 여러 지도 레이어를 선택하게 하는 Folium 컨트롤.
+- Marker: 지도 위 특정 지점을 표시하는 객체.
+- Popup: marker를 클릭했을 때 나타나는 정보.
+- Tooltip: marker에 마우스를 올렸을 때 보이는 정보.
+- Icon: marker의 색과 모양.
+- CircleMarker: 원형 marker, 크기나 색을 데이터 값과 연결하기 좋음.
+- MarkerCluster: 가까운 marker들을 묶어 지도 가독성을 높이는 기능.
+- PolyLine: 여러 좌표를 순서대로 연결해 선을 그리는 객체.
+- GeoJSON: 지리공간 객체를 JSON 형식으로 저장하는 표준.
+- Feature: GeoJSON에서 하나의 지리 객체.
+- Properties: GeoJSON feature의 이름, 코드 같은 속성 정보.
+- Geometry: GeoJSON feature의 실제 좌표와 모양 정보.
+- Polygon: 닫힌 면 형태의 지리 객체.
+- MultiPolygon: 여러 polygon으로 이루어진 지리 객체.
+- Choropleth map: 지역별 값을 색으로 표현하는 지도.
+- `key_on`: Choropleth에서 GeoJSON key와 데이터 key를 연결하는 옵션.
+- ColorBrewer: 지도 시각화에 자주 쓰는 색상 팔레트 모음.
+- Sequential palette: 값의 크기를 밝기나 농도로 표현하는 색상 체계.
+- Diverging palette: 기준값 양쪽의 차이를 표현하는 색상 체계.
+- `groupby`: 같은 값을 가진 행을 묶어 집계하는 Pandas 기능.
+- `pivot_table`: 행과 열 기준으로 데이터를 재구성하는 표.
+- `join`: key를 기준으로 두 데이터셋을 결합하는 작업.
+- Spatial indexing: 공간을 cell로 나누어 위치 질의를 빠르게 하는 방법.
+- Range query: 특정 반경 안의 대상을 찾는 질의.
+- k-NN: 가장 가까운 k개 이웃을 찾는 질의.
+- Cell ID: 좌표가 속한 공간 cell의 식별자.
+- Encoding: 위도·경도를 cell ID로 변환하는 과정.
+- Geohash: 직사각형 격자 기반 공간 인덱싱 방식.
+- Geohash precision: 문자열 길이, 길수록 더 작은 영역.
+- H3: Uber가 만든 육각형 격자 기반 공간 인덱싱 방식.
+- H3 resolution: H3 cell의 세밀도, 높을수록 더 작은 셀.
+- Boundary: cell 또는 polygon의 경계 좌표.
+- AABB: Axis-Aligned Bounding Box, 축에 평행한 최소 경계 사각형.
+
+### 15.3 평균, 표준편차, CLT 키워드
+
+- Numerical data: 순서와 크기 비교가 가능한 수치형 데이터.
+- Rank: 정렬했을 때의 순위.
+- Percentile: 특정 rank에 해당하는 값.
+- Median: 50th percentile, 중앙값.
+- Nearest-rank percentile: 올림한 순위의 실제 데이터 값을 percentile로 쓰는 방식.
+- Continuous percentile: 두 값 사이를 보간할 수 있는 percentile 방식.
+- Interpolation: 두 값 사이의 중간값을 계산하는 보간.
+- Mean: 평균, 모든 값을 더해 개수로 나눈 값.
+- Average: mean과 같은 의미로 자주 사용.
+- Balance point: 평균을 histogram의 균형점으로 보는 해석.
+- Center of mass: 평균의 물리적 해석, 질량중심.
+- Skewed distribution: 한쪽 꼬리가 긴 비대칭 분포.
+- Right-skewed: 오른쪽 꼬리가 긴 분포, 평균이 중앙값보다 커지기 쉬움.
+- Outlier: 다른 값들과 매우 동떨어진 값.
+- Variability: 데이터가 얼마나 퍼져 있는지.
+- Deviation: 각 값에서 평균을 뺀 값.
+- Squared deviation: 편차를 제곱한 값.
+- Variance: 제곱편차의 평균.
+- Standard deviation: 표준편차, 평균으로부터의 대표적 거리.
+- RMS: Root Mean Square, 제곱평균제곱근.
+- Chebyshev's inequality: 모든 분포에 대해 평균 ± z SD 안의 최소 비율을 보장하는 부등식.
+- Standard units: 값을 평균에서 몇 SD 떨어졌는지로 변환한 단위.
+- z-score: standard unit 값.
+- Bell-shaped curve: 종모양 곡선.
+- Inflection point: 곡선의 휘어짐이 바뀌는 지점, 정규분포에서는 평균 ± 1 SD.
+- Normal distribution: 정규분포, 평균을 중심으로 대칭인 종모양 분포.
+- Standard normal distribution: 평균 0, SD 1인 정규분포.
+- Density: 확률밀도, 구간 아래 면적이 확률이 됨.
+- 68-95-99.7 rule: 정규분포에서 평균 ±1, ±2, ±3 SD 안의 대략적 비율.
+- CLT: Central Limit Theorem, 큰 무작위표본의 평균 분포가 정규분포에 가까워진다는 정리.
+- Sample average: 표본평균.
+- Distribution of sample averages: 가능한 표본평균들이 이루는 분포.
+- Population mean: 모집단 평균, 표본평균 분포의 중심.
+- Population SD: 모집단 표준편차.
+- SD of sample means: 표본평균들의 표준편차.
+- Square root law: 표본평균 SD가 `population SD / sqrt(n)`이 되는 법칙.
+- Sample size: 표본 크기, 커질수록 표본평균의 변동성이 줄어듦.
+- i.i.d.: independent and identically distributed, 독립이고 같은 분포를 따르는 변수들.
+
+### 15.4 추정과 신뢰구간 키워드
+
+- Inference: 표본으로 모집단에 대해 결론을 내리는 과정.
+- Estimation: 표본 statistic으로 population parameter를 추정하는 과정.
+- Parameter: 모집단의 고정된 값, 보통 알 수 없음.
+- Statistic: 표본에서 계산한 값, 표본에 따라 달라짐.
+- Point estimate: 하나의 숫자로 된 추정치.
+- Interval estimate: 가능한 값의 구간으로 된 추정치.
+- Variability of estimate: 표본이 달라질 때 추정치가 달라지는 정도.
+- Census: 모집단 전체를 조사하는 것.
+- Original sample: 실제로 가진 원래 표본.
+- Resampling: 가진 표본에서 다시 표본을 뽑는 절차.
+- Bootstrap: original sample에서 복원추출을 반복해 statistic 분포를 근사하는 방법.
+- Bootstrap principle: original sample에서 다시 뽑는 것이 population에서 다시 뽑는 것과 비슷하다는 원리.
+- Bootstrap sample: original sample에서 복원추출한 새 표본.
+- Replace=True: 복원추출, bootstrap의 핵심.
+- Replace=False: 비복원추출, permutation test나 random sample에서 자주 사용.
+- Bootstrap statistic: bootstrap sample에서 계산한 statistic.
+- Bootstrap distribution: bootstrap statistic들의 경험적 분포.
+- Confidence interval: parameter가 있을 법한 구간을 추정한 것.
+- Confidence level: 신뢰구간을 만드는 절차의 장기 포함률.
+- 95% CI: 같은 절차를 반복하면 약 95%의 구간이 parameter를 포함한다는 의미.
+- Percentile method: bootstrap statistic의 양쪽 percentile로 CI를 만드는 방식.
+- Left endpoint: 신뢰구간의 왼쪽 끝값.
+- Right endpoint: 신뢰구간의 오른쪽 끝값.
+- Null value: 귀무가설에서 가정하는 parameter 값.
+- CI for testing: 신뢰구간에 null value가 포함되는지로 양측 검정을 하는 방법.
+- Rare element: 표본에 거의 나타나지 않는 값, bootstrap이 잘 반영하지 못할 수 있음.
+- Small sample problem: 표본이 너무 작아 bootstrap distribution이 불안정해지는 문제.
+- Bell-shaped bootstrap distribution: bootstrap을 쓰기 비교적 적절해 보이는 분포 형태.
+
+### 15.5 선형회귀와 예측 모델 키워드
+
+- Artificial intelligence: 인간의 학습·추론·지각 능력을 인공적으로 구현하려는 분야.
+- Machine learning: 데이터를 통해 모델 성능을 개선하는 방법.
+- Model parameter: 모델의 동작을 결정하는 값.
+- Learning: 데이터를 이용해 parameter를 조정하는 과정.
+- Supervised learning: 입력과 정답 label을 함께 사용해 학습하는 방식.
+- Unsupervised learning: label 없이 데이터 구조를 찾는 방식.
+- Reinforcement learning: 보상을 통해 행동 정책을 개선하는 방식.
+- Regression: 입력 X로 수치형 출력 Y를 예측하는 문제.
+- Regression analysis: X와 Y 사이의 숨은 관계를 추정하는 분석.
+- Independent variable: 독립변수, 설명변수 X.
+- Dependent variable: 종속변수, 반응변수 Y.
+- Linear regression: X와 Y의 관계를 직선으로 모델링하는 회귀.
+- Slope: 기울기 `w`.
+- Intercept: 절편 `b`.
+- Hypothesis/model: Y를 예측하는 식 또는 함수.
+- Residual: 관측값과 예측값의 차이.
+- Error metric: 모델 오차를 수치화하는 지표.
+- Linearity: X와 Y 관계가 선형이라는 가정.
+- Independence: 관측치나 변수 사이 독립성에 대한 가정.
+- Homoscedasticity: residual의 분산이 일정하다는 가정.
+- Normality: residual이 대체로 정규분포를 따른다는 가정.
+- `LinearRegression`: scikit-learn의 선형회귀 모델.
+- 2D input: scikit-learn에서 X가 `(n_samples, n_features)` 형태여야 한다는 조건.
+- `fit`: 모델을 학습시키는 메서드.
+- `predict`: 학습된 모델로 예측값을 만드는 메서드.
+- `coef_`: 학습된 기울기 계수.
+- `intercept_`: 학습된 절편.
+- `make_regression`: scikit-learn의 회귀용 가상 데이터 생성 함수.
+- `ravel`: 배열을 1차원 view로 펴는 함수.
+- `flatten`: 배열을 1차원 copy로 펴는 함수.
+- MAE: Mean Absolute Error, 절대오차 평균.
+- MSE: Mean Squared Error, 제곱오차 평균.
+- RMSE: Root Mean Squared Error, MSE의 제곱근.
+- Gradient descent: 오차를 줄이는 방향으로 parameter를 갱신하는 최적화 방법.
+- R-square: 모델이 Y의 전체 변동 중 얼마나 설명하는지 나타내는 지표.
+- SST: Total Sum of Squares, 전체 변동.
+- SSR: Residual Sum of Squares, 설명되지 않은 변동.
+- Overfitting: 모델이 training data에만 과하게 맞는 현상.
+- Causation caution: 회귀 관계가 곧 인과관계를 의미하지 않는다는 주의.
+
+### 15.6 두 표본 비교와 A/B Testing 키워드
+
+- Two-sample comparison: 두 집단의 numerical values를 비교하는 분석.
+- A/B testing: 두 sample이 같은 underlying distribution에서 왔는지 검정하는 절차.
+- Group label: 각 관측값이 어느 집단에 속하는지 나타내는 범주형 변수.
+- Numerical variable: 집단 간 비교할 수치형 변수.
+- Difference of means: 두 집단 평균의 차이.
+- Observational study: 연구자가 집단 배정을 통제하지 않은 관찰연구.
+- Randomized controlled experiment: 참여자를 treatment/control에 무작위 배정한 실험.
+- Treatment group: 처치를 받은 집단.
+- Control group: 비교 기준이 되는 집단.
+- Random assignment: 참여자를 집단에 무작위 배정하는 것.
+- Confounding factor: 집단 차이와 결과에 동시에 영향을 줄 수 있는 다른 요인.
+- Association: 두 변수 또는 집단 사이의 관계.
+- Causation: 한 요인이 결과의 원인이라는 주장.
+- Label shuffling: 귀무가설 아래 group label을 섞는 작업.
+- Permutation: label을 비복원으로 재배치하는 것.
+- Permutation test: label shuffling으로 귀무분포를 만드는 검정.
+- Exact test: 가능한 모든 permutation을 계산하는 검정.
+- Empirical p-value: 시뮬레이션 결과에서 관측값만큼 극단적인 비율.
+- Left-tail p-value: 작은 값이 대립가설을 지지할 때 쓰는 p-value.
+- Right-tail p-value: 큰 값이 대립가설을 지지할 때 쓰는 p-value.
+- Potential outcomes: 같은 사람이 control일 때와 treatment일 때 가질 수 있는 잠재 결과.
+- Double-blind study: 연구자와 참여자 모두 처치 배정을 모르는 실험.
+- Treatment effect: 처치가 결과에 미치는 효과.
+- Improvement proportion: `1`로 기록된 개선 결과의 비율.
+- BTA: Botulinum Toxin A, low-back pain RCT 예제의 treatment.
+
+### 15.7 AI 시대 데이터과학 키워드
+
+- Data science process: 문제정의, 데이터수집, 정리, EDA, 모델링, 해석, 의사결정의 흐름.
+- Problem definition: 어떤 문제를 풀 것인지 명확히 정하는 일.
+- EDA: Exploratory Data Analysis, 탐색적 데이터 분석.
+- Decision support: 데이터 분석 결과를 의사결정에 활용하는 것.
+- LLM: Large Language Model, 다음 단어를 확률적으로 예측하는 언어모델.
+- Hallucination: AI가 없는 사실을 그럴듯하게 만들어내는 현상.
+- Bias: 학습 데이터나 입력 데이터의 편향이 결과에 반영되는 문제.
+- Overconfidence: 불확실한 답을 확신 있게 말하는 문제.
+- Context window: 모델이 한 번에 참고할 수 있는 입력 길이.
+- Knowledge cutoff: 모델 학습 정보가 멈춘 시점.
+- Verification: AI 결과가 사실과 데이터에 맞는지 확인하는 절차.
+- Cross-checking: 다른 모델, 출처, 방식으로 결과를 재검토하는 것.
+- Prompt: AI에게 주는 입력 지시.
+- Prompt engineering: 원하는 출력을 얻기 위해 지시, 맥락, 형식, 제약을 설계하는 방법.
+- Role instruction: AI에게 특정 역할을 부여하는 프롬프트 요소.
+- Output format: 표, Markdown, bullet 등 결과 형식 지정.
+- Constraint: 길이, 범위, 출처, 금지사항 같은 제한조건.
+- Evaluation criteria: 결과가 좋은지 판단할 기준.
+- Few-shot prompting: 원하는 입력-출력 예시를 함께 제공하는 방식.
+- Task decomposition: 큰 작업을 작은 단계로 쪼개는 방법.
+- Accountability: 결과 사용에 대한 최종 책임.
+- Data literacy: 데이터를 의심하고 해석하고 설명하는 능력.
+- AI literacy: AI의 강점과 한계를 이해하고 적절히 쓰는 능력.
+- Good question: 분석 방향과 결과 품질을 결정하는 명확한 질문.
+- Small real problem: 실제로 반복되고 귀찮은 작은 문제, AI 활용의 좋은 출발점.
+
+---
+
+## 16. 예상문제와 헷갈리는 포인트
+
+시험 직전에 바로 답안을 떠올리기 위한 문제-정답 모음이다. 서술형은 아래 문장을 그대로 변형해서 쓰면 된다.
+
+### 16.1 가설검정 예상문제
+
+문제: 가설검정의 전체 절차를 설명하라.
+
+정답:
+
+```text
+먼저 귀무가설과 대립가설을 세우고, 두 가설을 구분할 검정통계량을 정한다. 귀무가설이 참이라고 가정한 뒤 검정통계량을 반복 시뮬레이션하여 귀무분포를 만들고, 실제 관측 통계량이 그 분포에서 얼마나 극단적인지 p-value로 판단한다.
+```
+
+문제: 귀무가설과 대립가설의 차이는?
+
+정답:
+
+```text
+귀무가설은 관측된 차이가 우연에 의해 발생했다는 시뮬레이션 가능한 chance model이다. 대립가설은 관측된 차이가 우연만으로 설명되지 않는다는 다른 설명이다.
+```
+
+문제: p-value의 정확한 의미는?
+
+정답:
+
+```text
+p-value는 귀무가설이 참이라고 가정했을 때, 관측된 검정통계량과 같거나 대립가설 방향으로 더 극단적인 값이 나올 확률이다.
+```
+
+헷갈림: p-value는 귀무가설이 참일 확률인가?
+
+정답:
+
+```text
+아니다. p-value는 귀무가설이 참일 확률이 아니라, 귀무가설 아래에서 현재 관측값만큼 극단적인 결과가 나올 확률이다.
+```
+
+문제: p-value cutoff와 p-value의 차이는?
+
+정답:
+
+```text
+p-value cutoff는 데이터를 보기 전에 정하는 판단 기준이고, p-value는 관측 데이터와 시뮬레이션으로 계산되는 값이다. cutoff는 귀무가설이 참일 때 잘못 기각할 장기적 오류확률과 연결된다.
+```
+
+문제: 검정통계량을 고를 때 중요한 기준은?
+
+정답:
+
+```text
+검정통계량은 귀무가설과 대립가설을 잘 구분해야 한다. 특히 어떤 방향의 값이 대립가설을 지지하는지 명확해야 한다.
+```
+
+문제: Swain 배심원 예제에서 관측값 8명의 의미는?
+
+정답:
+
+```text
+적격 인구의 Black 비율이 26%이고 100명을 무작위로 뽑는다면 Black panelist 수가 8명처럼 작게 나오는 것은 매우 드물다. 따라서 무작위 선정 모델은 실제 데이터와 일관되지 않는다.
+```
+
+문제: Mendel 예제에서 왜 절대거리 통계량을 쓰는가?
+
+정답:
+
+```text
+대립가설이 75%보다 크다 또는 작다 중 한쪽 방향이 아니라, 모델의 예측값 75%에서 멀리 떨어져 있다는 것이기 때문이다. 따라서 `abs(sample percent - 75)`를 사용한다.
+```
+
+문제: Alameda jury 예제에서 TVD를 쓰는 이유는?
+
+정답:
+
+```text
+ethnicity가 여러 범주로 이루어진 categorical distribution이므로 특정 범주 하나만 비교하기보다 전체 분포의 차이를 하나의 숫자로 요약해야 한다. TVD는 두 categorical distribution의 거리를 측정한다.
+```
+
+문제: TVD 공식과 해석은?
+
+정답:
+
+```text
+TVD(P, Q) = 1/2 * sum(|P_i - Q_i|)이다. 값이 0이면 두 분포가 같고, 값이 클수록 두 분포가 더 다르다.
+```
+
+헷갈림: 귀무가설을 기각하지 못하면 귀무가설이 참인가?
+
+정답:
+
+```text
+아니다. 귀무가설을 기각할 충분한 증거가 없다는 뜻이지, 귀무가설이 참이라고 증명한 것은 아니다.
+```
+
+### 16.2 지도 시각화 예상문제
+
+문제: Folium에서 좌표 순서는?
+
+정답:
+
+```text
+Folium의 location은 `[위도, 경도]` 순서다. GeoJSON 좌표는 보통 `[경도, 위도]` 순서이므로 혼동하지 않아야 한다.
+```
+
+문제: Marker, Popup, Tooltip의 차이는?
+
+정답:
+
+```text
+Marker는 지도 위 위치를 표시하고, Popup은 marker를 클릭했을 때 보이는 정보이며, Tooltip은 마우스를 올렸을 때 보이는 정보다.
+```
+
+문제: MarkerCluster는 언제 쓰는가?
+
+정답:
+
+```text
+지도 위에 marker가 너무 많아 겹쳐 보일 때 가까운 marker들을 cluster로 묶어 가독성을 높이기 위해 사용한다.
+```
+
+문제: PolyLine에서 중요한 점은?
+
+정답:
+
+```text
+PolyLine은 좌표들을 순서대로 연결하므로 좌표의 순서가 중요하다. 순서가 잘못되면 노선이나 경로가 엉뚱하게 연결된다.
+```
+
+문제: GeoJSON이란?
+
+정답:
+
+```text
+GeoJSON은 행정구역 경계, 도로, polygon 같은 지리공간 객체를 JSON 형식으로 표현하는 표준이다.
+```
+
+문제: Choropleth map이란?
+
+정답:
+
+```text
+Choropleth map은 지역별 값을 색으로 표현하는 지도다. GeoJSON의 지역 경계와 DataFrame의 값을 key로 연결하여 색을 칠한다.
+```
+
+헷갈림: Choropleth가 제대로 안 칠해지는 흔한 이유는?
+
+정답:
+
+```text
+GeoJSON의 key와 DataFrame의 key가 서로 맞지 않기 때문이다. `key_on`과 데이터의 key column을 정확히 연결해야 한다.
+```
+
+문제: Geohash와 H3의 차이는?
+
+정답:
+
+```text
+Geohash는 직사각형 격자 기반 공간 인덱싱이고, H3는 육각형 격자 기반 공간 인덱싱이다. Geohash는 precision이 길수록, H3는 resolution이 높을수록 더 작은 영역을 나타낸다.
+```
+
+문제: 공간 인덱싱의 목적은?
+
+정답:
+
+```text
+위도·경도를 cell ID로 변환하여 반경 검색, 근접 검색, 공간 집계 같은 위치 기반 질의를 효율적으로 처리하기 위한 것이다.
+```
+
+### 16.3 평균, 표준편차, CLT 예상문제
+
+문제: 평균과 중앙값의 차이는?
+
+정답:
+
+```text
+평균은 모든 값을 더해 개수로 나눈 값이며 histogram의 balance point로 해석할 수 있다. 중앙값은 50th percentile이다. 분포가 치우쳐 있으면 평균은 꼬리 방향으로 끌려가지만 중앙값은 상대적으로 덜 민감하다.
+```
+
+문제: Percentile 계산에서 nearest-rank와 continuous 방식의 차이는?
+
+정답:
+
+```text
+Nearest-rank 방식은 정렬된 데이터에서 해당 순위의 실제 원소를 선택한다. Continuous 방식은 위치가 정수로 떨어지지 않으면 인접한 두 값 사이를 보간할 수 있다.
+```
+
+헷갈림: percentile index는 0부터 시작하는가?
+
+정답:
+
+```text
+Python과 NumPy의 index는 0부터 시작한다. 하지만 말로 "몇 번째 원소"라고 할 때는 보통 1부터 센다. 강의의 `k = p/100 * (n-1)` 계산식은 0-based index 기준이다.
+```
+
+헷갈림: 보간에서 `k = 3.7`이면 어떻게 계산하는가?
+
+정답:
+
+```text
+0-based index 기준으로 index 3의 값과 index 4의 값 사이를 0.7만큼 이동한다. 즉 `index 3 값 + (index 4 값 - index 3 값) * 0.7`이다.
+```
+
+문제: 표준편차 SD의 의미는?
+
+정답:
+
+```text
+표준편차는 값들이 평균으로부터 대략 얼마나 떨어져 있는지를 나타내는 대표적 거리다. 편차를 제곱하고 평균낸 뒤 제곱근을 취한 값이다.
+```
+
+문제: Chebyshev 부등식은?
+
+정답:
+
+```text
+분포의 모양과 관계없이 평균 ± z SD 안에 있는 값의 비율은 적어도 `1 - 1/z^2`이다.
+```
+
+자주 나오는 값:
+
+```text
+평균 ± 2 SD: 최소 75%
+평균 ± 3 SD: 최소 88.9%
+평균 ± 4 SD: 최소 93.75%
+```
+
+문제: Standard unit이란?
+
+정답:
+
+```text
+Standard unit은 어떤 값이 평균에서 몇 SD만큼 떨어져 있는지를 나타낸 값이다. 공식은 `(value - average) / SD`이다.
+```
+
+문제: 정규분포에서 평균 ± 1, 2, 3 SD의 비율은?
+
+정답:
+
+```text
+정규분포에서는 평균 ± 1 SD 안에 약 68%, ± 2 SD 안에 약 95%, ± 3 SD 안에 약 99.7%가 들어간다.
+```
+
+문제: CLT의 의미는?
+
+정답:
+
+```text
+중심극한정리는 모집단 분포의 모양과 관계없이 표본 크기가 충분히 크면 표본평균들의 분포가 대략 정규분포에 가까워진다는 정리다.
+```
+
+헷갈림: CLT는 원자료가 정규분포가 된다는 뜻인가?
+
+정답:
+
+```text
+아니다. 원자료가 정규분포가 되는 것이 아니라, 반복해서 뽑은 표본평균들의 분포가 정규분포에 가까워진다는 뜻이다.
+```
+
+문제: 표본평균 분포의 중심과 SD는?
+
+정답:
+
+```text
+표본평균 분포의 중심은 population mean이고, 표본평균의 SD는 `population SD / sqrt(sample size)`이다.
+```
+
+문제: Square root law의 의미는?
+
+정답:
+
+```text
+표본평균의 SD는 표본 크기의 제곱근에 반비례한다. 추정 정확도를 x배 높이려면 표본 크기를 x^2배 늘려야 한다.
+```
+
+### 16.4 추정과 신뢰구간 예상문제
+
+문제: Parameter와 statistic의 차이는?
+
+정답:
+
+```text
+Parameter는 모집단의 고정된 값이고 보통 알 수 없다. Statistic은 표본에서 계산한 값이며 표본에 따라 달라지고 parameter 추정에 사용된다.
+```
+
+문제: Bootstrap이란?
+
+정답:
+
+```text
+Bootstrap은 original sample이 모집단을 어느 정도 닮았다고 보고, 그 표본에서 같은 크기로 복원추출을 반복하여 statistic의 경험적 분포를 만드는 방법이다.
+```
+
+문제: Bootstrap에서 왜 복원추출을 하는가?
+
+정답:
+
+```text
+같은 크기로 비복원추출하면 원래 표본과 같은 값들의 집합만 반복되어 mean이나 median 같은 statistic이 변하지 않는다. 변동성을 만들기 위해 복원추출이 필요하다.
+```
+
+문제: 95% confidence interval의 정확한 의미는?
+
+정답:
+
+```text
+95% 신뢰구간은 모수가 95% 확률로 그 구간 안에 있다는 뜻이 아니다. 같은 표본추출과 구간 계산 절차를 반복하면 만들어진 구간들 중 약 95%가 진짜 parameter를 포함한다는 뜻이다.
+```
+
+헷갈림: CI 안에 모수가 들어 있을 확률이 95%인가?
+
+정답:
+
+```text
+빈도주의 해석에서는 아니다. 특정 구간이 계산된 후에는 parameter가 그 안에 있거나 없거나 둘 중 하나다. 95%는 구간을 만드는 절차의 장기적 포함률이다.
+```
+
+문제: CI로 가설검정을 하는 방법은?
+
+정답:
+
+```text
+양측 검정에서 5% cutoff를 사용한다면 95% confidence interval을 만든다. 귀무가설의 null value가 구간 밖에 있으면 귀무가설을 기각하고, 구간 안에 있으면 기각할 수 없다.
+```
+
+문제: Bootstrap을 쓰기 어려운 경우는?
+
+정답:
+
+```text
+표본이 매우 작거나, minimum/maximum처럼 rare value에 민감한 parameter를 추정하거나, bootstrap distribution이 bell-shaped가 아닌 경우에는 주의해야 한다.
+```
+
+### 16.5 선형회귀 예상문제
+
+문제: 선형회귀란?
+
+정답:
+
+```text
+선형회귀는 독립변수 X와 종속변수 Y 사이의 관계를 `Y = wX + b` 형태의 직선으로 모델링하여 Y를 예측하는 지도학습 방법이다.
+```
+
+문제: scikit-learn `LinearRegression`에서 X 형태는?
+
+정답:
+
+```text
+X는 2차원 배열이어야 한다. 단일 독립변수라도 `[163, 179, ...]`가 아니라 `[[163], [179], ...]`처럼 만들어야 한다.
+```
+
+문제: MAE와 MSE의 차이는?
+
+정답:
+
+```text
+MAE는 절대오차의 평균으로 원래 단위와 같아 직관적이다. MSE는 제곱오차의 평균으로 큰 오차를 더 크게 벌하지만 단위가 제곱 단위라 직관성은 낮다.
+```
+
+문제: RMSE는?
+
+정답:
+
+```text
+RMSE는 MSE에 제곱근을 씌운 값으로, 큰 오차를 반영하면서도 원래 y와 같은 단위로 해석할 수 있다.
+```
+
+문제: R-square의 의미는?
+
+정답:
+
+```text
+R-square는 종속변수 Y의 전체 변동 중 회귀모델이 설명한 비율이다. 1에 가까울수록 설명력이 높고, 0이면 평균 예측과 비슷하며, 음수이면 평균 예측보다 못한 모델이다.
+```
+
+헷갈림: R-square가 높으면 인과관계가 증명되는가?
+
+정답:
+
+```text
+아니다. R-square는 설명력 또는 예측 성능의 지표이지 인과관계를 증명하지 않는다.
+```
+
+문제: `ravel()`과 `flatten()`의 차이는?
+
+정답:
+
+```text
+둘 다 배열을 1차원으로 펴지만, `ravel()`은 가능하면 view를 반환하고 `flatten()`은 copy를 반환한다.
+```
+
+문제: 선형회귀 기본 가정은?
+
+정답:
+
+```text
+대표적으로 선형성, 독립성, 등분산성, residual의 정규성 가정이 있다.
+```
+
+### 16.6 두 표본 비교와 A/B Testing 예상문제
+
+문제: A/B testing이란?
+
+정답:
+
+```text
+A/B testing은 두 sample이 같은 underlying distribution에서 왔는지, 또는 두 집단 사이에 실제 차이가 있는지 검정하는 방법이다.
+```
+
+문제: Permutation test의 핵심 아이디어는?
+
+정답:
+
+```text
+귀무가설 아래에서는 group label과 관측값의 연결이 의미 없다고 보고, label을 비복원으로 섞어 검정통계량의 귀무분포를 만든다.
+```
+
+문제: Bootstrap과 permutation test의 차이는?
+
+정답:
+
+```text
+Bootstrap은 추정치의 변동성과 confidence interval을 보기 위해 표본에서 복원추출한다. Permutation test는 두 집단 차이를 검정하기 위해 group label을 비복원으로 섞는다.
+```
+
+문제: 흡연 산모 예제의 검정통계량과 방향은?
+
+정답:
+
+```text
+검정통계량은 `smoker average - non-smoker average`이다. 대립가설은 smoker babies가 더 가볍다는 것이므로 음수 방향이 대립가설을 지지한다.
+```
+
+문제: empirical p-value가 0이면 확률이 진짜 0인가?
+
+정답:
+
+```text
+아니다. 정해진 simulation repetitions 안에서 관측값만큼 극단적인 값이 한 번도 나오지 않았다는 뜻이다. 경험적 p-value는 진짜 확률의 근사다.
+```
+
+문제: Observational study와 randomized controlled experiment의 차이는?
+
+정답:
+
+```text
+Observational study는 연구자가 집단 배정을 통제하지 않으므로 association은 말할 수 있지만 causation은 조심해야 한다. Randomized controlled experiment는 random assignment 덕분에 causal conclusion을 더 강하게 말할 수 있다.
+```
+
+문제: 흡연 산모 예제에서 인과관계를 단정할 수 없는 이유는?
+
+정답:
+
+```text
+엄마들이 흡연 여부에 무작위 배정된 것이 아니므로 소득, 식습관, 건강 상태 등 confounding factor가 출생체중에 영향을 주었을 수 있기 때문이다.
+```
+
+문제: BTA 예제에서 causal conclusion이 가능한 이유는?
+
+정답:
+
+```text
+BTA 예제는 randomized controlled trial이고 treatment/control이 무작위 배정되었기 때문에 집단 차이가 chance 또는 treatment 때문이라고 해석할 수 있다.
+```
+
+문제: BTA 예제의 검정통계량과 방향은?
+
+정답:
+
+```text
+검정통계량은 `treatment improvement proportion - control improvement proportion`이다. treatment의 개선 비율이 더 높다는 대립가설이므로 양수 방향이 대립가설을 지지한다.
+```
+
+### 16.7 AI 시대 데이터과학 예상문제
+
+문제: AI 시대에 데이터과학을 배우는 이유는?
+
+정답:
+
+```text
+AI가 분석과 코드를 도와줄 수 있어도 문제 정의, 데이터 선택, 결과 해석, 검증, 의사결정 책임은 사람이 해야 한다. 데이터과학은 AI 답변을 검증하고 좋은 질문을 만들기 위한 기초다.
+```
+
+문제: LLM의 4가지 특성과 대응 원칙은?
+
+정답:
+
+```text
+LLM은 그럴듯하지만 틀릴 수 있으므로 사실을 검증해야 한다. 같은 질문에도 답이 달라질 수 있으므로 교차검증이 필요하다. 학습 시점 이후의 일은 모를 수 있으므로 최신 정보는 검색해야 한다. 컨텍스트 길이에 한계가 있으므로 큰 작업은 쪼개야 한다.
+```
+
+문제: 좋은 프롬프트의 요소는?
+
+정답:
+
+```text
+좋은 프롬프트는 작업 목표, 맥락, 출력 형식, 제약조건, 대상 독자, 평가 기준을 명확히 포함해야 한다.
+```
+
+문제: AI 결과를 그대로 믿으면 안 되는 이유는?
+
+정답:
+
+```text
+AI는 hallucination, bias, overconfidence, context 부족 문제를 가질 수 있고 결과에 대한 최종 책임을 지지 않기 때문이다.
+```
+
+문제: "AI는 답을 만들고, 사람은 질문을 만든다"의 의미는?
+
+정답:
+
+```text
+AI는 빠르게 답을 생성할 수 있지만 어떤 질문을 할지, 어떤 데이터를 쓸지, 결과가 타당한지, 어디에 사용할지는 사람이 판단해야 한다는 뜻이다.
+```
+
+문제: AI 활용은 어디서 시작하는 것이 좋은가?
+
+정답:
+
+```text
+거창한 시스템보다 실제로 반복되고 귀찮은 작은 문제에서 시작하는 것이 좋다. 예를 들어 중복 파일 정리, 문서 비교, 반복 입력 줄이기, 데이터 정리 자동화가 있다.
+```
+
+### 16.8 최종 헷갈림 압축
+
+- p-value는 귀무가설이 참일 확률이 아니다.
+- p-value가 크다고 귀무가설이 참이라는 뜻도 아니다.
+- cutoff는 사전에 정하고, p-value는 데이터로 계산한다.
+- Bootstrap은 `replace=True`, permutation test는 label shuffle `replace=False`.
+- Bootstrap은 추정과 CI, permutation test는 두 집단 차이 검정에 쓴다.
+- CI는 특정 구간 안에 모수가 95% 확률로 있다는 뜻이 아니다.
+- 95% CI는 절차의 장기 포함률이 95%라는 뜻이다.
+- CLT는 원자료가 아니라 표본평균의 분포에 대한 정리다.
+- 표본평균 SD는 `population SD / sqrt(n)`이다.
+- 표본 크기를 4배로 늘리면 표본평균 SD는 절반이 된다.
+- 평균은 outlier와 skewness에 민감하고, median은 상대적으로 강하다.
+- 정규분포 68-95-99.7과 Chebyshev의 최소 보장은 다르다.
+- Folium 좌표는 `[위도, 경도]`, GeoJSON 좌표는 보통 `[경도, 위도]`.
+- Choropleth는 GeoJSON key와 DataFrame key가 맞아야 한다.
+- Geohash는 직사각형, H3는 육각형 격자다.
+- LinearRegression의 X는 2차원 배열이어야 한다.
+- R-square가 높아도 인과관계가 증명되는 것은 아니다.
+- Observational study는 association, RCT는 causation 판단에 더 적합하다.
+- Empirical p-value 0은 진짜 확률 0이 아니라 simulation에서 안 나왔다는 뜻이다.
+- AI 답변은 검증해야 하며, 문제 정의와 결과 책임은 사람에게 있다.
+
+
+# 1. 가설 검정 (Testing Hypothesis)
+- 모델: 데이터에 대한 가설 집합
+- 기회 모델: 무작위성에 의한 데이터 
+- 귀무가설, 대립가설
+- p-value 
+- p-value cutoff
+- 검정통계량 
+- Total Variation Distance, TVD
+- Statistical Significance. 통계적 유의성 
+
+# 3. 평균 
+- 백분위수 Percentile, numpy에서는 0 based index 
+- 분산과 표준편차, 평균 +- n 표준편차, 68, 95, 99.7
+- 체비셰프 부등식 n sd에 대해, 1 - 1/n^2, n sd가 최소 해당 백분위만큼을 성립함 
+- 데이터 분포가 종모양이면 변곡점을 가지고 SD 바로 추출 가능 
+- 중심극한정리 
+- standard deviation
+- 평균 ± z SD 안의 최소 비율
+- SD
+- 정규분포에서는 평균 ± 1, 2, 3 SD
+- 중심극한정리
+- population mean
+- population SD / sqrt(sample size)
+- Folium, branca Figure, Marker, Popup, Tooltip, Icon, MarkerCluster, GeoJSON, Choropleth Map, ColorBrewer, 
+
+# 4. Estimation 추측 
+- 샘플링과 부트스트랩
+
+# 5. 선형 회귀
+-  MAE, MSE
+- 선형성 독립성 등분산성 정규성 
+
+# 6. 비교군 
