@@ -10,19 +10,13 @@ description: "학교 수업 내용 및 암호학, 정보보안 책 정리"
 
 ## 목차 
 1. 고전 암호
-2. 암호 수학 - 난수 생성 
-3. 대칭키 암호 
-4. 비대칭키 암호 
-5. 해시 
-6. 네트워크 보안 
+2. 암호 수학 
+3. 난수 생성 
+4. 대칭키 암호 
+5. 비대칭키 암호 
+6. 해시 
 7. 양자암호 
 8. 마무리 
-
-## 암호 공격 방법
-1. 암호문 단독 공격(Ciphertext Only Attack, COA)
-2. 기지 평문 공격 (Known Plaintext Attack, KPA)
-3. 선택 평문 공격 (Chosen Plaintext Attack, CPA)
-4. 선택 암호문 공격 (Chosen Ciphertext Attack, CCA)
 
 # 1. 고전 암호(아날로그 암호)
 - 컴퓨터 등장 이전 튜링머신 등장까지의 아날로그 암호 
@@ -82,6 +76,8 @@ $3(d) * 9(key^{-1}) = 27 mod 26 = 1(b)$
 
 # 2. 암호수학
 - 암호학에 쓰이는 수학적 내용들을 총 나열합니다.
+- **Integer factorization problem**
+- **Discrete logarithm problem**
 - 내부적으로 어떤 수학적 논리성을 띄는지와 증명 방법이 어떻게 되는가에 대한 내용은 관심사가 아닙니다.
 - 해당 수학 개념들이 암호학에 어떻게 쓰이는가에 대해 결과론적으로만 정리합니다. 
 - 군, 부분군, 유한군, 무한군, 순환 군, 순환 부분 군, 아벨 군
@@ -91,8 +87,6 @@ $3(d) * 9(key^{-1}) = 27 mod 26 = 1(b)$
 - 소수, 소수 판정, 오일러 함수, 오일러 정리, 페르마의 리틀 정리, 결정적 알고리즘, 확률적 알고리즘, 중국인 나머지 정리
 - 아벨군: 군의 4가지 요소 닫힘, 결합법칙, 항등원, 역원에 교환법칙이 추가된 구조
 - integral domain: 연산이 두 개(곱셈, 덧셈)인 환의 일종. 교환법칙이 성립하며 단위원을 가지고 영인자가 없는 구조
-- Integer factorization problem
-- Discrete logarithm problem
 
 ## 확장 유클리드 알고리즘
 
@@ -254,89 +248,70 @@ $3(d) * 9(key^{-1}) = 27 mod 26 = 1(b)$
 - 비공개키로 암호화한 것은, 암호키 소유자가 서명 한 것으로 작용. 
 - 공개키로 암호화한 것은 암호키만 복호화할 수 있는 기밀성 제공
 - 트랩도어 일방향성 
+- DSS
 
 ## RSA
+- 정수 인수분해 문제(Integer factorization problem) 기반 
 - 두 개의 소수 p, q가 있을 때. 
 - n = p * q, pi = (p-1) * (q-1)
 - e는 1 \< e \< pi 이면서, pi와 서로소인 수들 중 하나 
 - d는 d * e mod pi = 1이며 pi보다 작은 값 
-- => 공개키는 (e, n). 비밀키는 d 
-- Integer factorization problem 기반 
+- => 공개키는 (e, n). 비밀키는 d.
+- (e, n) 쌍을 공개하며, (d, n)쌍을 개인키로 저장. 혹은 (p, q, d)을 저장 
 
 ## ECC(타원 곡선 암호)
-- discrete logarithm problem 기반 
+- 이산 대수 문제(discrete logarithm problem) 기반 ECDLP 수학 알고리즘 사용 암호 기법 
+- 타원곡선 일반항: $$y^2 + a_1xy + a_3y = x^3 + a_2x^2 + a_4x + a_6$$
+- 통상적으로 사용하는 실수상의 타원곡선항: $$y^2 = x^3 + ax + b$$
+- 타원곡선이 만족해야하는 판별식 $$4a^3 + 27b^3 {\neq} 0$$
+- ECC의 수학적 특성
+- 소수 곡선, 이진 곡선 
+- ECDH, ECDSA, ECIES
+
+### 표준 ECC 
+
 
 ## Diffie-Hellman
 
-## DSS
+## 전자서명
 
 # 6. 해시 
 
-# 7. 네트워크 보안 
+## MAC HASH
 
-# 8. 양자 암호
+## MIC SHA
 
+# 네트워크 보안 
+## TLS
+## DOS 
 
-CSI 기밀성, 무결성, 가용성
-1. 암호문 단독 공격(Ciphertext Only Attack, COA)
-2. 기지 평문 공격 (Known Plaintext Attack, KPA)
-3. 선택 평문 공격 (Chosen Plaintext Attack, CPA)
-4. 선택 암호문 공격 (Chosen Ciphertext Attack, CCA)
+# 7. 양자 암호
 
-- 아벨군: 군의 4가지 요소 닫힘, 결합법칙, 항등원, 역원에 교환법칙이 추가된 구조
-- integral domain: 연산이 두 개(곱셈, 덧셈)인 환의 일종. 교환법칙이 성립하며 단위원을 가지고 영인자가 없는 구조
-
-- 난수: 특정한 배열 순서나 규칙을 가지지 않는 무작위 수
-임의성(균일분포와 독립성)과 비예측성을 충족해야 함. 
-TRNG: 연속적인 아날로그 값을 이용한 난수열 생성
-PRNG: 시드값 기반 결정적 난수열 생성, 
-PRF: 난수 비트 생성
-편향 보정 기법: 해시 함수를 통한 편향 제거
-
-## ECB(Electronic Codebook)
-- 각 블록을 독립적으로, 동일한 키를 사용하여 암호화
-## CTR(Counter)
-- 각 블록마다 1씩 증가하는 카운터 값을 암호화하여 키 스트림을 생성합니다.
-- 병렬 연산 가능
-- 평문을 암호화에 바로 사용하는게 아니라, 카운터값을 키값을 이용해 암호화한 값을 평문에 xor한 후 암호문으로 사용
-## GCM(Galois Counter Mode)
-- CTR 모드에 갈루아 필드 연산을 통해 **메시지 인증(MAC)** 기능을 추가하여 기밀성과 인증을 동시에 제공
-- 데이터 변조 확인 가능. 구현 복잡. GHash 병렬 연산 가능. 
-- TLs에 사용
-- AAD, AEAD
-
-*LFSR*
-n번째 비트를 그 이전 n개 비트를 가지고 xor연산을 통해 구하는 방식.
-그 이전 n개 비트중 뭐뭐를 사용할지는 계수값이 존재 가능함. 
-공격시, 주어진 암호문, 평문을 통해 키스트림을 찾고서 행렬연산을 통해 수행 가능. 단 n에 따른 경우의수 ㅈㄴ 때려야함
-
-DES
-64비트 블록, 56비트 키
-Feistel 구조, 반반 나눠서 연산 
-16라운드 고정 
-
-*AES*
-- 128비트 블록 -> 8비트 블록 16개를 4*4로 배치함. 
-- 키 길이 16바이트, 24바이트, 32바이트에 따라 라운드 10개 12개 14개로써 치환, 혼합, xor 수행
-- 각 ByteSub, ShiftRow, MixColumn, AddroundKey. 각 라운드마다 키가 따로 존재. => n+1개의 서브키 생성됨. 
-- 복호화시 각 단계를 inverse로 수행
-- 블록 크기에 맞추기 위해 패딩 존재 가능 값 03으로 채워넣음 
-
-*RSA*
-p랑 q가 주여졌을 때, n 을 구함. p * q
-오일러 파이 함수 값을 구함. (p-1)(q-1)
-gcd(e, 파이함수값) = 1이 되는 공개 지수 e를 구함
-e * d mod 파이값이 1이 되는 암호 지수 d를 구함 
-=> e가 공개키 값, n이 mod 값이 됨
-암호키는 {d, p, q}가 됨
-
-
-*Diffie Hellman*
-원시근 
-소수 p에 대한 원시근 a 주어졌을 때
-그냥 A, B가 마음대로 암호키 정한 뒤 각 제곱연산하고 넘기고 자기걸로 제곱한 뒤 mod하면 같은 수 나옴 
-
-# 정리 
+# 8. 마무리
 
 # 참고 자료
 - 암호학과 네트워크 보안 - Forouzan
+
+
+# 기말
+갈루아 필드
+ecc
+ecdlp, dlp, 키사이즈
+타원곡선 계수 
+p+q, E_p
+ECDSA ECDH
+
+메시지 인증, 무결성 
+해시 MAC, MAC-then-Encrypt 
+CBC, GCM 
+
+MD5, SHA, Brithday Attack, paradox 
+comparison
+
+TLS
+
+Slowloris, R-U-D-Y
+
+CISO, CPO, Firewall, IDS, IPS, APT 공격, NAC, ESM, SIEM
+
+MessageBox  Crack ME

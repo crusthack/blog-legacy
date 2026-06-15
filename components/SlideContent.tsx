@@ -119,6 +119,22 @@ export default function SlideContent({ slides, category, slug, title, background
   }, []);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const isReset = params.has('reset');
+
+    if (isReset) {
+      localStorage.removeItem(slideStorageKey);
+      params.delete('reset');
+      const newSearch = params.toString();
+      window.history.replaceState(
+        null,
+        '',
+        `${window.location.pathname}${newSearch ? `?${newSearch}` : ''}${window.location.hash}`
+      );
+      setIsSlideIndexReady(true);
+      return;
+    }
+
     const hashIndex = getHashSlideIndex();
     const storedIndex = getValidSlideIndex(localStorage.getItem(slideStorageKey));
     const restoredIndex = hashIndex ?? storedIndex;

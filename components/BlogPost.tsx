@@ -14,7 +14,7 @@ export default function BlogPost({
   post,
   showSlideButton = false,
 }: BlogPostProps) {
-  const slideUrl = getPostSlideHref(post.category, post.slug);
+  const slideUrl = `${getPostSlideHref(post.category, post.slug)}?reset=1`;
   const mdxComponents = createPostMdxComponents({
     category: post.category,
     slug: post.slug,
