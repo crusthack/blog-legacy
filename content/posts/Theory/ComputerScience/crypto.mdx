@@ -248,7 +248,7 @@ $3(d) * 9(key^{-1}) = 27 mod 26 = 1(b)$
 - 비공개키로 암호화한 것은, 암호키 소유자가 서명 한 것으로 작용. 
 - 공개키로 암호화한 것은 암호키만 복호화할 수 있는 기밀성 제공
 - 트랩도어 일방향성 
-- DSS
+- RSA, ECC, DSS, DH
 
 ## RSA
 - 정수 인수분해 문제(Integer factorization problem) 기반 
@@ -261,29 +261,121 @@ $3(d) * 9(key^{-1}) = 27 mod 26 = 1(b)$
 
 ## ECC(타원 곡선 암호)
 - 이산 대수 문제(discrete logarithm problem) 기반 ECDLP 수학 알고리즘 사용 암호 기법 
+- ECDLP: 타원곡선 위의 점 P와 G가 주어졌을 때, G가 P 점 기반 몇 k 스칼라곱인지를 알기가 힘듦. G = kP 
 - 타원곡선 일반항: $$y^2 + a_1xy + a_3y = x^3 + a_2x^2 + a_4x + a_6$$
 - 통상적으로 사용하는 실수상의 타원곡선항: $$y^2 = x^3 + ax + b$$
-- 타원곡선이 만족해야하는 판별식 $$4a^3 + 27b^3 {\neq} 0$$
-- ECC의 수학적 특성
-- 소수 곡선, 이진 곡선 
-- ECDH, ECDSA, ECIES
+- 타원곡선이 만족해야하는 판별식 $$4a^3 + 27b^2 \neq 0$$s
+- ECC의 수학적 특성. E(G, +)
+- 타원곡선 점 덧셈 
+1. 점 P, Q가 있을 때 P != Q && P != -Q 이면, P와 Q를 이은 직선이 타원곡선과 만나는 점을 -R이라고 하며, 그 R이 P + Q로 정의됨 
+2. P + -P = 0임 
+3. P + P 일 경우, P에서의 접선이 타원곡선과 만나는 점을 -R이라고 하고. R을 2P라고 함 . 
+- P + Q 수식:
+1. 
+$$
+s = \frac{y_P - y_Q}{x_P - x_Q}
+$$
+2. 
+$$
+x_R = s^2 - x_P - x_Q
+$$
+3. 
+$$
+y_R = s(x_P - x_R) - y_P
+$$
+- P + P 수식:
+$$
+s = \frac{3x_P^2 + a}{2y_P}
+$$
+$$
+x_R = s^2 - 2x_P
+$$
+$$
+y_R = s(x_P - x_R) - y_P
+$$
+- n-1개 비트 있을 때, n-2비트에서부터 0비트까지 순회 \{p = k_i == 1 ? 2P + P : 2p} ... 
 
-### 표준 ECC 
+- 소수 곡선: 실수 집합 위에서 정의되며 소프트웨어 구현에 효율적 
+- 이진 곡선: 2^n 집합 위에서 정의되며 하드웨어 구현에 효율적 
 
+### Diffie-Hellman 키 교환 ECDH 
+- A는 자신의 $$K_a$$를 사용해 계산된 P_a 공개
+- B는 자신의 $$K_b$$를 사용해 계산된 P_b 공개 
+- 각자 자신의 비밀 K값을 사용하여 상대방의 점을 통해 둘이 동일한 비밀 점 P_ab가 계산됨. 
+- 해당 점을 기반으로 키 생성하여 암호화에 사용 
 
-## Diffie-Hellman
+### 메시지 암호화 교환 
+- 메시지 `m`을 곡선 위의 점 `M(x, y)`에 매핑
+- Alice는 `(Pa, Sa * Pb + M)`을 Bob에게 보냅니다.
+- Bob은 `Pa * Sb`를 계산해 `M + Sa * Pb - Pa * Sb = M`으로 메시지를 복원합니다.
+
+- 메시지 임베딩 
+`p`가 `p mod 4 = 3`을 만족하는 소수라고 가정합니다.
+
+1. `1 / 2^k`가 충분히 작도록 `k`를 선택합니다.
+2. 메시지 `m`은 `m < (p - k) / k`를 만족해야 합니다.
+3. `j = 0, ..., k - 1`에 대해 다음을 반복합니다.
+4. `x_j = m * k + j`
+5. `w_j = x_j^3 + a x_j + b`
+6. `z_j = w_j^((p + 1) / 4)`
+7. `z_j^2 = w_j`이면 `(x_j, z_j)`가 메시지 `m`을 인코딩한 점입니다.
+8. 모든 `j`가 실패하면 실패 확률은 `≤ 1 / 2^k`입니다.
+9. `m`이 `M(x, y)`로 임베딩되면 `m = floor(x / k)`로 복원할 수 있습니다.
+
+p, k, 메시지m과 타원곡선 식이 주어졌을 때 (모든건 암묵적 mod p된 값)
+j = [0, k-1]
+x = m * k + j
+w = 타원곡선에 x 대입 
+z = w^((p+1)/4) 
+if(z^2 = w) => can encode (x, z)
+
+## ECDSA 
+- nonce 재사용 금지 
+- 점 G 기반 비밀키 d, 공개키 P 점 공개 
+- r = P_x mod n 
 
 ## 전자서명
 
 # 6. 해시 
+- 충돌 저항성, 단방향성, 다이제스트, 비둘기집, 생일 문제 
+- MD5, SHA-1, SHA-2, SHA-3, 
+- 생일 공격에 따라 n 비트 충돌은 n/2 비트만큼의 공간을 가짐 
+- MIC는 키 없음. MAC은 키 있음. 
+- SHA는 키 없음. HMAC은 키 있음. 
+- SHA-1은 160비트 다이제스트 -> 80비트 공간. wang공격으로 인해 실제론 69비트까지 격하 
+- HMAC과 SHA-512
 
 ## MAC HASH
+- AES-CBC-MAC: IV 0으로 초기화한 후, AES 출력값 사용함으로써 마지막 태그 생성 
+- cbc방식은 padding이 붙어, oracle 공격이 가능. 
+- AES-CCM: AES 키값 태그 계산에 사용, 카운터 블럭 계산
+- AES-GCM: GHASH 사용. 128비트 0 벡터를 k 키 가지고서 GHASH 연산. 각 블록 gcm으로 연산 
+## 메시지 인증과 메시지 무결성 
+- 메시지 인증 기본: 공유한 비밀 키를 기반으로 푸터 추가해서 검증 
+- 인증 후 복호화 / 복호화 후 인증, 보통 후자가 나음.
+- 다이제스트 존재 
 
 ## MIC SHA
 
 # 네트워크 보안 
 ## TLS
+- SSL 후속작 
+- record protocol, handshake protocol 존재 
+- padding oracle 공격에 의한 mad-encrypt 폐지 
+- tls1.2 cbc oracle문제 해결, 새로운 암호화기법 도입 
+- tls 1.3
+- 1rtt, 0rtt, 가능한 기법 제한, server hello, 0, 1, 난수
+
+
 ## DOS 
+
+Slowloris: 헤더를 조금씩 보내면서 세션 처리를 천천히 수행 
+
+R-U-D-Y: payload를 천천히 보냄 
+
+- 러버싱 - JE를 JMP로 수정 
+
+
 
 # 7. 양자 암호
 
@@ -297,21 +389,23 @@ $3(d) * 9(key^{-1}) = 27 mod 26 = 1(b)$
 갈루아 필드
 ecc
 ecdlp, dlp, 키사이즈
-타원곡선 계수 
-p+q, E_p
+타원곡선 판별식  
+p+q, E_p,
+메시지 임베드는 가볍게 
 ECDSA ECDH
 
 메시지 인증, 무결성 
-해시 MAC, MAC-then-Encrypt 
+HMAC, MAC-then-Encrypt, Encrypt then MAC
 CBC, GCM 
 
-MD5, SHA, Brithday Attack, paradox 
+MD5, SHA1, SHA2, Brithday Attack, paradox 
 comparison
 
-TLS
+TLS 좀 빡으로
 
 Slowloris, R-U-D-Y
 
 CISO, CPO, Firewall, IDS, IPS, APT 공격, NAC, ESM, SIEM
+예방, 탐지, 대응, 포렌식 
 
 MessageBox  Crack ME

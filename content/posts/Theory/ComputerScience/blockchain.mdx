@@ -232,30 +232,25 @@ struct Output {
 ### Mast
 
 - MAST: input script 올리기 전에 분기 계산 후 필요한 스크립트만 올림. 관련된 해시 값 다 포함해서. 머클 트리. 
-- p2C: tweak 기반으로 이미 알고있는 상대방의 공개키를 통해 공캐기`를 예측하고서 트랜잭션 생성하는 기법
-- 슈노르 멀티시그: 공개키 여러개를 합성해 하나의 공개키 생성. 
-- p2TR(TapRoot): OP_1을 통한 자동 연산. MAST, P2C, MULTISIG 모두 합친 기술. teak 활용.   
-keypath(multisig)시, sign이 미리 계산한 teaked publickey로 풀리는지 확인.  
-scriptpath(mast)시, 새로이 계산한 tweaked publickey가 merkle root기반으로 미리 계산한 값이랑 일치하는지 확인. 
-- OP_IF, NOTIF, ELSE, ENDIF 와 같은 조건 연산자 존재
-- if문으로써 endif옵션까지 넣는 것보다, OP_EQUALVERIFY 사용하는게 더 효율적임. 분기 없다면 verify 사용
-- 분기는 n:m 트랜잭션에서 유용함. 분기 보고서 멀티 시그체크 하는거 파악할 것. 
+- Merkle Proof: output script에서는 루트노드 해시만 올림. input script에서 필요 스크립트 및 트리 경로에 있는 해시값들만 넣어서 순차적 해시를 통해 최종적으로 루트 해시 일치 검사 
 
 ### P2C
 
+- p2C: tweak 기반으로 이미 알고있는 상대방의 공개키를 통해 공캐기`를 예측하고서 트랜잭션 생성하는 기법
+
+- 슈노르 멀티시그: 공개키 여러개를 합성해 하나의 공개키 생성.
+
 ### P2TR
+- P2TR(TapRoot): OP_1을 통한 자동 연산. MAST, P2C, MULTISIG 모두 합친 기술. teak 활용.   
+keypath(multisig)시, sign이 미리 계산한 teaked publickey로 풀리는지 확인.  
+scriptpath(mast)시, 새로이 계산한 tweaked publickey가 merkle root기반으로 미리 계산한 값이랑 일치하는지 확인. 
+- 키 기반 검증과 키 손실시 스크립트 기반 검증 가능
 
 ### 다자간 트랜잭션 
 - 서명 시스템, schnorr와 ECDSA 
-
-## 3. BlockChain Network and Consensus
-- 수수료와 네트워크, 블록체인 구조와 합의 방식
-- RBF, CPFP, Anchor Output, Fee Sniping
-- 풀 노드, 아카이벌 노드, 라이트웨이트 노드
-- 마이너, 풀 마이너
-- 블룸필터, 컴팩트필터
-- tor, BIP324
-- mempool, orphan pool, utxo DB
+- OP_IF, NOTIF, ELSE, ENDIF 와 같은 조건 연산자 존재
+- if문으로써 endif옵션까지 넣는 것보다, OP_EQUALVERIFY 사용하는게 더 효율적임. 분기 없다면 verify 사용
+- 분기는 n:m 트랜잭션에서 유용함. 분기 보고서 멀티 시그체크 하는거 파악할 것. 
 
 ECDSA 
 Schnorr
@@ -269,12 +264,37 @@ Protocol Steps:
 3. Response: Alice computes s = k + ex, sends s to Bob
 4. Verification: Bob checks sG == kG + exG
 
+## 3. BlockChain Network and Consensus
+- 수수료와 네트워크, 블록체인 구조와 합의 방식
+- RBF, CPFP, Anchor Output, Fee Sniping
+- 풀 노드, 아카이벌 노드, 라이트웨이트 노드
+- 마이너, 풀 마이너
+- 블룸필터, 컴팩트필터
+- tor, BIP324
+- mempool, orphan pool, utxo DB
+
+
 RBF
+- squence \< 0xfffffffe. 교체시 무조건 이전 input 모두를 사용 
 CPFP
+- 자신 트랜잭션 붙여서 전체 수수료 늘리기 
+- pinning 공격: cpfp를 이용 
+- carveout으로 예외로 26번째 자식 추가 가능. 조건 있음. 
+- anchor로 개선되는 중 
 
 spv
+
+block relay
 Bloom Filter
 Compact Block Filter
+
+어택 관련 정리 이클립스어택, 부분 공격, 
+
+블록해시: 헤더를 2번 해시한 값. 
+주 가변 값: 머클 루트, nonce, 
+
+합의 
+
 
 ## Bitcoin CLI 실습 
 ./src/bitcoin-cli -regtest -datadir=./data getblockchaininfo
@@ -304,5 +324,319 @@ sendrawtransaction "hexstring"
 ./src/bitcoin-cli getrawtransaction "f192404e5e68a971e1ed9568ef33909201aa6d2ebc51f1e2221c0c5a7459b197" true
 
 
-# 이더리움 
+# 이더리움
+- 이더리움이란? **프로그램 가능한 블록체인 플랫폼**("World Computer"). 비트코인 = 프로그래밍 가능한 화폐, 이더리움 = 프로그래밍 가능한 블록체인
+- 결정론적이지만 사실상 무한한 상태 머신 + 전 세계에 공유되는 단일 상태(state) + 그 상태 전이를 적용하는 가상머신(EVM)
+- 백서: Vitalik Buterin(2013.12), Yellow Paper/C++ 구현: Gavin Wood, Genesis block: 2015.7.30
+- 화폐 단위는 ETH(또는 Ξ), 가장 작은 단위는 wei. Gas는 오직 ether로만 지불됨
 
+## Bitcoin vs Ethereum
+- 목적: Bitcoin = 디지털 현금 / Ethereum = 범용 프로그래머블 플랫폼
+- 모델: Bitcoin = UTXO, 제한적·튜링불완전 스크립트 / Ethereum = **계정 기반(Account-based)**, 튜링완전 EVM
+- 해시: Bitcoin = SHA-256, RIPEMD-160 / Ethereum = **Keccak-256**(FIPS-202 SHA-3와 다름, Snowden 이후 NIST 불신으로 원본 Keccak 채택)
+- 주소: Bitcoin = Base58Check(내장 체크섬) / Ethereum = Hex + **EIP-55** 대소문자 체크섬(내장 체크섬 없음)
+- 합의: Bitcoin = PoW(여전히) / Ethereum = **PoS**(2022.9 The Merge 이후)
+- 수수료: Bitcoin = sat/vB / Ethereum = **Gas**(base fee + priority fee, EIP-1559)
+
+## 튜링 완전성과 Gas
+- 정지 문제(Halting Problem): 임의 프로그램이 종료될지 사전 판단 불가 -> 무한루프/DoS 위험
+- 해결책 = **Gas**: EVM opcode마다 고정 gas 비용 부과, tx마다 gasLimit 선언, gas는 ether로만 지불
+- 가스 소진(out-of-gas) 시 상태는 revert되지만 가스는 소모됨. 미사용 gas는 환불
+- Gas는 단순 수수료가 아니라 튜링완전 블록체인에 필수적인 **안전장치**
+
+## 로드맵
+- 4단계: Frontier(2015.7, Genesis) -> Homestead(2016.3) -> Metropolis(2017.10, Byzantium/Constantinople/Istanbul) -> Serenity/Eth2.0(2022.9, **The Merge**)
+- 주요 하드포크: DAO fork(2016.7, 5천만불 해킹 후 롤백) / London(2021.8, EIP-1559) / Shanghai·Capella(2023.4, 출금 허용) / Cancun·Deneb(2024.3, EIP-4844 blob) / Pectra(2025.5, EIP-7702)
+- The Merge(2022.9.15): 실행 계층(메인넷)이 Beacon Chain(PoS 합의계층, 2020.12부터 운영)과 병합. 채굴(PoW) -> 검증자당 32 ETH 스테이킹으로 대체. 에너지 소비 약 99.95% 감소
+- 병합 이후 로드맵(병렬 진행): Surge(L2/blob 확장성) / Scourge(검열저항, MEV완화) / Verge(Verkle tree, stateless화) / Purge(과거 데이터 정리) / Splurge(계정추상화 등 기타)
+
+## 단위: wei, gwei, ether
+- 1 ether = 10^18 wei (비트코인 satoshi의 10^8보다 10자리 더 정밀)
+- wei(1) -> gwei(=Shannon, 10^9, gas 가격 표시용) -> ether(10^18, 표준 표시 단위)
+
+## 계정 모델 (Account-based vs UTXO)
+- 비트코인 UTXO: 상태 = 미사용 출력의 집합, 트랜잭션이 UTXO를 소비/생성. 무상태(stateless)라 병렬화엔 유리하지만 상태를 갖는 앱엔 불편
+- 이더리움 계정 기반: 상태 = `address -> {nonce, balance, code, storage}` 매핑. 트랜잭션이 잔액/storage를 직접 갱신. 스마트 컨트랙트에 자연스러움
+- 두 계정 유형
+  - **EOA**(Externally-Owned Account): private key로 제어, 트랜잭션 시작 가능, 코드 없음. 주소 = public key 해시
+  - **Contract Account**: 코드로 제어, private key 없음, 스스로 트랜잭션 시작 불가(반응만 가능). 주소 = 생성 tx의 from+nonce
+- 핵심: **모든 실행은 EOA의 트랜잭션에서 시작**됨. 컨트랙트 호출이 연쇄적으로 일어나도 gas는 결국 최초 EOA가 부담
+
+### nonce
+- 정의: 해당 주소에서 보낸 트랜잭션의 개수
+- 역할: ① 같은 계정 tx의 순서 보장 ② replay 공격 방지(서명된 tx 반복 재전송 차단)
+- 새 tx마다 정확히 1씩 증가해야 함. nonce gap -> 뒤 tx는 앞 nonce 처리될 때까지 mempool에 대기. 같은 nonce 재사용 -> 하나만 채택되고 나머지는 버려짐
+- 비트코인은 UTXO 소비 자체로 순서가 보장되어 nonce 불필요 -> 계정 기반 모델인 이더리움에서만 필수
+
+## 주소와 암호학
+- 비트코인과 동일하게 **secp256k1** 곡선 + ECDSA 서명 사용. 차이는 해시함수/인코딩/주소 도출 방식
+- 주소 도출: private key `k`(32B) -> public key `K = k*G`(비압축 64B, 04 prefix 제거) -> Keccak256(K)(32B) -> 마지막 20바이트 -> 앞에 `0x`
+  - 비트코인은 RIPEMD160(SHA256(pubkey)) + Base58Check 사용, 이더리움은 Keccak256 한 번 + 마지막 20바이트만 사용 (내장 체크섬 없음)
+- **EIP-55** 체크섬: 주소를 소문자로 변환 -> Keccak256(소문자 주소) 계산 -> 각 16진수 자리에서 해시값이 8 이상이면 대문자 표시. 오타의 약 99.986% 검출. 미지원 지갑은 대소문자 무시(여전히 유효)
+- ENS(Ethereum Name Service): `vitalik.eth` 같은 사람이 읽기 쉬운 이름 -> 주소 매핑(탈중앙 레지스트리 컨트랙트)
+
+### HD 지갑 (비트코인과 동일 표준 재사용)
+- BIP-39(니모닉) / BIP-32(HD 트리, xprv/xpub) / BIP-44(다중 코인 경로) 그대로 사용
+- 경로: `m / purpose' / coin_type' / account' / change / address_index`
+- SLIP-44 coin_type: Bitcoin=0, **Ethereum=60**, 테스트넷=1 -> 표준 경로 `m/44'/60'/0'/0/x`
+- 비트코인은 프라이버시 위해 매 tx마다 새 주소 생성(change branch 포함)하지만, 이더리움은 **계정당 단일 주소 재사용**(계정 기반 모델 특성상 change branch 미사용) -> UX는 단순하지만 프라이버시 낮음
+
+## 노드와 네트워크
+- The Merge 이후 노드는 2계층 구조: **실행 클라이언트**(Geth/Nethermind/Besu/Erigon/Reth - 블록/tx 수신, EVM 실행, 상태검증) + **합의 클라이언트**(Lighthouse/Prysm/Lodestar/Nimbus/Teku - PoS 프로토콜, 체인 합의), 둘은 Engine API로 통신
+  - 비트코인 Bitcoin Core는 여전히 단일 바이너리
+- 클라이언트 다양성(여러 구현체)이 보안 목표: 한 구현체 버그가 전체 네트워크를 마비시키지 않도록 함
+- DApp 통신: HTTP 기반 **JSON-RPC 2.0**(기본 포트 8545). 메서드 예: eth_gasPrice, eth_getBalance, eth_sendRawTransaction, eth_call. 라이브러리: ethers.js, web3.py, viem. 호스팅 노드: Alchemy, Infura
+
+## 트랜잭션
+- 정의: EOA에서 시작되어 네트워크 전파 후 블록체인에 기록되는 서명된 메시지. **오직 트랜잭션만이 상태를 변경**할 수 있음(컨트랙트는 스스로 행동 안 함)
+- EIP-2718 타입드 envelope: `transaction = tx_type || tx_payload`
+
+### 트랜잭션 타입 5종
+- `0x00` Legacy(2015): gasPrice 단일 필드 -> 채굴자가 최고가 우선 선택(1차가격 경매), 수수료 변동성 문제
+- `0x01` EIP-2930 Access List(2021 Berlin): (address, storage_slot) 미리 선언 -> cold 비용(EIP-2929로 비싸짐) 대신 warm 요율 적용
+- `0x02` **EIP-1559**(2021 London, 현재 기본값): `maxFeePerGas`, `maxPriorityFeePerGas` 필드. 블록마다 동적 조정되는 `baseFee`(목표 15M가스 기준 ±12.5%) + tip. `effectiveGasPrice = min(maxFeePerGas, baseFee+tip)`. baseFee는 **소각(burn)**, tip만 검증자에게. 디플레이션 압력
+- `0x03` EIP-4844 Blob TX(2024 Cancun): ~131,072B blob 데이터, EVM은 commitment만 접근. 별도 blob gas 시장. L2 데이터가용성 비용 약 10배 절감
+- `0x04` EIP-7702 EOA Delegation(2025 Pectra): EOA가 스마트컨트랙트 주소로 위임 지정 -> 일괄처리, 가스후원(paymaster), 소셜복구. 계정 추상화로 가는 단계
+
+### 트랜잭션 필드 (Legacy 예시)
+```text
+chainId   // 네트워크 식별자 (EIP-155, replay 방지)
+nonce     // 송신 EOA의 tx 카운터
+gasPrice  // (legacy 전용) gas당 wei
+gasLimit  // 송신자가 허용하는 최대 gas
+to        // 20byte 수신 주소, 비어있으면 컨트랙트 생성
+value     // 전송 ether (wei)
+data      // 함수 호출 / 컨트랙트 바이트코드 등 임의 payload
+v, r, s   // ECDSA 서명 (from 필드는 없음! v,r,s로부터 복구)
+```
+- **from 필드가 없음**: (v,r,s)로부터 public key를 복구해서 송신자 주소를 얻음
+- v: 두 후보점(R/R') 중 올바른 것을 선택하는 복구 식별자. EIP-155 이후 v는 chainId까지 인코딩(replay 방지)
+- 서명 대상: RLP 인코딩된 tx payload를 Keccak-256 해시한 값
+
+### RLP (Recursive Length Prefix)
+- 이더리움 고유의 직렬화 포맷. 단순성/결정론/압축성 목적
+- 두 구성요소: String(바이트배열), List(중첩 가능)
+- 용도: 트랜잭션 직렬화, 블록 헤더/바디, MPT 노드 인코딩
+
+### Gas 메커니즘
+- gasLimit만큼 `maxFeePerGas × gasLimit`이 미리 확보(예치)되고, 미사용분은 환불, out-of-gas는 revert(가스는 소모)
+- 단순 ETH 전송(intrinsic) = 21,000 gas. 컨트랙트 배포(intrinsic) = 53,000
+- nonzero 데이터 바이트당 16 gas, zero 바이트당 4 gas (calldata 비용)
+- 블록 gas limit: 약 3,000만~3,600만 (EIP-1559 목표치는 그 절반). 검증 시간/노드 하드웨어 요구사항을 가정용 PC 수준으로 유지하기 위해 의도적으로 제한. 검증자 투표로 ±1/1024씩 조정, 큰 인상은 하드포크 필요
+
+### Contract 생성 / 함수 호출
+- 컨트랙트 생성: `to = 0x0`, `data` = 배포 바이트코드. 생성 주소 = `Keccak256(rlp([sender, nonce]))`의 마지막 20바이트
+  - **CREATE2**(EIP-1014): `Keccak256(0xff‖sender‖salt‖Keccak256(init_code))` -> salt 기반으로 배포 전 주소를 사전 계산 가능 (counterfactual deployment, Uniswap V2/Gnosis Safe에서 활용)
+- 함수 호출 `data` 구성(ABI 인코딩): **함수 셀렉터**(Keccak256(시그니처)의 첫 4바이트) + 32바이트씩 패딩된 인자들
+  - 예: `transfer(address,uint256)` -> `0xa9059cbb`
+  - 정적 타입은 head에 인라인, 동적 타입(string/bytes/배열)은 head에 오프셋 + tail에 [길이, 데이터]
+- value/data 조합: value만 있으면 단순 전송, data만 있으면 함수 호출, 둘 다 있으면 payable 함수+전송, 둘 다 없으면 gas만 낭비
+  - 컨트랙트가 수신자인데 data 없음 -> `receive()` 호출(없으면 `fallback()`), data 있는데 매칭 함수 없음 -> `fallback()`
+
+### 트랜잭션 생명주기
+- 서명 -> 노드 제출(`eth_sendRawTransaction`) -> mempool 진입(노드별로 존재, 전역 mempool 없음) -> 검증자가 블록에 포함 -> 상태변경+receipt 발급 -> finality(~12분/64슬롯)
+- slot=12초, epoch=32slot=6.4분
+- **MEV**(Maximal Extractable Value): 검증자/빌더가 tx 순서를 조작해 얻는 이익. 샌드위치 공격(피해자 거래 앞뒤로 매수/매도 끼워넣기). 완화책: PBS(Proposer-Builder Separation), MEV-Boost, 프라이빗 RPC
+
+### 멀티시그
+- 비트코인은 P2SH/P2WSH 등 네이티브 스크립트로 멀티시그 지원
+- 이더리움 EOA엔 네이티브 멀티시그가 없음 -> **Gnosis Safe** 같은 스마트컨트랙트로 구현 (M-of-N, 사실상의 표준)
+
+## EVM (Ethereum Virtual Machine)
+- 스마트 컨트랙트의 배포/실행을 전담하는 이더리움의 연산 엔진. 단순 EOA간 ETH 전송은 EVM을 거치지 않음
+- 4대 속성: ① **스택 기반**(레지스터 없음) ② **256-bit 워드** ③ **준-튜링 완전**(quasi, gas로 제한) ④ 샌드박스화+결정론적(I/O·시계·난수 없음)
+- 단일 스레드, 스케줄러 없이 트랜잭션을 순서대로 처리(JS와 유사)
+- 256bit를 쓰는 이유: Keccak-256(32B)/secp256k1 스칼라(256bit) 등 암호연산이 정확히 들어맞음 + storage slot이 256bit 키 + wei 단위 큰 수 연산(uint256 ≈ 10^77)에 충분
+
+### Stack & 데이터 위치
+- **Stack**: 최대 1,024개 항목, 각 32B, LIFO. PUSH0~32/POP/DUPn(1~16)/SWAPn(1~16). DUP/SWAP은 상위 16개까지만 접근 가능 -> "stack too deep" 문제 원인. 매우 저렴(2~3 gas)
+- **Memory**: 바이트 주소, 0으로 초기화, 호출마다 초기화되는 휘발성. MLOAD/MSTORE/MSTORE8/MSIZE. 확장비용은 2차함수(quadratic): `3*words + words^2/512`
+- **Storage**: 256bit 키-값, 영구(world state 일부), 가장 비쌈. SLOAD cold 2,100/warm 100(EIP-2929). SSTORE 0->nonzero 20,000 / nonzero->nonzero 2,900 / nonzero->0 2,900(+최대 4,800 환급)
+- **Transient Storage**(EIP-1153, Cancun): storage와 동일한 모양이지만 tx 종료 시 폐기, TLOAD/TSTORE 100gas. 재진입 가드 등에 활용
+- **Calldata**: 호출 프레임에 전달되는 읽기 전용 바이트열. 함수호출이면 selector(4B)+ABI인자. 가장 저렴
+- 비용 순서: storage > memory > calldata/stack
+
+### Opcode 11개 카테고리 (약 150개 활성 opcode)
+```text
+Arithmetic   ADD MUL SUB DIV EXP (mod 2^256 연산)
+Logic        LT GT EQ AND OR XOR NOT
+Bitwise      SHA3(KECCAK256) SHL SHR BYTE
+Stack        PUSH0~32 POP DUPn SWAPn
+Memory       MLOAD MSTORE MSTORE8 MSIZE
+Storage      SLOAD SSTORE TLOAD TSTORE
+Environment  ADDRESS CALLER(msg.sender) ORIGIN(tx.origin) CALLVALUE CALLDATALOAD
+Block        NUMBER TIMESTAMP COINBASE PREVRANDAO BASEFEE BLOCKHASH
+Flow Control JUMP JUMPI JUMPDEST PC STOP
+Logging      LOG0~LOG4
+System       CREATE CREATE2 CALL DELEGATECALL STATICCALL RETURN REVERT SELFDESTRUCT
+```
+
+### CALL 계열 (컨트랙트 간 통신)
+- **CALL**(gas,to,value,argsOff,argsLen,retOff,retLen): value 전송 가능, `msg.sender`가 호출 컨트랙트로 바뀜, 새로운 스택/메모리/상태를 가진 독립 프레임. 가스는 EIP-150에 따라 잔여의 **63/64**까지만 전달(1/64는 예비)
+- **DELEGATECALL**: 대상 코드를 **호출자의 컨텍스트**(storage, msg.sender, msg.value 그대로)에서 실행 -> 프록시/업그레이더블 패턴, 라이브러리의 기반. 대상 버그가 호출자 storage를 파괴할 수 있어 위험(2017 Parity 해킹, $300M)
+- **STATICCALL**: CALL과 유사하나 모든 상태변경 금지(SSTORE/LOG/CREATE/SELFDESTRUCT/value전송 모두 revert) -> view/pure 함수의 외부호출용
+- 최대 호출 깊이 1,024 프레임. 어디서든 revert되면 전체 트랜잭션이 원자적으로 롤백
+
+### CREATE / REVERT / SELFDESTRUCT
+- **CREATE**: 주소 = `Keccak256(rlp([sender,nonce]))`의 마지막 20B (nonce 의존, 예측 어려움)
+- **CREATE2**(Constantinople 2019): 주소 = `Keccak256(0xff‖sender‖salt‖Keccak256(init_code))` (배포 전 사전계산 가능)
+- **RETURN**: 성공 종료 + 상태변경 커밋 / **REVERT**(EIP-140): 상태 롤백 + 남은 가스 환불(모든 가스 소모하는 INVALID와 다름) / `require`, `revert("reason")`이 사용
+- **SELFDESTRUCT**: 원래 컨트랙트 삭제+잔액 전송이었으나 EIP-6780(Cancun)으로 사실상 폐지 -> 같은 트랜잭션 내에서 생성된 컨트랙트에서만 실제 삭제, 그 외엔 잔액만 전송
+
+### 가스 회계 핵심
+- EIP-2929(Berlin, 2021): 트랜잭션 내 첫 접근(**cold**) 2,100~2,600gas, 이후 접근(**warm**) 100gas. 부작용 완화로 EIP-2930 Access List 도입
+- SSTORE 환급은 `gas_used/5`로 트랜잭션당 상한(EIP-3529, London) - 과거 SELFDESTRUCT 24,000gas 환급은 제거됨
+- 최적화 패턴: 슬롯 packing, storage->memory 캐싱, `unchecked{}`, calldata 사용, transient storage, immutable/constant
+
+### World State와 MPT
+- World State = 160bit 주소 -> Account{nonce, balance, storageRoot, codeHash} 매핑
+- **Merkle-Patricia Trie**(MPT) = Merkle(해싱) + Patricia(경로 압축) + Trie(16진 분기). 잦은 상태 갱신에 O(log n) 재계산/증명 가능
+- 블록마다 4개의 trie: **State Trie**(전역1, 헤더 stateRoot) / **Transaction Trie**(블록당1) / **Receipt Trie**(블록당1) / **Storage Trie**(컨트랙트별1, 계정의 storageRoot)
+- 검증 체인: 헤더 -> state trie -> account -> storage trie -> 슬롯값 (라이트 클라이언트는 O(log n) 해시만으로 검증)
+- 향후: Verkle Trie(벡터 커밋먼트)로 더 작은 증명 + stateless client 지향
+
+### Bytecode 구조
+- **Deployment(creation) bytecode**: tx의 data로 전송, 체인엔 미저장. 생성자 로직 + (실행 결과인) runtime bytecode를 RETURN
+- **Runtime bytecode**: 주소에 저장되어 매 호출마다 실행. calldata에서 함수 selector 추출 -> 비교 -> 분기(디스패처) 구조
+- **Metadata**: solc가 끝에 약 53바이트 CBOR 추가(소스 IPFS 해시+컴파일러 버전), 실행은 안 하지만 가스는 소비
+- 함수 셀렉터 = `Keccak256("funcName(type1,type2,...)")`의 첫 4바이트 (정규화된 타입명 사용, 공백/파라미터명 없음)
+
+### Precompiled Contracts
+- 비용이 큰 연산을 클라이언트 네이티브 코드로 구현해 낮은 번호 주소에 배치
+- `0x01 ECRECOVER`(서명->주소 복구), `0x02 SHA256`, `0x03 RIPEMD160`, `0x04 IDENTITY`(복사), `0x05 MODEXP`(RSA류), `0x06/07/08 BN256 ADD/MUL/PAIRING`(zkSNARK), `0x09 BLAKE2F`, `0x0A POINT_EVALUATION`(EIP-4844 KZG)
+
+### 컴파일 파이프라인
+- `.sol` -> Parser(AST) -> 의미분석 -> [Yul IR, 선택적] -> EVM CodeGen -> Optimizer -> Bytecode + ABI(JSON)
+- **Yul**: Solidity의 저수준 함수형 중간언어. 정적 타입(u256), 암묵적 메모리할당/오버플로검사 없음(직접 제어)
+- `solc --bin`(배포용) / `--bin-runtime`(런타임용) / `--abi` / `--opcodes` / `--asm`
+
+## 스마트 컨트랙트
+- Nick Szabo(1990년대) 용어 차용, 실제로는 법적 계약이 아니라 EVM 위에서 실행되는 프로그램
+- 속성: **불변**(배포 후 코드 수정 불가) / **결정론적** / **샌드박스화** / **원자적**(완전성공 or 완전롤백)
+- 생명주기: 고수준 언어 작성(Solidity/Vyper) -> EVM 바이트코드 컴파일 -> 생성 tx로 배포 -> 호출 시에만 실행(자율실행 없음)
+
+### Solidity와 ABI
+- Solidity는 가장 널리 쓰이는 EVM 언어이며, `solc` 컴파일러를 통해 **bytecode**와 **ABI**를 생성
+  - bytecode: 체인에 배포되어 EVM이 실행하는 코드
+  - ABI(Application Binary Interface): 지갑/프론트엔드/라이브러리가 함수 호출과 반환값을 인코딩·디코딩하기 위한 JSON 인터페이스
+- 기본 타입: `bool`, `uint256`, `int256`, `address`, `address payable`, `bytes`, `bytes32`, `string`, `mapping`, `struct`, `enum`, array
+- 주요 전역 변수
+  - `msg.sender`: 현재 호출자
+  - `msg.value`: 함께 전송된 ETH 양
+  - `msg.data`, `msg.sig`: calldata와 함수 selector
+  - `block.timestamp`, `block.number`, `block.chainid`, `block.basefee`, `block.prevrandao`
+  - `tx.origin`: 최초 EOA. 인증 로직에 사용하면 피싱성 중간 컨트랙트 공격에 취약
+- ETH 수신 특수 함수
+  - `receive() external payable`: calldata 없이 ETH만 들어올 때 실행
+  - `fallback() external payable`: 함수 selector가 맞지 않거나 `receive()`가 없을 때 실행
+- 함수 selector는 `Keccak256("funcName(type1,type2,...)")`의 앞 4바이트이며, calldata는 selector + ABI 인자들로 구성됨
+
+### 스마트 컨트랙트 보안 (주요 취약점 7대 그룹)
+- **재진입(Reentrancy)**: 외부호출을 상태갱신보다 먼저 하는 순서 오류. The DAO(2016) 사건의 원인
+  - 방어: **Checks-Effects-Interactions** 패턴(검사->상태갱신->외부호출 순서 엄수), ReentrancyGuard(뮤텍스), 읽기전용 재진입까지 주의
+- **DELEGATECALL 오용**: 스토리지 레이아웃 불일치 시 라이브러리가 호출자의 스토리지(예: owner 주소 슬롯)를 덮어씀. Parity Multisig 해킹($300M) 등
+  - 방어: stateless library, 검증된 프록시 패턴(Transparent/UUPS/Diamond), `__gap` 슬롯 예약
+- **잘못된 난수**: `block.timestamp`/`blockhash`/`prevrandao`는 validator가 조작/예측 가능. Fomo3D 사건
+  - 방어: Chainlink **VRF**(오프체인생성+온체인검증), prevrandao는 미래블록 커밋 방식으로만
+- **미검증 CALL 반환값**: `call`/`send`는 실패해도 자동 revert 안 하고 false만 반환 -> 반환값 미확인 시 상태 불일치
+  - 방어: 반환값 항상 확인, `Address.sendValue`/`SafeERC20`(OpenZeppelin)
+- **프론트러닝/DoS**: 멤풀 공개로 인한 프론트러닝/샌드위치 공격, 배열 순회로 인한 가스한도 DoS
+  - 방어: 슬리피지 한도(minAmountOut), 커밋-리빌, 프라이빗 멤풀, **Pull-over-Push**(사용자가 직접 인출)
+- **정밀도/오라클 조작**: Solidity는 정수 연산만 가능(나누기 전에 곱하기 원칙). 단일 AMM의 spot 가격은 flash loan으로 조작 가능(Mango Markets $116M, Harvest Finance $34M)
+  - 방어: 고정밀 수학 라이브러리(mulDiv 등), 탈중앙 오라클(Chainlink) + **TWAP**, 다중 소스 집계, 서킷브레이커
+- **서명 재생/설정 오류**: nonce 없는 서명 재사용, `abi.encodePacked` 모호성, 크로스체인 재생 / 배포·업그레이드 스크립트 오류(Ronin, Sonne Finance)
+  - 방어: **EIP-712**(구조화 서명+도메인분리자), nonce 포함, 업그레이드 직후 집중 모니터링
+- 방어 철학: **스위스 치즈 모델**(불완전한 여러 계층을 겹겹이 쌓음). 도구: Slither/Mythril(정적분석), Echidna/Foundry fuzz(퍼징), Certora(정형검증)
+- 기본 보안 원칙
+  - public 함수는 누구나 임의 입력으로 호출할 수 있다고 가정
+  - 검증된 라이브러리(OpenZeppelin 등)를 재사용
+  - 컨트랙트 코드뿐 아니라 배포 스크립트, 업그레이드 스크립트, 거버넌스 설정까지 감사
+  - 테스트는 단순 line coverage보다 branch, invariant, fuzz/property test 중심으로 구성
+
+## 토큰 표준
+- 토큰 = 블록체인 기반 소유권/가치/권리의 추상화. ETH와 달리 프로토콜에 내재(intrinsic)되어 있지 않음 -> 컨트랙트가 직접 잔액(`mapping(address=>uint256)`)과 전송로직을 구현해야 함
+- 용도: 화폐(USDC/DAI), 유틸리티, 거버넌스 투표권(UNI/MKR), 실물자산 토큰화, 접근권, 수집품, 신원/증명 등
+- **Intrinsic token**: 자산 자체가 체인 안에 존재(ETH, NFT, DAO vote 등). 개인키 제어만으로 소유권 증명 가능
+- **Extrinsic token**: 오프체인 자산에 대한 청구권을 표현(금, 부동산, 국채, 담보형 스테이블코인 등). 발행자·수탁자·법·오라클에 대한 counterparty risk가 남음
+- **ERC-20**(Fungible, 2015 Fabian Vogelsteller 제안): 6개 필수 함수 `totalSupply/balanceOf/transfer/approve/transferFrom/allowance` + 이벤트 `Transfer/Approval`
+  - `_balances`(잔액), `_allowances`(2차원 mapping: owner->spender->amount)
+  - 워크플로 ①단순 `transfer` ②`approve`+`transferFrom`(2단계, 컨트랙트가 사용자 지갑에 직접 접근 못 하므로 위임 필요) - Uniswap 등 거의 모든 DeFi가 사용
+- **ERC-721**(Non-Fungible, 2018): 각 토큰이 고유한 `uint256 tokenId`. `_owners[tokenId]`로 소유자 추적(ERC-20의 `_balances[addr]`와 대조)
+- **ERC-1155**(Semi-Fungible/Multi-Token): Fungible+Non-Fungible 혼합, `id`+balance 조합, 게임아이템/배치 처리에 적합
+
+### ERC-20 전송 흐름
+- `transfer(to, amount)`
+  - 실제 트랜잭션의 `to`는 수신자 주소가 아니라 **토큰 컨트랙트 주소**
+  - calldata에 `transfer(수신자, 수량)`이 ABI 인코딩되어 들어감
+  - 토큰 컨트랙트 내부에서 `_balances[msg.sender] -= amount`, `_balances[to] += amount`, `Transfer` 이벤트 발생
+  - 토큰 전송 수수료는 해당 토큰이 아니라 ETH gas로 지불
+- `approve(spender, amount)` + `transferFrom(from, to, amount)`
+  - 사용자가 먼저 spender에게 allowance를 부여
+  - spender가 이후 `transferFrom`으로 allowance 한도 내에서 토큰 이동
+  - DEX, lending, NFT marketplace 등 대부분의 DeFi 상호작용에서 사용
+  - 무한 approve는 편리하지만 spender 컨트랙트가 해킹되면 잔액 전체가 위험해질 수 있음
+
+## 오라클
+- 이더리움은 **결정론적 폐쇄 시스템**이라 외부 데이터(I/O, 난수, 시계)를 직접 가져올 수 없음 -> **오라클 문제**: 신뢰 최소화를 깨지 않고 오프체인 진실을 온체인에 연결하는 문제
+- 분류: 신뢰축(Centralized vs **Decentralized**: Chainlink/Pyth/UMA), 방향축(**Inbound** 오프->온, Outbound 온->오프)
+- 설계 패턴 3가지
+  - **Immediate-Read**: 거의 안 변하는 작은 데이터를 한번 저장, view로 즉시 조회
+  - **Publish-Subscribe**: 오라클이 주기적으로 push, 다수 구독자가 polling/이벤트수신(Chainlink Price Feeds가 대표적)
+  - **Request-Response**: 큰 데이터셋 일부만 비동기 요청(`requestData`->이벤트->오프체인 노드->`fulfill` 콜백)
+- 데이터 인증: VRF 증명, TEE(하드웨어 enclave), ZK 코프로세서, 옵티미스틱 모델
+- **오라클 조작 = DeFi 최대 위험**: flash loan으로 저유동성 단일 DEX의 spot가격을 펌핑 -> 부풀려진 담보로 대출/청산 회피
+  - 방어: spot가격 대신 **TWAP**, 다중소스 집계(Chainlink는 피드당 7~31개 노드), 편차 임계값/서킷브레이커
+  - 사례: bZx(2020), Harvest Finance($34M), Mango Markets($116M, 2022), Inverse Finance($15.6M)
+- 주요 사용 사례: 가격 피드, 검증 가능한 난수(VRF), 날씨/스포츠/항공편 데이터, 신원·증명, 크로스체인 이벤트
+- 주요 공격 범주
+  - **Source compromise**: API나 원천 데이터 자체가 잘못되거나 해킹됨
+  - **Transport tampering**: 오라클 노드 또는 전송 과정에서 데이터가 변조됨
+  - **Price manipulation**: 오라클이 참조하는 시장 자체를 flash loan 등으로 조작
+- 오라클 설계 시에는 가격 값뿐 아니라 heartbeat, stale data, deviation threshold, emergency pause를 함께 고려해야 함
+
+## 합의 (Proof of Stake)
+- BFT(Byzantine Fault Tolerance): 전체의 **2/3 초과**가 정직해야 안전한 합의 가능 (두 충돌 결정이 동시에 2/3 지지를 받을 수 없음)
+- Why PoS: 에너지(~99.95%↓), slashing 기반 내부 비용구조(채굴보상 유출 대신 지분파괴), **경제적 finality**
+- **Gasper = LMD-GHOST + Casper FFG**
+  - **LMD-GHOST**(fork choice, liveness): 각 validator의 최신 투표만 반영(LMD) + 누적 표가 가장 무거운 subtree를 따라감(GHOST) -> 체인의 head 결정
+  - **Casper FFG**(finality, safety): validator 신원을 알고 있다는 PoS 특성으로 2/3 초과 투표를 결정론적으로 집계. **Justification**(지역적 2/3) -> **Finalization**(그 자식까지 justified, 전역적) 2단계 커밋
+
+### Validator
+- 32 ETH를 deposit contract에 예치 + BLS12-381 키 생성 -> activation queue
+- 생명주기: Deposited -> Pending -> Active -> Exiting -> Exited -> Withdrawable -> Withdrawn (각 단계 churn limit으로 속도 제한)
+- 두 임무: **Proposer**(RANDAO기반, effective balance 비례확률로 슬롯당 1회 선출, ~140일에 한번꼴) / **Attester**(매 에폭 전원 참여)
+- **BLS12-381**: 서명/공개키 집계 가능(약 100만 validator 서명을 committee당 1개로 압축) + 결정론적. ECDSA보다 PoS에 적합하나 검증에 pairing 연산 필요
+- **Attestation** = source+target(Casper FFG용) + head(LMD-GHOST용) 3가지 투표를 하나로 압축
+
+### 시간 구조 & Finality
+- slot = 12초, epoch = 32 slot = 6.4분, 각 epoch의 첫 슬롯 = checkpoint
+- 각 slot에는 proposer 1명이 배정되며, proposer가 오프라인이면 빈 slot이 발생할 수 있음
+- validator들은 epoch마다 committee로 나뉘어 attestation을 제출. attestation은 `source`(이전 justified checkpoint), `target`(현재 epoch checkpoint), `head`(LMD-GHOST 기준 체인 head)를 함께 투표
+- Finality: justification(~1epoch) -> finalization(~2epoch), 정상 네트워크에서 **~12.8분**마다 finalize. 되돌리려면 전체 지분 1/3이 slashing 감수해야 함(경제적 finality)
+- 비교: 비트코인 확률적 finality(~60분, 51% 해시레이트 능가 비용) vs 이더리움 경제적 finality(~12.8분, 1/3 지분 파괴 비용)
+
+### Slashing & Inactivity Leak
+- Slashing 대상(입증가능한 악의적 행위): 이중 제안, 이중 투표, surround vote
+- 페널티: 즉시 effective balance의 1/32 차감 + 약 36일 후 동시 slashing 비율에 비례하는 **correlation penalty** 추가 -> 클라이언트/지역 다양화를 경제적으로 유도
+- **Inactivity leak**: 1/3 초과 validator가 동시 다운되어 2/3 합의 불가 시, 비활성 validator 지분을 점진적으로 깎아 활성 비중을 높여 finality 회복(liveness 우선 안전장치)
+
+### 출금 & MEV & 생태계
+- **Withdrawals**(EIP-4895, Shapella 2023.4): 프로토콜 레벨 연산으로 출금 도입, 32 ETH 초과분 자동 스윕, exit 후 256epoch(~27시간) 대기
+- **MEV**: 검증자/빌더가 tx 순서 조작으로 얻는 이익(연 수억$ 규모). 샌드위치 공격 등
+  - **PBS**(Proposer-Builder Separation) + **MEV-Boost**(Flashbots, ~90% validator 사용)로 빌더/제안자 역할 분리해 중앙화 완화
+- **Liquid Staking**(Lido ~30% 점유, RocketPool 등): 32 ETH 진입장벽/잠김 문제 해결, stETH 같은 유동성 토큰 발행 (Lido 점유율로 인한 중앙화 우려 존재)
+- **Restaking**(EigenLayer): 예치된 ETH를 추가 서비스(AVS) 보안담보로 재사용. AVS 버그가 이더리움 본체로 연쇄 slashing될 위험
+- 미래: **SSF**(Single-Slot Finality, finality를 슬롯 단위로 단축), **Danksharding**(blob당 ~128KB에서 블록당 128 blob까지 확장, DAS+KZG commitment로 데이터가용성 검증)
+
+### Bitcoin PoW vs Ethereum PoS
+- 블록 생성: Bitcoin은 해시 경쟁으로 약 10분마다 블록 생성, Ethereum은 12초 slot마다 proposer가 블록 제안
+- 자원 소모: Bitcoin은 전기·ASIC·해시레이트라는 외부 비용, Ethereum은 예치된 ETH와 slashing이라는 내부 비용
+- Finality: Bitcoin은 긴 체인 누적에 따른 확률적 finality, Ethereum은 Casper FFG의 2/3 투표와 slashing을 기반으로 한 경제적 finality
+- 공격 비용: Bitcoin은 51% 해시레이트 확보가 필요, Ethereum은 최소 1/3 이상의 지분 손실을 감수해야 finality를 되돌릴 수 있음
+- 중앙화 위험: Bitcoin은 채굴풀·ASIC 공급망, Ethereum은 liquid staking·거래소 스테이킹·MEV 인프라 집중이 주요 위험
+
+- OP_CLTV 절대 시간 
+- OP_CSV 상대 시간 
+- call, delegatecall, uncheck call, 샌드위치 공격, dos 공격, 정밀도 문제, 외부 가격 참조 문제, 
+- inbound, outbound
+- EVM - 256 워드 크기 
