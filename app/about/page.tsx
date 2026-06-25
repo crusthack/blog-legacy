@@ -1,7 +1,7 @@
 // /about/page.tsx
-import BlogPost from "@/components/BlogPost";
+import BlogPost from "@/components/post/BlogPost";
 import type { Metadata } from "next";
-import { getPostData } from "@/lib/posts";
+import { getPostData } from "@/lib/post/posts";
 import LeftSidebar from '@/components/LeftSidebar';
 import RightSidebar from '@/components/RightSidebar';
  

@@ -1,7 +1,7 @@
 // /components/RightSidebar.tsx
 import Link from "next/link";
-import { getAllPostData as getAllPostsData } from "@/lib/posts";
-import { getPostHref } from "@/lib/postPaths";
+import { getAllPostData as getAllPostsData } from "@/lib/post/posts";
+import { getPostHref } from "@/lib/post/postPaths";
 import { usefulLinks } from "@/lib/config";
  
 export default function RightSidebar() {

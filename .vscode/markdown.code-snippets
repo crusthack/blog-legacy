@@ -1,7 +1,8 @@
 {
   "Blog Post Frontmatter": {
-    "scope": "markdown",
-    "prefix": ["---", "post", "frontmatter", "graymatter"],
+    "scope": "markdown,mdx",
+    "prefix": ["---", "post", "frontmatter"],
+    "description": "기본 frontmatter (title, date, description, titleSlide)",
     "body": [
       "---",
       "title: '${1:${TM_FILENAME_BASE}}'",
@@ -16,15 +17,20 @@
     ]
   },
 
-  "Blog Post Frontmatter MDX": {
-    "scope": "mdx",
-    "prefix": ["---", "post", "frontmatter", "graymatter"],
+  "Blog Post Frontmatter Full": {
+    "scope": "markdown,mdx",
+    "prefix": ["postfull", "frontmatter-full"],
+    "description": "전체 frontmatter — 모든 Post 인터페이스 필드 포함",
     "body": [
       "---",
       "title: '${1:${TM_FILENAME_BASE}}'",
       "date: '${CURRENT_YEAR}-${CURRENT_MONTH}-${CURRENT_DATE}'",
       "description: '${2}'",
       "titleSlide: ${3|true,false|}",
+      "manualSlides: ${4|false,true|}",
+      "background:",
+      "  color: '${5}'",
+      "  image: '${6}'",
       "---",
       "",
       "# ${1:${TM_FILENAME_BASE}} 개요",

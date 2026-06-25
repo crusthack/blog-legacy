@@ -7,7 +7,7 @@ import "./view-styles.css";
 import Navi from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import PrintColorScheme from "@/components/PrintColorScheme";
-import { getAllPostData } from "@/lib/posts";
+import { getAllPostData } from "@/lib/post/posts";
  
 const geistSans = Geist({
   variable: "--font-geist-sans",

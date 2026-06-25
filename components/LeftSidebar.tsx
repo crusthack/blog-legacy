@@ -1,7 +1,7 @@
 // /components/LeftSidebar.tsx
 import Link from "next/link";
-import { getAllPostData } from "@/lib/posts";
-import { getCategoryHref, getCategoryLabel, getPostHref } from "@/lib/postPaths";
+import { getAllPostData } from "@/lib/post/posts";
+import { getCategoryHref, getCategoryLabel, getPostHref } from "@/lib/post/postPaths";
 import { excludeCategories, Menu } from "@/lib/config";
  
 export default function LeftSidebar() {

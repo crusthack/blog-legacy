@@ -1,6 +1,6 @@
 // /app/page.tsx
-import { getPostData } from '@/lib/posts'
-import BlogPost from '@/components/BlogPost'
+import { getPostData } from '@/lib/post/posts'
+import BlogPost from '@/components/post/BlogPost'
 import LeftSidebar from '@/components/LeftSidebar';
 import RightSidebar from '@/components/RightSidebar';
 import { notFound } from 'next/navigation';

@@ -1,8 +1,8 @@
 // /components/Navigation.tsx
 "use client";
 
-import type { Post } from "@/lib/posts";
-import { getCategoryHref, getCategoryLabel, getPostHref } from "@/lib/postPaths";
+import type { Post } from "@/lib/post/posts";
+import { getCategoryHref, getCategoryLabel, getPostHref } from "@/lib/post/postPaths";
 import { Menu } from "@/lib/config";
 import Link from "next/link";
 import { useState } from "react";

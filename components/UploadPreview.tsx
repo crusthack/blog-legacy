@@ -3,44 +3,24 @@
 import type { ComponentProps, DragEvent, ReactNode } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { MDXRemote, type MDXRemoteSerializeResult } from 'next-mdx-remote';
-import rehypeKatex from 'rehype-katex';
-import rehypePrettyCode from 'rehype-pretty-code';
-import rehypeSlug from 'rehype-slug';
-import remarkGfm from 'remark-gfm';
-import remarkMath from 'remark-math';
-import remarkToc from 'remark-toc';
 
-import CodeBlock from '@/components/CodeBlock';
-import SlideContent from '@/components/SlideContent';
-import CipherPlayground from '@/components/mdxComponents/CipherPlayground';
-import FancyShowcase from '@/components/mdxComponents/FancyShowcase';
-import JavaScriptPlayground from '@/components/mdxComponents/JavaScriptPlayground';
-import PythonPlayground from '@/components/mdxComponents/PythonPlayground';
-import SeminarInfo from '@/components/mdxComponents/SeminarInfo';
-import { rehypeInjectTitle, remarkNormalizeCodeMeta } from '@/lib/codeMeta';
-import { getTocFromMarkdown, type TocItem } from '@/lib/parseToc';
-import { splitContentIntoManualSlides, splitContentIntoSlides } from '@/lib/slides';
+import CodeBlock from '@/components/post/CodeBlock';
+import SlideContent from '@/components/post/SlideContent';
+import CipherPlayground from '@/components/post/mdxComponents/CipherPlayground';
+import FancyShowcase from '@/components/post/mdxComponents/FancyShowcase';
+import GridBlock, { GridItem } from '@/components/post/mdxComponents/GridBlock';
+import JavaScriptPlayground from '@/components/post/mdxComponents/JavaScriptPlayground';
+import PythonPlayground from '@/components/post/mdxComponents/PythonPlayground';
+import SeminarInfo from '@/components/post/mdxComponents/SeminarInfo';
+import { preprocessGridSource } from '@/lib/remark/remarkGridBlock';
+import { mdxPlugins } from '@/lib/post/mdxPlugins';
+import { getTocFromMarkdown, type TocItem } from '@/lib/post/parseToc';
+import { splitContentIntoManualSlides, splitContentIntoSlides, type ContentElement } from '@/lib/post/slides';
 
 type ViewMode = 'post' | 'slide';
 type AssetMap = Record<string, string>;
 
 const MAX_SOURCE_LENGTH = 500_000;
-
-const prettyOptions = {
-  theme: 'dark-plus',
-  keepBackground: true,
-  defaultLang: {
-    block: 'tsx',
-  },
-  langAlias: {
-    js: 'javascript',
-    ts: 'typescript',
-    cs: 'csharp',
-    py: 'python',
-    sh: 'bash',
-    shell: 'bash',
-  },
-};
 
 interface PreviewMeta {
   category: string;
@@ -62,12 +42,7 @@ interface PreviewSlide {
   totalWeight: number;
   complexCount: number;
   remainingWeight: number;
-  elements: {
-    type: 'simple' | 'complex' | 'html' | 'image' | 'code' | 'math' | 'table';
-    content: string;
-    lines: number;
-    weight: number;
-  }[];
+  elements: ContentElement[];
   mdx: MDXRemoteSerializeResult;
 }
 
@@ -128,21 +103,8 @@ function getFirstHeading(content: string) {
 async function compileMdxSource(source: string) {
   const { serialize } = await import('next-mdx-remote/serialize');
 
-  return serialize(source, {
-    mdxOptions: {
-      remarkPlugins: [
-        remarkGfm,
-        remarkToc,
-        remarkMath,
-        remarkNormalizeCodeMeta,
-      ],
-      rehypePlugins: [
-        rehypeSlug,
-        rehypeKatex,
-        [rehypePrettyCode, prettyOptions],
-        rehypeInjectTitle,
-      ],
-    },
+  return serialize(preprocessGridSource(source), {
+    mdxOptions: mdxPlugins,
     parseFrontmatter: false,
     blockJS: false,
     blockDangerousJS: true,
@@ -254,6 +216,8 @@ function createUploadMdxComponents({
   const common = {
     CipherPlayground,
     FancyShowcase,
+    GridBlock,
+    GridItem,
     JavaScriptPlayground,
     PythonPlayground,
     SeminarInfo,

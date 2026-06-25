@@ -1,20 +1,20 @@
-import BlogPost from '@/components/BlogPost';
-import CategorySidebar from '@/components/CategorySidebar';
-import SlideDeck from '@/components/SlideDeck';
-import TOC from '@/components/TOC';
-import { getTocFromMarkdown } from '@/lib/parseToc';
+import BlogPost from '@/components/post/BlogPost';
+import CategorySidebar from '@/components/post/CategorySidebar';
+import SlideDeck from '@/components/post/SlideDeck';
+import TOC from '@/components/post/TOC';
+import { getTocFromMarkdown } from '@/lib/post/parseToc';
 import {
   getAllPostData,
   getPostData,
-} from '@/lib/posts';
+} from '@/lib/post/posts';
 import {
   getCanonicalCategoryPath,
   getCategoryFromSegments,
   getCategoryIndexHref,
   getRouteFromSegments,
   getStaticParamsFromPosts,
-} from '@/lib/postRoutes';
-import { getPostHref } from '@/lib/postPaths';
+} from '@/lib/post/postRoutes';
+import { getPostHref } from '@/lib/post/postPaths';
 import { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
 
