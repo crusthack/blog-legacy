@@ -1,26 +1,8 @@
 {
   "Blog Post Frontmatter": {
     "scope": "markdown,mdx",
-    "prefix": ["---", "post", "frontmatter"],
-    "description": "기본 frontmatter (title, date, description, titleSlide)",
-    "body": [
-      "---",
-      "title: '${1:${TM_FILENAME_BASE}}'",
-      "date: '${CURRENT_YEAR}-${CURRENT_MONTH}-${CURRENT_DATE}'",
-      "description: '${2}'",
-      "titleSlide: ${3|true,false|}",
-      "---",
-      "",
-      "# ${1:${TM_FILENAME_BASE}} 개요",
-      "",
-      "$0"
-    ]
-  },
-
-  "Blog Post Frontmatter Full": {
-    "scope": "markdown,mdx",
-    "prefix": ["postfull", "frontmatter-full"],
-    "description": "전체 frontmatter — 모든 Post 인터페이스 필드 포함",
+    "prefix": ["---", "post", "frontmatter", "포스트"],
+    "description": "블로그 포스트 frontmatter와 light/dark 슬라이드 배경",
     "body": [
       "---",
       "title: '${1:${TM_FILENAME_BASE}}'",
@@ -29,8 +11,10 @@
       "titleSlide: ${3|true,false|}",
       "manualSlides: ${4|false,true|}",
       "background:",
-      "  color: '${5}'",
-      "  image: '${6}'",
+      "  color:",
+      "    light: '${5}'",
+      "    dark: '${6}'",
+      "  image: '${7}'",
       "---",
       "",
       "# ${1:${TM_FILENAME_BASE}} 개요",
@@ -39,9 +23,46 @@
     ]
   },
 
+  "Slide Background Light and Dark": {
+    "scope": "markdown,mdx",
+    "prefix": ["slide-background", "background-theme", "슬라이드배경"],
+    "description": "슬라이드의 light/dark 배경색과 이미지 설정",
+    "body": [
+      "background:",
+      "  color:",
+      "    light: '${1}'",
+      "    dark: '${2}'",
+      "  image: '${3}'",
+      "$0"
+    ]
+  },
+
+  "Slide Background Single Color": {
+    "scope": "markdown,mdx",
+    "prefix": ["slide-background-color", "background-color", "슬라이드배경색"],
+    "description": "모든 테마에서 사용할 단일 슬라이드 배경색",
+    "body": [
+      "background:",
+      "  color: '${1}'",
+      "$0"
+    ]
+  },
+
+  "Slide Background Image": {
+    "scope": "markdown,mdx",
+    "prefix": ["slide-background-image", "background-image", "슬라이드배경이미지"],
+    "description": "슬라이드 배경 이미지 설정",
+    "body": [
+      "background:",
+      "  image: '${1:hero.png}'",
+      "$0"
+    ]
+  },
+
   "CategoryPostList": {
     "scope": "mdx",
-    "prefix": ["<CategoryPostList/>", "CategoryPostList"],
+    "prefix": ["<CategoryPostList/>", "CategoryPostList", "카테고리글목록"],
+    "description": "현재 카테고리의 포스트 목록 렌더링",
     "body": [
       "<CategoryPostList/>"
     ]

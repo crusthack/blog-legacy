@@ -1,15 +1,15 @@
 import type { ComponentProps } from 'react';
 import type { MDXRemoteProps } from 'next-mdx-remote/rsc';
 
-import CipherPlayground from '@/components/post/mdxComponents/CipherPlayground';
-import CodeBlock from '@/components/post/CodeBlock';
-import CategoryPostList from '@/components/post/mdxComponents/CategoryPostList';
-import FancyShowcase from '@/components/post/mdxComponents/FancyShowcase';
-import GridBlock, { GridItem } from '@/components/post/mdxComponents/GridBlock';
-import JavaScriptPlayground from '@/components/post/mdxComponents/JavaScriptPlayground';
-import PythonPlayground from '@/components/post/mdxComponents/PythonPlayground';
-import SeminarInfo from '@/components/post/mdxComponents/SeminarInfo';
-import { MdxImage } from '@/components/post/MdxImage';
+import CodeBlock from '@/components/post/mdxComponents/elements/CodeBlock';
+import GridBlock, { GridItem } from '@/components/post/mdxComponents/elements/GridBlock';
+import { MdxImage } from '@/components/post/mdxComponents/elements/MdxImage';
+import CategoryPostList from '@/components/post/mdxComponents/widgets/CategoryPostList';
+import CipherPlayground from '@/components/post/mdxComponents/widgets/CipherPlayground';
+import FancyShowcase from '@/components/post/mdxComponents/widgets/FancyShowcase';
+import JavaScriptPlayground from '@/components/post/mdxComponents/widgets/JavaScriptPlayground';
+import PythonPlayground from '@/components/post/mdxComponents/widgets/PythonPlayground';
+import SeminarInfo from '@/components/post/mdxComponents/widgets/SeminarInfo';
 import { isLocalDev, repoName } from '@/lib/config';
 import { mdxPlugins } from '@/lib/post/mdxPlugins';
 

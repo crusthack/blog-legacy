@@ -1,8 +1,8 @@
 // /components/post/CodeBlock.tsx
 "use client";
- 
+
 import { DetailedHTMLProps, HTMLAttributes, useRef, useState } from "react";
- 
+
 const IconCopy = () => (
     <svg
         width="14"
@@ -18,7 +18,7 @@ const IconCopy = () => (
         <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
     </svg>
 );
- 
+
 const IconCheck = () => (
     <svg
         width="14"
@@ -33,7 +33,7 @@ const IconCheck = () => (
         <polyline points="20 6 9 17 4 12" />
     </svg>
 );
- 
+
 interface CodeBlockProps extends DetailedHTMLProps<HTMLAttributes<HTMLPreElement>, HTMLPreElement> {
     isSlide?: boolean;
     weight?: number;
@@ -48,11 +48,11 @@ const CodeBlock = ({
 }: CodeBlockProps) => {
     const [isCopied, setIsCopied] = useState(false);
     const preRef = useRef<HTMLPreElement>(null);
- 
+
     const handleCopy = async () => {
         const code = preRef.current?.textContent;
         if (!code) return;
- 
+
         await navigator.clipboard.writeText(code);
         setIsCopied(true);
         setTimeout(() => setIsCopied(false), 1200);
@@ -72,7 +72,7 @@ const CodeBlock = ({
     const dynamicMaxHeight = isSlide
         ? `${Math.max(180, -20 + 80 * weight)}px`
         : undefined;
- 
+
     return (
         <div className="relative group my-4 rounded-lg overflow-hidden border border-white/10 shadow-xl print:border-none print:shadow-none print:!overflow-visible print:!max-h-none">
             {/* 상단 타이틀 바 (언어 라벨, 파일 주소, 복사 버튼) */}
@@ -99,7 +99,7 @@ const CodeBlock = ({
                         </div>
                     )}
                 </div>
-                
+
                 <button
                     onClick={handleCopy}
                     aria-label="Copy code"
@@ -114,10 +114,10 @@ const CodeBlock = ({
                     {isCopied ? "COPIED!" : "COPY"}
                 </button>
             </div>
- 
-            <pre 
-                ref={preRef} 
-                {...props} 
+
+            <pre
+                ref={preRef}
+                {...props}
                 style={{
                     ...props.style,
                     ...(dynamicMaxHeight ? { maxHeight: dynamicMaxHeight } : {})
@@ -129,5 +129,5 @@ const CodeBlock = ({
         </div>
     );
 };
- 
+
 export default CodeBlock;

@@ -2,8 +2,17 @@
 import { isLocalDev, repoName } from '@/lib/config';
 import type { CSSProperties } from 'react';
 
+export type PostBackgroundStyle = CSSProperties & {
+  '--slide-custom-background-color'?: string;
+  '--slide-custom-background-color-light'?: string;
+  '--slide-custom-background-color-dark'?: string;
+  '--slide-custom-background-image'?: string;
+};
+
 export interface PostBackground {
   color?: string;
+  colorLight?: string;
+  colorDark?: string;
   image?: string;
 }
 
@@ -18,11 +27,21 @@ export function normalizePostBackground(value: unknown): PostBackground | undefi
 
   if (typeof value === 'object') {
     const raw = value as Record<string, unknown>;
-    const color = typeof raw.color === 'string' ? raw.color : undefined;
+    const colorValue = raw.color;
+    const color = typeof colorValue === 'string' ? colorValue : undefined;
+    const colorModes = colorValue && typeof colorValue === 'object'
+      ? colorValue as Record<string, unknown>
+      : undefined;
+    const colorLight = typeof colorModes?.light === 'string'
+      ? colorModes.light
+      : undefined;
+    const colorDark = typeof colorModes?.dark === 'string'
+      ? colorModes.dark
+      : undefined;
     const image = typeof raw.image === 'string' ? raw.image : undefined;
 
-    if (color || image) {
-      return { color, image };
+    if (color || colorLight || colorDark || image) {
+      return { color, colorLight, colorDark, image };
     }
   }
 
@@ -62,10 +81,18 @@ export function getPostBackgroundStyle({
 }) {
   if (!background) return undefined;
 
-  const style: CSSProperties = {};
+  const style: PostBackgroundStyle = {};
 
   if (background.color) {
-    style.backgroundColor = background.color;
+    style['--slide-custom-background-color'] = background.color;
+  }
+
+  if (background.colorLight) {
+    style['--slide-custom-background-color-light'] = background.colorLight;
+  }
+
+  if (background.colorDark) {
+    style['--slide-custom-background-color-dark'] = background.colorDark;
   }
 
   if (background.image) {
@@ -75,10 +102,8 @@ export function getPostBackgroundStyle({
       image: background.image,
     });
 
-    style.backgroundImage = `linear-gradient(rgba(255,255,255,0.86), rgba(255,255,255,0.86)), url("${imageUrl}")`;
-    style.backgroundSize = 'cover';
-    style.backgroundPosition = 'center';
-    style.backgroundRepeat = 'no-repeat';
+    style['--slide-custom-background-image'] =
+      `linear-gradient(rgba(255,255,255,0.86), rgba(255,255,255,0.86)), url("${imageUrl}")`;
   }
 
   return style;

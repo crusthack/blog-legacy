@@ -6,7 +6,11 @@ titleSlide: true
 ---
 
 # C# 프로젝트 설정 개요
-- 기본적인 C# 프로젝트의 환경을 구성해 프로젝트를 관리하는 법을 정리합니다. 
+- 기본적인 C# 프로젝트의 환경을 구성해 프로젝트를 관리하는 법을 정리합니다
+1. 프로젝트에 패키지 설치하기
+2. 실행 옵션에 따른 빠른 환경 변수 주입하기 - 환경에 따른 실행 자동화 
+3. 유닛 테스트 작성하기 - 작성한 코드의 작동 확인 
+4. 벤치마킹 수행하기 - 작성한 코드의 성능 확인 
 
 # 프로젝트 생성 및 세팅 
 - `dotnet new console` 명령어를 통해 C# 콘솔 프로젝트를 생성합니다.
@@ -16,27 +20,28 @@ titleSlide: true
 - `dotnet add package Microsoft.Extensions.Configuration`
 - `dotnet add package Microsoft.Extensions.Hosting`
 
-
 ## 실습을 위한 Main함수 
 ```c#
 using System.Text;
 using Microsoft.Extensions.Configuration;
 
-namespace CSharpBasics
+namespace Startup
 {
     internal static class Program
     {
-        static int Main(string[] args)
+        static int Main(String[] args)
         {
             Console.InputEncoding = Encoding.UTF8;
             Console.OutputEncoding = Encoding.UTF8;
 
-            Console.WriteLine("hello, dotnet!!");
+            Console.WriteLine("UTF8 Encoding... 한글 출력 확인");
 
-            string environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") ?? "IDontKnow ";
+            var environment =
+                Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")
+                ?? "Production";
             Console.WriteLine($"현재 실행 환경: {environment}");
 
-            IConfiguration config = new ConfigurationBuilder()
+            var config = new ConfigurationBuilder()
                 .SetBasePath(AppContext.BaseDirectory)
                 .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
                 .AddJsonFile($"appsettings.{environment}.json", optional: true, reloadOnChange: true)
@@ -44,17 +49,17 @@ namespace CSharpBasics
                 .AddCommandLine(args)
                 .Build();
 
-            Console.WriteLine(config["Custom:message"]);
+            Console.WriteLine(config["Custom:Message"]);
 
             return 0;
         }
     }
 
-    public static class Mod
+    public static class Test
     {
-        public static int fn()
+        public static int Square(int x)
         {
-            return 1;
+            return x * x;
         }
     }
 }
@@ -66,22 +71,23 @@ namespace CSharpBasics
 
 ```json:Properties\launchSettings.json
 {
-  "profiles": {
-    "dev": {
-      "commandName": "Project",
-      "dotnetRunMessages": true,
-      "environmentVariables": {
-        "DOTNET_ENVIRONMENT": "Development"
-      }
-    },
-    "prod": {
-      "commandName": "Project",
-      "dotnetRunMessages": true,
-      "environmentVariables": {
-        "DOTNET_ENVIRONMENT": "Production"
-      }
+    "profiles": {
+        "dev": {
+            "commandName": "Project",
+            "dotnetRunMessages": true,
+            "environmentVariables": {
+                "DOTNET_ENVIRONMENT": "Development",
+                "CUSTOM__MESSAGE": "hello, development!!"
+            }
+        },
+        "prod":{
+            "commandName": "Project",
+            "dotnetRunMessages": true,
+            "environmentVariables": {
+                "DOTNET_ENVIRONMENT": "Production"
+            }
+        }
     }
-  }
 }
 ```
 
@@ -178,8 +184,8 @@ EFC_5228_1262719628 = 1
 - 일반 환경, 전체 환경에 대한 환경변수 설정입니다. 
 ```appsettings.json
 {
-    "Custom": {
-        "message": "hello, appsettings!!"
+    "CUSTOM": {
+        "MESSAGE": "hello, appsettings!!"
     }
 }
 ```
@@ -188,14 +194,14 @@ EFC_5228_1262719628 = 1
 - 배포환경에 대한 환경변수 설정 파일입니다. 
 ```appsettings.Production.json
 {
-    "Custom": {
-        "message": "hello, production!!"
+    "CUSTOM": {
+        "MESSAGE": "hello, production!!"
     }
 }
 ```
 
 ## main 함수 실행 결과 
-- `Console.WriteLine(config["Custom:message"]);` 실행시 일반(개발)환경에서는 `hello, appsettings!!`가,   
+- `Console.WriteLine(config["Custom:message"]);` 실행시 일반(개발)환경에서는 `hello, development!!`가,   
 배포환경에서는 `hello, production!!`이 출력됩니다. 
 
 ## 실제 환경 변수 활용
@@ -214,7 +220,12 @@ EFC_5228_1262719628 = 1
 ## CI/CD 배포 환경에서의 사용 
 - 위의 환경변수 주입을 활용하여 자동 배포시에 쉘 스크립트를 미리 작성하여 (비밀값과 같이) 여러가지 설정을 통한 배포(실행)이 가능합니다. 
 
-
+# 여러가지 명령줄로 실행해보기 
+```cmd
+dotnet run Custom:Message="hello, commandline"
+dotnet run --launch-profile prod
+dotnet run --launch-profile prod -- --Custom:Message="hello, prod, commandline"
+```
 
 # 유닛 테스트(xUnit)
 - 작성한 함수/프로그램이 의도와 맞게 정상 동작하는지 확인하기 위해 유닛 테스트 함수를 작성한 후 확인을 합니다. 
@@ -222,41 +233,44 @@ EFC_5228_1262719628 = 1
 
 ## xUnit 프로젝트 생성
 ```cmd
-- `dotnet new xunit -o Test`
+dotnet new xunit -o Test
+cd Test
+dotnet add reference "..\1. ProjectStartup\1. ProjectStartup.csproj"
 ```
 - 유닛 테스트를 위한 xUnit 템플릿 프로젝트를 생성합니다. 
+- 참조하는 프로젝트 외부에 생성해주어야합니다. 
 
 ## 테스트 코드 작성 
 ```cs
-namespace Tests;
+namespace Test;
 
 public class UnitTest1
 {
     [Fact]
     public void Test1()
     {
-        Assert.Equal(1, 1);
+        Assert.Equal(4, Startup.Test.Square(2));
     }
 
     [Fact]
     public void Test2()
     {
-        Assert.NotEqual(1, 2);
+        Assert.Equal(9, Startup.Test.Square(3));
+        Assert.NotEqual(10, Startup.Test.Square(2));
     }
 }
 ```
 
 ## 테스트 실행 
 - `dotent test`를 통해 유닛테스트 프로젝트를 실행합니다. 
-- 결과: `Test summary: total: 2, failed: 0, succeeded: 2, skipped: 0, duration: 4.6s`
-
+- 결과: `Test summary: total: 2, failed: 0, succeeded: 2, skipped: 0, duration: 1.3s`
 
 # 벤치마킹(Benchmark)
 - 프로그램 성능(속도, 메모리 사용량)을 확인하고 개선하기 위해 벤치마킹을 수행합니다.
 - 벤치마킹 또한 실제 프로젝트 참조 없이 간단한 알고리즘 성능 검사만 수행합니다.
 
 ## 벤치마킹 프로젝트 생성 
-- `dotnet new console -n Benchmark`
+- `dotnet new console -o Benchmark`
 - `cd Benchmark`
 - `dotnet add package BenchmarkDotNet`
 - `dotnet run -c Release`
@@ -267,7 +281,6 @@ using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Diagnosers;
 using BenchmarkDotNet.Running;
 using System.Text;
-
 
 internal static class Program
 {

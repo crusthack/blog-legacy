@@ -24,7 +24,7 @@ export default function CategoryPostList({
     .filter((post) => !excludeIndex || post.slug !== 'index')
     .filter((post) => post.slug !== currentSlug)
     .slice(0, limit ?? undefined)
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   if (posts.length === 0) {
     return (

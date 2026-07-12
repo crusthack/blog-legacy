@@ -6,7 +6,7 @@ titleSlide: true
 ---
 
 # .Net SDK 설치 
-- 필자는 Windows에서 Visual Studio Code를 사용하여 .Net 개발을 연습합니다(실제 개발시 Visual Studio를 사용합니다)
+- Windows에서 Visual Studio Code를 사용하여 .Net 개발을 연습합니다. (실제 애플리케이션 개발 시에는 Visual Studio를 사용합니다)
 
 ## Windows - Visual Studio
 - Visual Studio에서 알아서 .Net Feature 선택해서 설치.
@@ -23,6 +23,29 @@ titleSlide: true
 - `winget search Microsoft.DotNet.SDK`
 - `winget install Microsoft.DotNet.SDK10.0`
 - search로 버전 확인 후, 선택하여 설치 
+
+# 연습용 솔루션 구성하기 
+```cmd
+# 솔루션 폴더 생성 
+mkdir practice-dotnet 
+cd practice-dotnet
+
+# 솔루션 생성
+dotnet new sln -n "practice-dotnet"
+
+# C# 콘솔 프로젝트 생성 
+dotnet new console -lang "C#" -o "1. ProjectStartup"
+
+# 솔루션에 프로젝트 참조 추가 
+dotnet sln add "1. ProjectStartup\1. ProjectStartup.csproj"
+
+# 솔루션 빌드 
+dotnet build
+
+# 프로젝트 실행 
+dotnet run --project "1. ProjectStartup"
+>> Hello, World!! 
+```
 
 # sln, 솔루션 파일 생성하기 
 - sln, 솔루션 파일은 개발자가 여러개의 프로젝트들을 쉽게 관리 하기위한 텍스트 기반의 파일입니다.  

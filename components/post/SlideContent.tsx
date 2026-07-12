@@ -60,7 +60,7 @@ export default function SlideContent({ slides, category, slug, title, background
   const [slideTheme, setSlideTheme] = useState<SlideTheme>('system');
   const [isSlideThemeReady, setIsSlideThemeReady] = useState(false);
   const effectiveSlideTheme = slideTheme === 'system' ? undefined : slideTheme;
-  const themedBackgroundStyle = slideTheme === 'system' ? backgroundStyle : undefined;
+  const hasCustomBackground = Boolean(backgroundStyle);
   const themeLabel = slideTheme === 'system' ? 'Auto' : slideTheme === 'light' ? 'Light' : 'Dark';
 
   const cycleSlideTheme = () => {
@@ -457,8 +457,9 @@ export default function SlideContent({ slides, category, slug, title, background
       <div
         data-view="slide"
         data-slide-theme={effectiveSlideTheme}
+        data-custom-background={hasCustomBackground ? 'true' : undefined}
         className={`slide-view fixed inset-0 z-50 flex flex-col overflow-hidden print:hidden ${isFullscreen && !isChromeVisible ? 'cursor-none' : ''}`}
-        style={themedBackgroundStyle}
+        style={backgroundStyle}
         onMouseMove={revealFullscreenChrome}
       >
 
@@ -777,8 +778,9 @@ export default function SlideContent({ slides, category, slug, title, background
       <div
         data-view="slide"
         data-slide-theme={effectiveSlideTheme}
+        data-custom-background={hasCustomBackground ? 'true' : undefined}
         className="slide-view absolute top-0 left-0 w-full z-[9999] opacity-0 pointer-events-none h-0 overflow-hidden print:h-auto print:opacity-100 print:pointer-events-auto print:relative print:block"
-        style={themedBackgroundStyle}
+        style={backgroundStyle}
       >
         {slides.map((slide, idx, filteredArray) => (
           <div

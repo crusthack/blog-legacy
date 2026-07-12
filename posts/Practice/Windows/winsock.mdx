@@ -1,8 +1,867 @@
 ---
 title: 'Winsock'
-date: '2026-05-01'
+date: '2026-07-02'
+description: 'Winsock 소켓 프로그래밍'
+titleSlide: true
+manualSlides: false
+background:
+  color:
+    light: ''
+    dark: ''
+  image: ''
 ---
 
-# 개요
-- Winsock관련 각종 헤더 API 정리
-- 기본적인 소켓 통신부터 IOCP 및 예제까지 정리합니다. 
+# Winsock 소켓 프로그래밍 개요
+- Win32 API인 Winsock을 이용한 소켓 프로그래밍 정리입니다 
+- Winsock 사용할 때 간단하게 참고하기 위한 용도입니다 
+- 기본적인 TCP UDP 소켓 통신, IOCP 구현, Raw Socket을 통한 네트워크 프로토콜 구현 등을 위한 내용들을 다룹니다 
+
+## 목차 
+![
+- Part 1. 기본 소켓 프로그래밍
+1. Winsock 기본 설정
+2. 소켓 주소 체계
+3. 소켓 관리
+4. TCP 통신 예제
+5. UDP 통신 예제
+6. 소켓 옵션 
+|
+- Part 2. 고급 윈도우 소켓 프로그래밍
+7. IOCP
+8. Raw Socket 
+9. RIO
+- Part 3. 기타
+10. Winsock 헤더 목록 
+11. Winsock 에러 목록 
+12. 참고 자료
+]!
+
+## Winsock 기본 구조(서버)
+1. 윈속 초기화 
+2. 소켓 통신 처리
+3. 윈속 종료 
+```c++
+#include <WinSock2.h>
+#include <iostream>
+
+// 라이브러리 링크 설정, VS에서 프로젝트 설정으로도 세팅 가능
+#pragma comment(lib, "Ws2_32.lib")
+
+int main()
+{
+    // 윈도우 소켓 기본 설정
+    WSADATA wsaData;
+    auto ret = WSAStartup(MAKEWORD(2, 2), &wsaData);
+    if (ret == SOCKET_ERROR)
+    {
+        return 1;
+    }
+    // 패시브 소켓 생성 
+    SOCKET listenSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+
+    // 주소 설정 루프백 주소(127.0.0.1)에 포트번호 5000
+    sockaddr_in addr;
+    addr.sin_addr.S_un.S_addr = htonl(INADDR_LOOPBACK);
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(5000);
+
+    // 소켓에 주소 바인딩 
+    bind(listenSocket, (sockaddr*) & addr, sizeof(addr));
+
+    // 소켓 접속 설정 
+    listen(listenSocket, 0);
+
+    // 소켓 연결 요청 수락 후 액티브 소켓 반환
+    auto sock = accept(listenSocket, 0, 0);
+
+    // 액티브 소켓으로부터 데이터 수신
+    char buffer[100] = {};
+    recv(sock, buffer, 100, 0);
+    std::cout << buffer << std::endl;
+
+    // 윈도우 소켓 자원 해제 
+    WSACleanup();
+
+	return 0;
+}
+```
+
+## 클라이언트 코드 예시 
+```c++
+void client()
+{   
+    WSADATA wsaData;
+    WSAStartup(MAKEWORD(2, 2), &wsaData);
+
+    // 소켓 설정 
+    SOCKET sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    sockaddr_in addr;
+    addr.sin_family = AF_INET;
+    addr.sin_addr.S_un.S_addr = htonl(INADDR_LOOPBACK);
+    addr.sin_port = htons(5000);
+
+    // 대상 주소로 소켓 연결 및 데이터 송신 
+    connect(sock, (sockaddr*)&addr, sizeof(addr));
+
+    char buffer[] = "hello, world!!\n";
+    send(sock, buffer, strlen(buffer), 0);
+
+    WSACleanup();
+}
+```
+- 코드 최소화한 예제입니다 
+
+## 에러 처리 
+- Winsock 관련된 모든 함수는 실행 결과값을 `int`로 반환합니다. 
+- 대부분의 경우, 0이 반환됐을 시 정상 동작한 경우이며 이외의 경우는 각 정수 값에 대응되는 에러 코드를 보유하고 있습니다.
+- 예제 코드에서는 가독성을 위해 에러 처리를 최소화하였으며 실제 애플리케이션 개발 시 에러 대응을 수행하여야 합니다. 
+
+## 관련 헤더 
+- winsock2.h: 윈도우 소켓 기본 헤더
+- winsock.h: 구버전 윈도우 소켓 헤더. 만일 사용할 시 winsock2.h보다 나중에 포함되어야 함. 
+- Ws2def.h: Winsock2 기본 구조체/상수 정의 헤더
+- Ws2tcpip.h: tcp/ip 프로토콜 확장 헤더
+- Ws2ipdef.h: ip 데이터 정의 헤더 
+- Mswsock.h: 비동기 api 확장 헤더 
+- Mswsockdef.h: 정의 헤더
+```이하생략
+- Ws2spi.h
+Mstcpip.h
+Tcpioctl.h
+Iphlpapi.h
+Icmpapi.h
+Ipexport.h
+Ip2string.h
+Iptypes.h
+Ifdef.h
+Ifmib.h
+Ipmib.h
+Tcpmib.h
+Udpmib.h
+Netioapi.h
+Netiodef.h
+Windns.h
+Windnsdef.h
+Winhttp.h
+Wininet.h
+Http.h
+Websocket.h
+Wlanapi.h
+Netfw.h
+Fwpmu.h
+Fwpmtypes.h
+Fwpsu.h
+Fwpstypes.h
+Netlistmgr.h
+Networkisolation.h
+Ras.h
+Rasdlg.h
+Rasshost.h
+Mprapi.h
+Upnp.h
+Natupnp.h
+Snmp.h
+Wsman.h
+```
+
+# Part 1. Winsock 프로그래밍 기본 
+- Winsock을 사용한 소켓프로그래밍의 기본적인 구조들에 대해 정리합니다. 
+
+
+# 1. Winsock 초기화와 종료
+- Winsock 사용시 윈도우 시스템에게 어떤 버전을 사용할지, 관련하여 시스템 세팅을 어떻게 할지 초기화를 해주어야 합니다.
+- `WSAStartup` 호출 시 Winsock 버전 설정을 수행하며, 관련 초기화 정보를 `WSADATA` 구조체로 받아 저장합니다. 
+- `WSAStartup`과 `WsaCleanup` 호출시 각각 내부적으로 참조 카운터를 증가/감소 시키며, 0이 됐을 시 자원을 해제 처리합니다. 
+
+## WSAStartup(in WORD, out LPWSADATA)
+- 첫 번째 파라미터로 WORD 값을 입력하며, 두 번째 파라미터는 out으로 받을 WSADATA 포인터를 넣어줍니다. 
+- `WsaStartup(MAKEWORD(a, b), &wsaData)` 앞의 a는 메이저 버전을, 뒤의 b는 마이너 버전을 명시합니다.
+- WORD(2바이트)값은 앞의 1바이트가 b값으로, 뒤의 1바이트는 a값으로 0xBBAA로써 존재합니다\
+즉, 상위 1바이트를 마이너버전으로 인식하고 하위 1바이트를 메이저 버전으로 인식합니다. 
+
+## WSACleanup()
+- `WSAStartup`을 통해 할당받은 자원을 해제하는 함수입니다.
+- 각 2개 함수는 참조 카운트를 통해 관리되며, `WSACleanup` 호출시 카운트가 0이되면 실제 자원 해제를 수행합니다.
+- 자원 해제 시, 모든 스레드에서의 **Winsock** 관련된 모든 동작들이 취소됩니다. 
+
+## WSADATA
+- WSAStartup을 통해 초기화된 Winsock 정보를 받아오는 자료입니다. 
+- `wVersion`: 실제 초기화된 Winsock 버전
+- `wHighVersion`: 구현체가 지원하는 가장 높은 버전
+- `szDescription`: 구현 설명 문자열
+- `szSystemStatus`: 시스템 상태 정보 
+
+## 예제 코드 
+```c++
+#include <WinSock2.h>
+
+#pragma comment(lib, "Ws2_32.lib")
+
+int main() 
+{
+    WSADATA wsaData;
+    int ret;
+    ret = WSAStartup(MAKEWORD(2, 2), &wsaData); 메이저 버전 2, 마이너 버전 2
+    if (ret != 0) // 에러 처리 
+
+    ret = WSACleanup();
+    if (ret!= 0) // 에러 처리 
+}
+```
+
+# 2. 주소 체계
+- 소켓 통신을 위해서는 통신 대상의 주소를 명시해줘야 합니다. 
+- 주소 관련된 구조체와 관련 함수들을 정리합니다. 
+
+## SOCKADDR
+- 각종 소켓 api에 대응하기 위한 공통 구조체입니다.
+- 직접적으로 사용하진 않고, 따로 각 소켓 목적별로 래핑된 구조체를 사용합니다.
+```c
+typedef struct sockaddr {
+    ADDRESS_FAMILY sa_family;   // Address family.
+    CHAR sa_data[14];           // Up to 14 bytes of direct address.
+} SOCKADDR
+```
+
+## SOCKADDR_IN
+```c
+typedef struct sockaddr_in {
+    ADDRESS_FAMILY sin_family;  // short 2 바이트 
+    USHORT sin_port;            // 2 바이트 
+    IN_ADDR sin_addr;           // 4 바이트 
+    CHAR sin_zero[8];           // 8 바이트 
+} SOCKADDR_IN
+```
+- IPv4를 사용하는 소켓을 위한 구조체입니다
+- `sin_family`: 주소 체계 지정, `AF_INET` 사용 
+- `sin_port`: transport 계층을 위한 포트 번호 지정, `htons(5000)`함수를 통한 빅 엔디안 변환 사용. 
+- `sin_addr`: IP 주소, `htonl()`을 사용하여 변환 혹은 `inet_pton` 함수를 사용하여 ip 주소 문자열을 변환하여 사용 
+- `siz_zero`: 16바이트 맞추기 위한 패딩용 필드
+
+## SOCKADDR_IN6
+```c
+typedef struct sockaddr_in6 {
+    ADDRESS_FAMILY sin6_family; // 2 바이트 
+    USHORT sin6_port;           // 2 바이트 
+    ULONG  sin6_flowinfo;       // 4 바이트  
+    IN6_ADDR sin6_addr;         // 16 바이트 
+    union {                     // 4 바이트 
+        ULONG sin6_scope_id;    
+        SCOPE_ID sin6_scope_struct;
+    };
+} SOCKADDR_IN6
+```
+- IPv6용 28바이트 구조체입니다. `AF_INET6` 사용, 포트번호는 그대로 사용합니다.
+- `sin6_flowinfo`: 흐름 제어용 플래그. 보통 0
+- `sin6_addr`: 16바이트 IPv6 주소. `inet_pton`을 사용하여 텍스트 주소 변환 수행
+- `scope_id`: ...
+
+## Address Family
+- `ws2def.h`에서 정의되는 주소 체계 정의 값들입니다. [MSDN 참조](https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-socket?utm_source=chatgpt.com)
+- 주로 IPv4용의 `AF_INET` 혹은 IPv6용의 `AF_INET6`를 사용합니다. 
+- `AF_UNIX` 유닉스 소켓, `AF_BTH` 블루투스, `AF_IRDA` 적외선통신 등
+- **Protocol Family** 줄여서 **PF**는 Address Family의 이전 이름입니다. AF와 같게 취급됩니다. 
+
+## 바이트 오더 변환 함수 htons, htonl 
+- 네트워크에서는 빅 엔디안 구조의 바이트 정렬을 하용하나, 호스트 컴퓨터에서는 빅엔디안일 수도, 리틀엔디안일 수도 있습니다.
+- 호스트 환경에 맞춰서 바이트 오더를 변환하기 위해 host to nerwork 함수들이 존재합니다.
+- 역으로 네트워크 정보를 호스트 환경에서 사용하기 위해 network to host의 ntohs 같은 함수들 또한 존재합니다. 
+- 대체로 포트번호 변환 및 ip주소 변환을 위해 short, long(4 byte) 접미사가 붙은 함수를 주로 사용합니다.
+
+## 문자열 주소 변환 함수 
+- ip 주소를 지정할 때는 **.** 기반으로 분리된 체제를 사용하기에 문자열로 된 주소 지정이 간편합니다. 
+- 예를 들어 바이트 값 `0x7f000001`을 사용하기보다 \
+`127.0.0.1`문자열을 그대로 사용하는게 프로그래머 입장에선 더욱 직관적으로 느껴집니다. 
+- 이를 위해 문자열 주소 표현을 IP 주소 체계로 변환해주는 `inet_pton`, `inet_ntop` 함수들이 존재합니다.
+
+## DNS 주소 변환 함수 
+- `getaddrinfo(pNodeName, pServiceName, pHints, ppResult)`는 도메인 이름(e.g. github.com)을 IP주소로 받아오는 함수입니다. 
+
+# 3. 소켓 관리
+## socket 함수 
+- socket(Address_Family, Socket_Type, Protocol_Type) 함수는 옵션에 맞는 소켓 핸들러를 반환해줍니다.
+```c
+SOCKET tcp = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+SOCKET udp = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+SOCKET raw = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
+```
+
+## SOCK_TYPE
+- 소켓의 통신 방식에 대한 타입 옵션입니다. 
+- `SOCK_STREAM`: 스트림 형식 => tcp 소켓 
+- `SOCK_DGRAM`: 데이터 그램 형식 => udp 소켓 
+- `SOCK_RAW`: Raw Packet 데이터 => raw 소켓, 커스텀 소켓 
+- `SOCK_RDM`, `SOCK_SEQPACKET` 존재 
+
+## PROTOCOL_TYPE
+- Address Family에서 사용할 실제 프로토콜을 선택하는 값입니다. 
+- IP위에서 동작시 `IPPROTO` 접두사가 붙은 `IPPROTO_TCP`, `IPPROTO_UDP` 등을 사용합니다 
+- 블루투스 사용시 `BHPROTO_RFCOMM`, `BHTPROTO_L2CAP`와 같은 값을 사용합니다 
+
+## 소켓 자원 해제 
+- `socket` 함수를 통해 할당받은 소켓 핸들러는, 통신이 완료된 이후 자원 해제를 수행해줘야 합니다.
+- `shutdown` 함수를 통해서는 통신 종료 처리를 수행합니다.
+- `closesocket` 함수를 통해서는 반환받은 소켓 핸들러를 해제합니다.
+
+# 4. TCP 통신 예제
+
+## TCP 소켓 통신 개요 
+- TCP는 소켓을 통해 데이터를 연속된 스트림 형식으로 주고 받습니다. 
+- 이는 데이터를 보낼 때, 수신할 때 데이터가 조각 날 수 있다는 특징이 있습니다. 이를 위해 데이터를 메시지 단위로 파싱하는 동작이 필요합니다.
+- 다만 이 포스트에서는 간단하게 송수신 함수 사용에 대해서만 정리합니다. 
+
+## TCP 소켓 함수
+
+### 공통 소켓 함수 
+- `send`: 데이터를 송신합니다.
+- `recv`: 데이터를 수십합니다. 리턴값을 수신한 바이트 길이입니다. 리턴값이 0일 시, 연결이 끊긴 상황입니다. 
+- `shutdown`: 통신을 종료합니다. 옵션에 따라 송신을 중료할지, 수신을 중료할지 혹은 둘 다 종료할지를 선택합니다. 
+- `closesocket`: 소켓 자원을 해제합니다.
+
+### 서버측 소켓 함수 
+- `bind`: 운영체제에게 특정 주소(IP, Port)로 소켓 주소를 설정 요청합니다. 이미 점유되어있을 시 에러가 발생합니다.
+- `listen`: 소켓이 내부적으로 통신하기 시작합니다. 3-way-handshake가 발생합니다. 
+- `accept`: 연결된 소켓을 받아옵니다. 액티브 소켓이라 하며 해당 소켓을 통해 데이터 송수신을 처리합니다. 
+
+### 클라이언트측 소켓 함수
+- `connect`: 특정 주소로 소켓 연결을 시도합니다. 연결이 성공할 시 소켓을 통해 데이터 송수신을 수행합니다. 
+
+## 서버 예제 코드 
+```c++
+#include <WinSock2.h>
+#include <WS2tcpip.h>
+#include <iostream>
+#include <format>
+
+#pragma comment(lib, "Ws2_32.lib")
+
+int main()
+{
+	WSADATA wsaData;
+
+	auto ret = WSAStartup(MAKEWORD(2, 2), &wsaData);
+	if (ret == SOCKET_ERROR)
+	{
+		return 1;
+	}
+
+	SOCKET acceptSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+
+	sockaddr_in addr;
+	addr.sin_addr.S_un.S_addr = htonl(INADDR_LOOPBACK);
+	addr.sin_family = AF_INET;
+	addr.sin_port = htons(5000);
+
+	bind(acceptSocket, (sockaddr*)&addr, sizeof(addr));
+
+	listen(acceptSocket, 0);
+	char ipaddr[INET_ADDRSTRLEN];
+	inet_ntop(AF_INET, &addr.sin_addr, ipaddr, INET_ADDRSTRLEN);
+	std::cout << std::format("server is listening... ip: {0}, port: {1}\n", ipaddr, ntohs(addr.sin_port));
+
+	SOCKADDR_IN targetAddr;
+	int addrLen = sizeof(targetAddr);
+
+	auto sock = accept(acceptSocket, (SOCKADDR*) & targetAddr, &addrLen);
+	std::cout << std::format("New client connected. ip: {0}, port: {1}\n", inet_ntop(AF_INET, &targetAddr.sin_addr, ipaddr, INET_ADDRSTRLEN), ntohs(targetAddr.sin_port));
+
+	char buffer[100] = {};
+
+	while (1)
+	{
+		auto recvLength = recv(sock, buffer, 100, 0);
+		if (recvLength == 0)
+		{
+			printf("client disconnected\n");
+			break;;
+		}
+
+		std::cout << buffer << std::endl;
+
+		if (strlen(buffer) == 0)
+		{
+			break;
+		}
+	}
+
+	shutdown(sock, SD_BOTH);
+	closesocket(sock);
+
+	WSACleanup();
+
+	return 0;
+}
+```
+
+## 클라이언트 예제 코드
+```c++
+#include <WinSock2.h>
+#include <WS2tcpip.h>
+#include <iostream>
+#include <string>
+
+#pragma comment(lib, "ws2_32.lib")
+
+int main()
+{
+	int errCode;
+	WSADATA wsaData;
+	errCode = WSAStartup(MAKEWORD(2, 2), &wsaData);
+	if (errCode)
+	{
+		printf("WSAStartup Winsock error has occurred. code: %d\n", errCode);
+		return 1;
+	}
+
+	SOCKADDR_IN addr;
+	addr.sin_family = AF_INET;
+	addr.sin_port = htons(5000);
+	errCode = inet_pton(AF_INET, "127.0.0.1", &addr.sin_addr);
+
+	SOCKET sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if (sock == SOCKET_ERROR)
+	{
+		printf("socket Winsock error has occurred. code: %d\n", errCode);
+		return 1;
+	}
+
+	errCode = connect(sock, (SOCKADDR*)&addr, sizeof(addr));
+	if (errCode)
+	{
+		printf("Winsock error has occurred. code: %d\n", errCode);
+		return 1;
+	}
+
+	std::string input;
+	while (std::getline(std::cin >> std::ws, input))
+	{
+		send(sock, input.c_str(), input.length() + 1, 0);
+	}
+
+	errCode = shutdown(sock, SD_BOTH);
+	if (errCode)
+	{
+		printf("WSAStartup Winsock error has occurred. code: %d\n", errCode);
+		return 1;
+	}
+
+	errCode = closesocket(sock);
+	if (errCode)
+	{
+		printf("WSAStartup Winsock error has occurred. code: %d\n", errCode);
+		return 1;
+	}
+
+	WSACleanup();
+}
+```
+
+# 5. UDP 통신 예제 
+
+## UDP 소켓 함수 
+- `sendto`: 목적지를 주소를 지정하여 데이터그램 전송 
+- `recvfrom`: 데이터 수신과 함께 송신자 주소 정보 받아오기 
+- `connect`: UDP 소켓 목적지 기본값 설정, 이후 send나 recv를 통해 등록된 대상과 통신 가능
+- `getpeername`: `connect`를 통해 등록한 주소 확인 
+
+## 서버 예제 코드
+```c++
+#include <WinSock2.h>
+#include <WS2tcpip.h>
+#include <iostream>
+#include <format>
+
+#pragma comment(lib, "Ws2_32.lib")
+
+int main()
+{
+    WSADATA wsaData;
+
+    int ret = WSAStartup(MAKEWORD(2, 2), &wsaData);
+    if (ret != 0)
+    {
+        std::cout << "WSAStartup failed: " << ret << '\n';
+        return 1;
+    }
+
+    SOCKET sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    if (sock == INVALID_SOCKET)
+    {
+        std::cout << "socket failed: " << WSAGetLastError() << '\n';
+        WSACleanup();
+        return 1;
+    }
+
+    SOCKADDR_IN serverAddr{};
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_addr.S_un.S_addr = htonl(INADDR_LOOPBACK);
+    serverAddr.sin_port = htons(5000);
+
+    ret = bind(sock, reinterpret_cast<sockaddr*>(&serverAddr), sizeof(serverAddr));
+    if (ret == SOCKET_ERROR)
+    {
+        std::cout << "bind failed: " << WSAGetLastError() << '\n';
+        closesocket(sock);
+        WSACleanup();
+        return 1;
+    }
+
+    char ipaddr[INET_ADDRSTRLEN]{};
+    inet_ntop(AF_INET, &serverAddr.sin_addr, ipaddr, sizeof(ipaddr));
+
+    std::cout << std::format(
+        "UDP server is listening... ip: {}, port: {}\n",
+        ipaddr,
+        ntohs(serverAddr.sin_port)
+    );
+
+    while (true)
+    {
+        char buffer[100]{};
+
+        sockaddr_in clientAddr{};
+        int clientAddrLen = sizeof(clientAddr);
+
+        int recvLength = recvfrom(
+            sock,
+            buffer,
+            sizeof(buffer) - 1,
+            0,
+            reinterpret_cast<sockaddr*>(&clientAddr),
+            &clientAddrLen
+        );
+
+        if (recvLength == SOCKET_ERROR)
+        {
+            std::cout << "recvfrom failed: " << WSAGetLastError() << '\n';
+            break;
+        }
+
+        buffer[recvLength] = '\0';
+
+        char clientIp[INET_ADDRSTRLEN]{};
+        inet_ntop(AF_INET, &clientAddr.sin_addr, clientIp, sizeof(clientIp));
+
+        std::cout << std::format(
+            "received from {}:{} => {}\n",
+            clientIp,
+            ntohs(clientAddr.sin_port),
+            buffer
+        );
+
+        if (recvLength == 0 || strlen(buffer) == 0)
+            break;
+    }
+
+    closesocket(sock);
+    WSACleanup();
+
+    return 0;
+}
+```
+
+## 클라이언트 예제 코드 
+```c++
+#include <WinSock2.h>
+#include <WS2tcpip.h>
+#include <iostream>
+#include <string>
+
+#pragma comment(lib, "Ws2_32.lib")
+
+int main()
+{
+    WSADATA wsaData;
+    int ret = WSAStartup(MAKEWORD(2, 2), &wsaData);
+    if (ret != 0)
+    {
+        std::cout << "WSAStartup failed: " << ret << '\n';
+        return 1;
+    }
+
+    SOCKET sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    if (sock == INVALID_SOCKET)
+    {
+        std::cout << "socket failed: " << WSAGetLastError() << '\n';
+        WSACleanup();
+        return 1;
+    }
+
+    sockaddr_in serverAddr{};
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_port = htons(5000);
+
+    if (inet_pton(AF_INET, "127.0.0.1", &serverAddr.sin_addr) != 1)
+    {
+        std::cout << "Invalid IP address\n";
+        closesocket(sock);
+        WSACleanup();
+        return 1;
+    }
+
+    std::string input;
+
+    while (std::getline(std::cin, input))
+    {
+        if (input.empty())
+            break;
+
+        int sent = sendto(
+            sock,
+            input.c_str(),
+            static_cast<int>(input.size()),
+            0,
+            reinterpret_cast<sockaddr*>(&serverAddr),
+            sizeof(serverAddr));
+
+        if (sent == SOCKET_ERROR)
+        {
+            std::cout << "sendto failed: " << WSAGetLastError() << '\n';
+            break;
+        }
+    }
+
+    closesocket(sock);
+    WSACleanup();
+
+    return 0;
+}
+```
+
+# 6. 소켓 옵션 상세
+## 소켓 옵션 설정하기 
+- `setsockopt`: 소켓에 플래그값을 이용해 특정 옵션 설정하는 함수 
+- `getsockopt`: 현재 소켓의 옵션 정보를 확인하는 함수 
+```c++
+BOOL enable = TRUE;
+setsockopt(s, SOL_SOCKET, SO_KEEPALIVE, reinterpret_cast<const char*>(&enable), sizeof(enable));
+
+int value = 0;
+int len = sizeof(value);
+getsockopt(s, SOL_SOCKET, SO_ERROR, reinterpret_cast<char*>(&value), &len);
+```
+## 여러가지 소켓 옵션 
+
+| 옵션 | 설명 | 주의점 |
+|---|---|---|
+| `SO_REUSEADDR` | 주소 재사용 | Unix와 Windows 의미 차이 주의 |
+| `SO_KEEPALIVE` | TCP Keepalive 활성화 | 기본 간격이 길 수 있음 |
+| `SO_LINGER` | close 동작 제어 | RST 유발 가능 |
+| `SO_RCVBUF` | 수신 버퍼 크기 | 커널 버퍼 크기 |
+| `SO_SNDBUF` | 송신 버퍼 크기 | 지연/메모리와 trade-off |
+| `SO_ERROR` | 지연된 소켓 오류 조회 | 논블로킹 connect 후 확인 |
+| `SO_BROADCAST` | UDP 브로드캐스트 허용 | UDP 전용에 가까움 |
+
+## TCP NoDelay
+- TCP 소켓은 데이터를 보낼 때 여러번의 패킷 생성에 의한 헤더 오버헤드를 줄이기 위해 커널측에서 데이터를 모은 뒤 송신하는 **Nagle 알고리즘**을 사용합니다. 
+- **NoDelay**옵션을 활성화하면, 송신 요청시 최대한 바로바로 패킷을 보내는 동작을 수행합니다. 
+```c++
+BOOL enable = TRUE;
+setsockopt(s, IPPROTO_TCP, TCP_NODELAY, reinterpret_cast<char*>(&enable), sizeof(enable));
+```
+
+## Nonblokcing 
+
+## Keepalive
+
+## ReuseAddr
+
+## Linger
+
+## Broadcast
+
+# Part 2. Advanced Winsock Programming 
+- 고성능 통신을 위한 IOCP 소켓 프로그래밍과 Raw Socket을 IP 계층, Transport 계층 프로토콜 직접 구현 방법을 정리합니다. 
+
+# 7. IOCP
+## Winsock I/O Models
+- Winsock은 기본 동기 방식부터 고성능 비동기 방식까지, 여러가지 입출력 모델들을 지원합니다. 
+
+| I/O Model                               | 대표 API                                                                      |                 Blocking 여부 | 기반 I/O         | 특징                                       |
+| --------------------------------------- | --------------------------------------------------------------------------- | --------------------------: | -------------- | ---------------------------------------- |
+| **Blocking I/O**                        | `send`, `recv`, `accept`, `connect`                                         |                    Blocking | 일반 I/O         | 호출한 스레드가 I/O 완료까지 대기                     |
+| **Non-blocking I/O**                    | `ioctlsocket(FIONBIO)`, `send`, `recv`                                      |                Non-blocking | 일반 I/O         | 준비되지 않으면 `WSAEWOULDBLOCK` 반환             |
+| **I/O Multiplexing**                    | `select`                                                                    | Non-blocking/Blocking 선택 가능 | 일반 I/O         | 여러 소켓의 readable/writable/exception 상태 감시 |
+| **Event Notification**                  | `WSAEventSelect`, `WSAWaitForMultipleEvents`                                |                  비동기 이벤트 기반 | 일반 I/O         | 소켓 이벤트를 Windows Event 객체로 통지             |
+| **Message Notification**                | `WSAAsyncSelect`                                                            |                  비동기 메시지 기반 | 일반 I/O         | 소켓 이벤트를 Window Message로 통지               |
+| **Overlapped I/O + Polling**            | `WSARecv`, `WSASend`, `WSAGetOverlappedResult`                              |                         비동기 | Overlapped I/O | 완료 여부를 직접 조회                             |
+| **Overlapped I/O + Event**              | `WSARecv`, `WSASend`, `WSAOVERLAPPED::hEvent`                               |                         비동기 | Overlapped I/O | 완료 시 Event 객체가 signaled                  |
+| **Overlapped I/O + Completion Routine** | `WSARecv`, `WSASend`, Completion Routine                                    |                         비동기 | Overlapped I/O | Alertable Wait 중 APC callback 실행         |
+| **Overlapped I/O + IOCP**               | `WSARecv`, `WSASend`, `CreateIoCompletionPort`, `GetQueuedCompletionStatus` |                         비동기 | Overlapped I/O | 완료 패킷을 Completion Port Queue로 수신         |
+| **RIO**                                 | `RIOReceive`, `RIOSend`, `RIOCreateCompletionQueue`                         |                         비동기 | Registered I/O | 등록 버퍼 기반 고성능 네트워크 I/O                    |
+
+## Overlapped I/O
+- Overlapped I/O는 일반 입출력을 감싼다는 개념의 비동기 입출력입니다. 소켓만이 아닌 파일,파이프 등 다양한 입출력에서도 사용할 수 있습니다.
+- 비동기로 입력 요청을 하면, 커널이 유저 메모리로의 데이터 복사까지 수행한 뒤 **완료 통지**를 해줍니다.\
+대부분의 비동기 모델들(Select, EPoll 등)은 **Readable**통지를 받은 후 한 번더 **Read**를 수행하여 커널 메모리에서 유저 메모리로 데이터를 복사하는 작업을 수행합니다. 
+- Overlapped I/O는 요청이 비동기로 pending이 되면, `ERROR_IO_PENDING`에러를 반환합니다.\
+이미 커널에 데이터가 존재하여 즉시 반환된 경우 0 반환, 이외엔 다른 에러코드 반환
+- Winsock에서는 주로 `WSARecv`, `WSASend`, `lpfnAcceptEx`와 같은 함수를 사용하여 I/O 요청을 수행합니다.
+
+## I/O Completion Port 
+- 비동기 입출력이 완료됐을 시 완료 통지를 받는 방식입니다. 
+- Completion Queue에 큐잉 된 Completion Packet(Completion Key, OVERLAPPED Struct, BytesTransferred, Status, etc)들을 하나씩 꺼내 쓰는 구조입니다. 
+- `CreateIoCompletionPort`를 통해 포트를 생성 및 핸들러를 포트에 등록하고서,\
+ `GetQueuedCompletionStatus`를 통해 대상 Completion Port에서 I/O 완료 통지를 받습니다. 
+
+## IOCP 소켓 프로그래밍 모델
+- **IOCP**는 **Overlapped I/O**를 통한 비동기 입출력을 **Completion Port**로의 완료통지를 받는 비동기 입출력 방식입니다. 
+##### IOCP가 효율적인 이유
+1. Overlapped I/O를 통해 유저 메모리까지 데이터 복사가 완료된 이후 완료 통지를 받아 즉시 처리
+2. 소수의 Thread에서의 다수의 소켓 입출력 처리를 통한 Thread 비용 감소
+3. 완료된 I/O 요청만 Completion Queue를 통해 전달받으므로 불필요한 상태 검사 X
+
+## IOCP 동작 구조 
+1. I/O Completion Port 생성 `CreateIoCompletionPort`
+2. 소켓(파일 핸들러) 완료 포트에 등록 `CreateIoCompletionPort`
+3. 소켓에 Overlapped I/O 요청 `WSARecv`, `WSASend`...
+4. 커널이 I/O를 수행. 알아서 유저 메모리와 커널 메모리 간의 데이터 복사 수행. 이후 I/O 완료 시 완료 통지. 
+5. 워커스레드에서 완료 포트로부터 완료된 I/O Completion Packet을 받아 처리 `GetQueuedCompletionStatus`
+
+## WSASocket IOCP용 소켓 생성
+- 그냥 `socket`으로 생성해도 직접적인 문제는 없습니다만 `WSASocket`을 통해 세밀한 옵션 설정 가능합니다.
+- 호출 예시: `WSASocket(AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, 0, WSA_FLAG_OVERLAPPED);` IOCP용 소켓 기본 생성
+- `lpProtocolInfo`: 프로토콜의 특성 정보. 보통 NULL
+- `socket group`: 소켓 그룹 정보. 보통 0 
+- `flags`: 소켓 옵션. RIO 소켓, 상속 옵션, 등 설정 가능
+
+## CreateIoCompletionPort 포트 생성 및 등록
+- 포트 생성: `CompletionPort = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, (DWORD)MaxWorkerThread);`
+- **INVALID_HANDLE_VALUE**및 여타 null값 넣음으로써 포트 생성 지시. 반환값: 생성된 포트
+- WorketThread 수 지정은, 보통 0 하면 cpu 코어 수로 자동 설정
+- 소켓 등록: `CreateIoCompletionPort((HANDLE)Socket, CompletionPort, (ULONG_PTR)key, 0)`
+- 등록할 소켓, 대상 포트, 키값(보통 소켓 관리 객체)을 넘김으로써 소켓을 완료포트에 등록
+- 리턴값은 넣어준 완료 포트 핸들러와 동일. 등록 실패하면 null 반환
+
+## GetQueuedCompletionStatus 완료 통지 수신 
+- `GetQueuedCompletionStatus(CompletionPort, (LPDWORD)&bytesTransferred, (PULONG_PTR)&key, &lpOverlapped, INFINITE)`
+- 대상 포트로부터 I/O 완료 통지를 받습니다. 성공시 0이 아닌 값을 반환하며, 실패시 0을 반환합니다.
+- 어떤 소켓으로부터 I/O가 완료됐는지 받아오는 파라미터가 존재하지 않습니다. 그래서 key와 overlapped를 활용해 간접적으로 참조해야 합니다.
+- key는 사용자 정의 포인터입니다. 
+- 저의 전략은 key 값으로는 소켓 관리 객체(세션 객체)를 설정하며 overlapped구조체는 context 구조체를 사용하는 것입니다. 
+
+### key와 overlapped 활용 
+- `GetQueuedCompletionStatus`가 반환하는 key값은 완료포트에 핸들러를 등록할 때의 포인터 값이며\
+overlapped는 비동기 I/O 요청시 넘겨주는 OVERLAPPED 구조체 포인터입니다. 
+- 즉, Key는 해당 소켓 자체에 등록되는 정보이며\
+Overlapped는 해당 소켓에 수행한 비동기 I/O 요청 단위로 존재하는 정보입니다. (`WSASend`, `WSARecv`...)
+- `Key`값으로는 해당 소켓 자체를 관리하는 소켓 관리 클래스(세션 클래스) 인스턴스를 등록하여 활용합니다.
+- `OVERLAPPED`는 해당 구조체 감싸는 래핑 구조체 `SocketContext`를 정의하여 활용할 수 있습니다. 
+- `OVERLAPPED`를 첫 번째 멤버로 정의한 `Context` 구조체를 정의하여\
+돌려받은 `OVERLAPPED` 포인터를 `Context` 포인터로 캐스팅하여 I/O 단위로 상태를 관리합니다.
+
+### key, overlapped 포인터 활용 예시
+```c++
+GetQueuedCompletionStatus(server->CompletionPort, (LPDWORD)&bytesTransferred, (PULONG_PTR)&manager, &lpOverlapped, INFINITE);
+context = (SocketContext*)lpOverlapped;
+
+switch (context->LastOp)
+{
+    case ESocketOperation::Accept:
+        CompleteAccept();
+        break;
+    case ESocketOperation::Recv:
+        manager->CompleteRecv(context, bytesTransferred);
+        break;
+    case ESocketOperation::Send:
+        manager->CompleteSend(context, bytesTransferred);
+        break;
+    default:
+        std::cout << "Unknown Operation" << std::endl;
+}
+```
+
+
+## WSARecv 비동기 수신 
+- `WSARecv(socket, wsaBuf*, bufferCount, &ReceivedBytes, &flags, &overlapped, NULL)`
+- `WSABUF`: 버퍼 구조체입니다. 배열로 넘길 수 있음. 
+- `ReceivedBytes`: 요청이 즉시 완료됐을 시 사용할 수신 데이터 길이. IOCP에선 NULL 사용 가능
+- `flags`: 일반적인 경우 그냥 0 사용
+- `overlapped`: overlapped I/O를 관리 하기 위한 구조체.\
+**호출 전, 무조건 ZeroMemory를 통해 해당 객체를 0으로 초기화**
+- 마지막 파라미터 값은 **callback** 방식을 통한 완료 모델에서 사용. NULL 넣어줍니다. 
+- **리턴값**: 일반적인 경우 `SOCKET_ERROR` 반환. `WSAGetLastError()`를 통해 확인시 `ERROR_IO_PENDING`임\
+즉시 종료(커널에 이미 데이터 존재)의 경우 0 반환. 이외의 경우 에러코드 처리 필요
+
+
+## WSASend 비동기 송신 
+- WSASend(socket, wsaBuf, bufferCount, &bytesSent, &flags, &overlapped, &APC)
+- `bytesSent`, `flags`, `APC`: NULL로 설정. 이외 Recv와 동일. 수신 동작만 다름 
+
+## WSABUF 버퍼에 대해서 
+- `WSARecv`, `WSASend`는 `WSABUF` 구조체에 대한 포인터, 즉 버퍼에 대한 배열을 인자로 받습니다.
+- 여러개의 버퍼를 관리해 복합적인 I/O를 수행하는 Scatter I/O 동작을 할 수 있습니다.
+- 그냥 하나의 버퍼만을 사용하도록 하는 것이 편리합니다.
+- `WSABUF`에 설정된 length값을 통해 해당 값에 따라 송수신을 시도합니다.\
+송신시에는 버퍼 전체 길이가 아닌 메시지 길이(송신할 데이터 길이 값)으로 매번 수정해줘야합니다. 
+```c++
+typedef struct _WSABUF {
+  ULONG len;
+  CHAR  *buf;
+} WSABUF
+```
+
+## AcceptEx, GetAcceptExSockAddrs 함수 포인터 연결하기 
+- `MSWSock.h` 헤더에 있는 확장 함수입니다. 접속 수락을 비동기로 수행하기 위해 사용
+- 사용시, `#pragma comment(lib, "mswsock.lib")`를 통한 라이브러리 링크 설정 필요
+- 또한, 관련 함수는 따로 함수 포인트를 찾아 참조하는 동작 요구
+```c++
+{
+    GUID guidAcceptEx = WSAID_ACCEPTEX;
+    DWORD bytes = 0;
+
+    if (WSAIoctl(ListenSocket, SIO_GET_EXTENSION_FUNCTION_POINTER, &guidAcceptEx, sizeof(guidAcceptEx),
+    &lpfnAcceptEx, sizeof(lpfnAcceptEx), &bytes, NULL, NULL) == SOCKET_ERROR)
+    {
+        std::cerr << "WSAIoctl(AcceptEx) Error: " << WSAGetLastError() << std::endl;
+        exit(-1);
+    }
+}
+{
+    GUID guidGetAcceptExSockaddrs = WSAID_GETACCEPTEXSOCKADDRS;
+    DWORD dwBytes = 0;
+
+    if (WSAIoctl(ListenSocket, SIO_GET_EXTENSION_FUNCTION_POINTER, &guidGetAcceptExSockaddrs, sizeof(guidGetAcceptExSockaddrs),
+    &lpfnGetAcceptExSockAddrs, sizeof(lpfnGetAcceptExSockAddrs), &dwBytes, NULL, NULL) == SOCKET_ERROR)
+    {
+        printf("WSAIoctl for GetAcceptExSockaddrs failed: %d\n", WSAGetLastError());
+        exit(-1);
+    }
+}
+```
+
+## AcceptEx 비동기 수락 
+- 비동기로 접속 수락을 처리하기 위해 사용. 함수포인터를 이용해 호출
+- `lpfnAcceptEx(socket, activeSocket, buffer, dataReceiveLength, sizeof(SOCKADDR_IN) + 16, sizeof(SOCKADDR_IN) + 16, &dataReceivedLength, &AcceptContext->Overlapped)`
+- `activeSocket`: 새로운 연결을 받을 소켓입니다.\
+미리 소켓을 생성해(`socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)`) 넣어주어야합니다
+- `buffer`: 해당 버퍼에 `data`, `localAddress`, `remoteAddress` 데이터 저장
+- `dataReceiveLength`: 접속 직후 수신한 데이터를 처리하고자 하는 것인데, 활용하지 말 것 
+- `addressLength`: 내 주소 정보와 연결된 소켓 주소 정보 저장. 커널이 사용하는 정보를 위해 +16 넣어줘야 함
+- 리턴값: 성고시 **True** 이외는 **False** 
+
+## GetAcceptExSockAddrs 주소 정보 확인
+- `AcceptEx`를 통해 접속처리한 소켓에 대해 주소 정보를 확인하는 함수입니다. 함수포인터를 이용해 호출해야 합니다.
+- 호출 예시: `lpfnGetAcceptExSockAddrs(buffer, dataLength, sizeof(SOCKADDR_IN) + 16, sizeof(SOCKADDR_IN) + 16, SOCKADDR**, int*, SOCKADDR**, int*)`
+- `dataLength`: 데이터 길이. 사용 안 할거니 0으로 설정
+- 버퍼를 통해 각 포인터가 버퍼 내부 데이터를 가르키게 만듭니다. 이후 `inet_ntop`를 통해 문자열 표현으로 번역 가능합니다. 
+
+# 8. Raw Socket
+
+## Raw Socket 개요
+- Raw Socket은 일반 TCP/UDP 소켓보다 낮은 계층의 패킷을 직접 다루기 위한 소켓이다.
+- TCP/UDP 소켓은 OS가 IP 헤더, TCP/UDP 헤더 생성과 검증을 대부분 처리한다.
+- Raw Socket은 ICMP, IP 패킷, 커스텀 프로토콜 분석처럼 패킷 헤더를 직접 관찰하거나 구성할 때 사용한다.
+
+## Raw Socket의 한계
+- Windows에서는 보안상 Raw Socket 송수신에 제한이 있다.
+- 일반적으로 관리자 권한이 필요하다.
+- TCP Raw 송신은 제한적이며, 임의 TCP 패킷 생성은 Npcap/WinPcap 같은 패킷 드라이버가 더 적합하다.
+- Raw Socket을 쓴다고 NIC에서 OS를 완전히 우회하는 것은 아니다. IP 계층 처리는 여전히 OS 네트워크 스택의 영향을 받는다.
+
+# 9. RIO
+
+# Part 3. Appendix
+# 10. Winsock 헤더 목록 
+# 11. Winsock 에러 목록 
+# 12. 참고 자료
