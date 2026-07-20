@@ -39,26 +39,26 @@ export default async function SlideDeck({ post, toc }: SlideDeckProps) {
     remainingWeight: 0,
     elements: [],
     renderedContent: (
-      <div className="flex flex-col items-center justify-center text-center space-y-8 py-20 relative min-h-[60vh]">
+      <div className="slide-title-layout relative flex min-h-[60vh] flex-col items-center justify-center space-y-10 py-20 text-center">
         <div className="space-y-4">
-          <h1 className="slide-title-heading text-6xl md:text-7xl lg:text-8xl font-black leading-tight tracking-tighter">
+          <h1 className="slide-title-heading font-black leading-tight tracking-tighter">
             {post.title}
           </h1>
         </div>
         {post.description && (
-          <p className="slide-title-text text-2xl md:text-3xl max-w-4xl mx-auto leading-relaxed whitespace-pre-line font-medium">
+          <p className="slide-title-text mx-auto max-w-5xl whitespace-pre-line font-medium leading-relaxed">
             {post.description}
           </p>
         )}
         {post.date && (
-          <div className="slide-title-meta pt-12 font-bold text-lg tracking-widest">
+          <div className="slide-title-meta pt-10 font-bold tracking-widest">
             {post.date}
           </div>
         )}
         <div className="absolute bottom-0 left-0 text-left">
           <a
             href={postUrl}
-            className="text-3xl font-mono underline decoration-1 underline-offset-4 transition-colors"
+            className="slide-title-link font-mono underline decoration-1 underline-offset-4 transition-colors"
             target="_blank"
             rel="noopener noreferrer"
           >

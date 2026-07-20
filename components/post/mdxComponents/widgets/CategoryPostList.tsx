@@ -28,16 +28,16 @@ export default function CategoryPostList({
 
   if (posts.length === 0) {
     return (
-      <section className="my-6 rounded-md border border-dashed border-gray-300 bg-gray-50 px-4 py-3 text-sm text-gray-500">
+      <section className="category-post-list-empty my-6 rounded-md border border-dashed px-4 py-3 text-sm">
         표시할 글이 없습니다.
       </section>
     );
   }
   return (
-    <section className="my-8 overflow-hidden rounded-md border border-gray-200 bg-[#f6f8fa]">
-      <div className="flex items-baseline justify-between gap-4 border-b border-gray-200 bg-white px-3">
-        <h2 className="m-0 text-lg font-bold text-gray-800 leading-none">{title}</h2>
-        <span className="shrink-0 rounded-full bg-gray-100 px-2.5 py-1 text-[15px] font-mono font-bold text-blue-500">
+    <section className="category-post-list my-8 overflow-hidden rounded-md border">
+      <div className="category-post-list-header flex items-baseline justify-between gap-4 border-b px-3">
+        <h2 className="category-post-list-heading m-0 text-lg font-bold leading-none">{title}</h2>
+        <span className="category-post-list-badge shrink-0 rounded-full px-2.5 py-1 text-[15px] font-mono font-bold">
           카테고리: {getCategoryLabel(category)} &nbsp; 포스트 개수: {posts.length}
         </span>
       </div>
@@ -46,25 +46,25 @@ export default function CategoryPostList({
         {posts.map((post) => (
           <li
             key={`${post.category}-${post.slug}`}
-            className="w-full group relative bg-white/60 transition hover:bg-white !py-0 !mt-1 !mb-0"
+            className="category-post-list-item group relative w-full transition !py-0 !mt-1 !mb-0"
           >
             <Link
               href={getPostHref(post.category, post.slug)}
-              className="block px-4 py-2 no-underline"
+              className="category-post-list-link block px-4 py-2 no-underline"
             >
-              <span className="absolute left-0 top-0 h-full w-1 bg-transparent transition group-hover:bg-blue-500" />
+              <span className="category-post-list-accent absolute left-0 top-0 h-full w-1 bg-transparent transition" />
               <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                <span className="font-bold text-gray-800 transition group-hover:text-blue-600">
+                <span className="category-post-list-title font-bold transition">
                   {post.title}
                 </span>
                 {post.date && (
-                  <time className="text-xs font-mono text-gray-400">
+                  <time className="category-post-list-date text-xs font-mono">
                     {post.date}
                   </time>
                 )}
               </div>
               {showDescription && post.description && (
-                <p className="mt-1 mb-0 line-clamp-2 text-sm leading-relaxed text-gray-500">
+                <p className="category-post-list-description mt-1 mb-0 line-clamp-2 text-sm leading-relaxed">
                   {post.description}
                 </p>
               )}

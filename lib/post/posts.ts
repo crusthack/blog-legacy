@@ -21,7 +21,7 @@ export interface Post {
   description: string
   titleSlide?: boolean
   manualSlides?: boolean
-  background?: PostBackground
+  background: PostBackground
  
   content: string
 }

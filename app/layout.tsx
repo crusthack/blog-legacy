@@ -40,7 +40,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <PrintColorScheme />
-        <div className="print:hidden">
+        <div className="mb-4 print:hidden">
           <Navi posts={postsData} />
         </div>
         {children}

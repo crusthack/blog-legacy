@@ -27,19 +27,19 @@ export default function BlogPost({
         <div className="absolute top-4 right-4 z-10">
           <Link
             href={slideUrl}
-            className="flex items-center gap-2 px-3 py-1.5 bg-[#f6f8fa] hover:bg-[#eff2f5] text-[#24292f] border border-[#d0d7de] rounded-md font-medium text-sm shadow-sm transition-all active:bg-[#ebf0f4] active:shadow-inner"
+            className="post-slide-link flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-lg font-extrabold shadow-sm transition-all active:translate-y-px active:shadow-inner"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
+              width="18"
+              height="18"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
-              className="opacity-70"
+              aria-hidden="true"
             >
               <rect width="18" height="14" x="3" y="3" rx="2" />
               <path d="M7 21h10" />

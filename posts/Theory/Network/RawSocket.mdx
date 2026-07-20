@@ -1,0 +1,1936 @@
+---
+title: 'RawSocket'
+date: '2026-07-16'
+description: 'Linux에서의 Raw Socket 실습'
+titleSlide: true
+manualSlides: false
+background:
+  color:
+    light: ''
+    dark: ''
+  image: ''
+---
+
+# RawSocket 개요
+
+1. Raw Socket 생성 
+2. `setsockopt` 옵션 설정(타임아웃)
+3. ICMP 작성 
+4. sendto로 데이터 송신 
+5. recvfrom으로 데이터 수신 
+
+## 학습 순서
+1. icmp ping 메시지 
+2. ipv4 프로토콜 구현 
+3. udp 프로토콜 구현 
+4. tcp 프로토콜 구현 
+5. af_packet을 통한 이더넷 프로토콜 구현 
+
+## 추가로 할만한 것들 
+- ipv6, icmpv6
+- arp 
+- dhcp
+- dns 
+
+## Linux Socket Header
+- `sys/socket.h`: 일반 소켓 헤더
+- `netinet/in.h`: INET 관련 헤더 
+- `arpa/inet.h`: IP 주소 변환 
+- `unistd.h`: 파일기술자 관련(close)
+
+# ICMP
+## ICMP 개요
+- ICMP 용도: 인터넷 환경에서 IP 패킷 처리 과정에서의 문제 처리 
+- 목적지 도달 불가, Ping 메시지, TTL 만료 알림 등 
+- 각 메시지 타입별로 별도의 헤더 구조를 지님 
+- 공통 헤더 
+```txt
+0                   1                   2                   3
+0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|     Type      |     Code      |          Checksum             |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|     Data ...
++-+-+-+-+-
+```
+
+- 참조: [ICMP RFC 792](https://datatracker.ietf.org/doc/html/rfc792)
+
+## ICMP 메시지 타입별 용도
+|type|purpose|
+| - |---|
+|0|Echo Reply Message|
+|3|Destination Unreachable Message|
+|4|Source Quench Message|
+|5|Redirect Message|
+|8|Echo Request Message|
+|11|Time Exceeded Message|
+|12|Parameter Problem Message|
+|13|Timestamp Message|
+|14|Timestamp Reply Message|
+|15|Information Request Message|
+|16|Information Reply Message|
+
+## Echo Message (Ping)
+- Network 계층에서의 목적지 IP 호스트가 동작하는지 확인하기 위한 메시지 
+- 대상 IP로 에코 요청 메시지 송신시, 같은 데이터를 가진 응답 메시지 전달. 
+- 메시지 타입은 8 또는 0 (요청 메시지, 응답 메시지), 코드는 0 
+- id와 시퀀스 번호는 메시지 식별 값. 서버는 요청에 맞춰서 같은 값으로 응답
+- Data 또한 동일. Data는 보통 아스키 시퀀스 사용 
+- 체크섬: 
+
+```txt
+0                   1                   2                   3
+0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|     Type(8/0) |     Code(0)   |          Checksum             |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|           Identifier          |        Sequence Number        |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|     Data ...
++-+-+-+-+-
+```
+
+
+## 실습 종류 
+- ping 메시지 보내기 
+- ping 메시지 보낸 후 imcp 패킷 수신 
+- 여러가지 ping 메시지 송신 테스트 
+- 최종 ping 프로그램
+
+## ping 보내기 
+- icmp 메시지 작성 후 ping 메시지를 보내기만 하는 버전입니다. 
+```c++
+#include <iostream>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <stdlib.h>
+
+typedef struct _icmpHeader
+{
+    unsigned char type; // 0=Echo Reply, 8=Echo Request 11=TTL Exceeded
+    unsigned char code;
+    unsigned short checksum;
+    unsigned short id;
+    unsigned short sequenceNum;
+} IcmpHeader;
+
+unsigned short calcIcmpChechsum(const unsigned char* buffer, int len)
+{
+    unsigned int sum = 0;
+    while(len >= 2)
+    {
+        const unsigned short word = (buffer[0] << 8) | buffer[1];
+        sum += word;
+        len -= 2;
+        buffer += 2;
+    }
+    // if len is odd
+    if(len == 1)
+    {
+        sum += buffer[0] << 8;
+    }
+
+
+    while((sum >> 16) != 0)
+    {
+        sum = (sum & 0xFFFFu) + (sum >> 16);
+    }
+
+    return ~sum;
+}
+
+void buildIcmpRequest(char* buffer, int payloadsize, unsigned short id, unsigned short seq)
+{
+    // header
+    auto p = (IcmpHeader*)buffer;
+    p->type = 8;
+    p->code = 0;
+    p->id = htons(id);
+    p->sequenceNum = htons(seq);
+    p->checksum = 0;
+    
+    // payload
+    for(int i=0; i < payloadsize; ++i)
+        buffer[sizeof(IcmpHeader) + i] = (char)('A' + i % 26);
+    
+    //calculate header
+    p->checksum = htons(calcIcmpChechsum((unsigned char*)buffer, sizeof(IcmpHeader) + payloadsize));
+}
+
+
+int main(int argc, char** argv)
+{
+    int sock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
+
+    sockaddr_in addr{};
+    addr.sin_family = AF_INET;
+    inet_pton(AF_INET, "127.0.0.1", (sockaddr*)&addr.sin_addr);
+
+    int payloadSize = 30;
+    int bufferSize = payloadSize + sizeof(IcmpHeader);
+    char* buffer = (char*)malloc(sizeof(char) * bufferSize);
+
+    buildIcmpRequest(buffer, payloadSize, 3000, 0);
+
+    int r = sendto(sock, buffer, bufferSize, 0, (sockaddr*)&addr, sizeof(addr));
+
+    close(sock);
+
+    printf("ICMP Packet (%d bytes)\n", bufferSize);
+
+    for (int i = 0; i < bufferSize; ++i)
+    {
+        printf("%02X ", static_cast<unsigned char>(buffer[i]));
+
+        if ((i + 1) % 16 == 0)
+            printf("\n");
+    }
+
+    printf("\n");
+
+    return 0;
+}
+```
+
+## ping 수신 처리 
+- recvfrom으로 수신 시, ip 프레임 + icmp 프레임으로 수신되기 때문에 ipv4 헤더 파싱 필요 
+- IPv4 RFC 참조: [IPv4 RFC 791](https://datatracker.ietf.org/doc/html/rfc791)
+
+### 코드 
+```c++
+#include <iostream>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <stdlib.h>
+
+typedef struct _icmpHeader
+{
+    unsigned char type; // 0=Echo Reply, 8=Echo Request 11=TTL Exceeded
+    unsigned char code;
+    unsigned short checksum;
+    unsigned short id;
+    unsigned short sequenceNum;
+} IcmpHeader;
+
+typedef struct _ipv4Header
+{
+    unsigned char VerIhl;       // high 4 bit for ip version, low 4 bit for internet header length
+    unsigned char Type; 
+    unsigned short TotalLength; // packet total length 
+
+    unsigned short Id;          // Identification
+    unsigned short FlagFrag;    // high 3 bit for flag, low 13 bit for fragment offset
+
+    unsigned char TTL;          // time to live
+    unsigned char Proto;        // Protocol
+    unsigned short Checksum;    // check sum
+
+    unsigned int SourceAddress; // Source IP
+
+    unsigned int DestinationAddress; // Destination IP
+} IPv4Header;
+
+unsigned short calcIcmpChechsum(const unsigned char* buffer, int len)
+{
+    unsigned int sum = 0;
+    while(len >= 2)
+    {
+        const unsigned short word = (buffer[0] << 8) | buffer[1];
+        sum += word;
+        len -= 2;
+        buffer += 2;
+    }
+    // if len is odd
+    if(len == 1)
+    {
+        sum += buffer[0] << 8;
+    }
+
+
+    while((sum >> 16) != 0)
+    {
+        sum = (sum & 0xFFFFu) + (sum >> 16);
+    }
+
+    return ~sum;
+}
+
+void buildIcmpRequest(char* buffer, int payloadsize, unsigned short id, unsigned short seq)
+{
+    // header
+    auto p = (IcmpHeader*)buffer;
+    p->type = 8;
+    p->code = 0;
+    p->id = htons(id);
+    p->sequenceNum = htons(seq);
+    p->checksum = 0;
+    
+    // payload
+    for(int i=0; i < payloadsize; ++i)
+        buffer[sizeof(IcmpHeader) + i] = (char)('A' + i % 26);
+    
+    //calculate header
+    p->checksum = htons(calcIcmpChechsum((unsigned char*)buffer, sizeof(IcmpHeader) + payloadsize));
+}
+
+void printIcmpHeader(const char* buffer, int len)
+{
+    if(len < sizeof(IcmpHeader) || buffer == nullptr)
+    {
+        return;
+    }
+
+    auto p = (IcmpHeader*)buffer;
+    printf("ICMP Header Info\n");
+    printf("icmp type: \t%02d\n", p->type);
+    printf("icmp code: \t%02d\n", p->code);
+    printf("icmp id: \t%d\n", ntohs(p->id));
+    printf("icmp sqeuence: \t%d\n", ntohs(p->sequenceNum));
+    printf("checksum: \t0x%X\n", ntohs(p->checksum));
+
+    if(p->type==0 || p->type==8)
+    {
+        printf("ping message Payload...\n");
+
+        for(int i=0; i<len - sizeof(IcmpHeader); ++i)
+        {
+            printf("%c ", buffer[sizeof(IcmpHeader) + i]);
+        }
+    }
+    printf("\n");
+}
+
+
+int main(int argc, char** argv)
+{
+    int sock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
+
+    sockaddr_in addr{};
+    addr.sin_family = AF_INET;
+    inet_pton(AF_INET, "127.0.0.1", (sockaddr*)&addr.sin_addr);
+
+    int payloadSize = 30;
+    int bufferSize = payloadSize + sizeof(IcmpHeader);
+    char* buffer = (char*)malloc(sizeof(char) * bufferSize);
+
+    buildIcmpRequest(buffer, payloadSize, 3000, 3);
+
+    int r = sendto(sock, buffer, bufferSize, 0, (sockaddr*)&addr, sizeof(addr));
+
+    printf("ICMP Packet (%d bytes)\n", bufferSize);
+
+    printIcmpHeader(buffer, bufferSize);
+
+    char* recvBuffer = (char*)malloc(1500);
+    int recvBufSize = 1500;
+    sockaddr_in adr {};
+    socklen_t len {};
+    // all of icmp packet snipping
+    while(1)
+    {
+        r = recvfrom(sock, recvBuffer, recvBufSize, 0, (sockaddr*)&adr, &len);
+        if(r == -1)
+        {
+            printf("error\n");
+            return 0;
+        }
+        if(r < sizeof(IPv4Header))
+        {
+            continue;
+        }
+
+        // print ip header
+        auto p = (IPv4Header*)recvBuffer;
+        char src[16], dst[16];
+        inet_ntop(AF_INET, &p->SourceAddress, src, 16);
+        inet_ntop(AF_INET, &p->DestinationAddress, dst, 16);
+        int ipver = p->VerIhl >> 5;
+        int ipHeaderLen = (p->VerIhl & 0b00011111) * 4;
+        int totalLen = ntohs(p->TotalLength);
+        int ttl = p->TTL;
+        int proto = p->Proto;
+
+        printf("IP  v=%d IHL=%d totalLen=%d TTL=%d proto=%d\n",
+               ipver, ipHeaderLen, totalLen, ttl, proto);
+        printf("Source IP: %s\n", src);
+        printf("Destination IP: %s\n", dst);
+        printf("\n");
+    }
+
+    return 0;
+}
+```
+- 동작: 로컬 주소로 핑 메시지 전송, 이후 IP 패킷 스니핑 수행 지속적으로 수행 
+- 수신되는 icmp 메시지 스니핑. 수신시에는 IPv4 헤더를 파싱처리해야함. 
+- 특이사항: NIC타고 수신되는 IP 패킷을 캡쳐하기에 ping request message는 보통 보이지 않음.\
+단, 로컬호스트로 보내는 핑 메시지는 송신과 함께 수신 되기에 ping 요청 메시지가 보임 
+
+## ping 메시지 송수신 프로그램 
+
+
+# IPv4
+## IPv4 개요 
+- Network Layer에서 서로 다른 네트워크에 위치한 호스트간의 데이터 통신 수행 프로토콜 
+- 라우팅을 통해 멀리 떨어진 호스트와 통신 
+- 각 호스트는 ip주소를 통해 식별
+- 데이터그램이라는 패킷 형식으로 데이터 전달
+- 네트워크 용량을 고려한 패킷 분할과 재조립을 지원
+
+```txt
+0                   1                   2                   3
+0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|Version|  IHL  |Type of Service|          Total Length         |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|         Identification        |Flags|      Fragment Offset    |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|  Time to Live |    Protocol   |         Header Checksum       |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                       Source Address                          |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                    Destination Address                        |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                    Options                    |    Padding    |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+```
+
+## IP 헤더 작성하기 
+- ICMP 메시지를 보낼 땐 IP헤더를 고려할 필요가 없었지만, 수신시에는 IP 헤더를 파싱해야만 했습니다.
+- 이를 확장해 송신시에도 IP 헤더를 작성하도록 합니다
+
+## 코드 
+```c++
+#include <iostream>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <stdlib.h>
+ 
+typedef struct _icmpHeader
+{
+    unsigned char type; // 0=Echo Reply, 8=Echo Request 11=TTL Exceeded
+    unsigned char code;
+    unsigned short checksum;
+    unsigned short id;
+    unsigned short sequenceNum;
+} IcmpHeader;
+ 
+typedef struct _ipv4Header
+{
+    unsigned char VerIhl;       // high 4 bit for ip version, low 4 bit for internet header length
+    unsigned char Type; 
+    unsigned short TotalLength; // packet total length 
+ 
+    unsigned short Id;          // Identification
+    unsigned short FlagFrag;    // high 3 bit for flag, low 13 bit for fragment offset
+ 
+    unsigned char TTL;          // time to live
+    unsigned char Proto;        // Protocol
+    unsigned short Checksum;    // check sum
+ 
+    unsigned int SourceAddress; // Source IP
+ 
+    unsigned int DestinationAddress; // Destination IP
+} IPv4Header;
+ 
+unsigned short calcIcmpChechsum(const unsigned char* buffer, int len)
+{
+    unsigned int sum = 0;
+    while(len >= 2)
+    {
+        const unsigned short word = (buffer[0] << 8) | buffer[1];
+        sum += word;
+        len -= 2;
+        buffer += 2;
+    }
+    // if len is odd
+    if(len == 1)
+    {
+        sum += buffer[0] << 8;
+    }
+ 
+ 
+    while((sum >> 16) != 0)
+    {
+        sum = (sum & 0xFFFFu) + (sum >> 16);
+    }
+ 
+    return ~sum;
+}
+ 
+void buildIcmpRequest(char* buffer, int payloadsize, unsigned short id, unsigned short seq)
+{
+    // header
+    auto p = (IcmpHeader*)buffer;
+    p->type = 8;
+    p->code = 0;
+    p->id = htons(id);
+    p->sequenceNum = htons(seq);
+    p->checksum = 0;
+    
+    // payload
+    for(int i=0; i < payloadsize; ++i)
+        buffer[sizeof(IcmpHeader) + i] = (char)('A' + i % 26);
+    
+    //calculate header
+    p->checksum = htons(calcIcmpChechsum((unsigned char*)buffer, sizeof(IcmpHeader) + payloadsize));
+}
+ 
+void printIcmpHeader(const char* buffer, int len)
+{
+    if(len < sizeof(IcmpHeader) || buffer == nullptr)
+    {
+        return;
+    }
+ 
+    auto p = (IcmpHeader*)buffer;
+    printf("ICMP Header Info\n");
+    printf("icmp type: \t%02d\n", p->type);
+    printf("icmp code: \t%02d\n", p->code);
+    printf("icmp id: \t%d\n", ntohs(p->id));
+    printf("icmp sqeuence: \t%d\n", ntohs(p->sequenceNum));
+    printf("checksum: \t0x%X\n", ntohs(p->checksum));
+ 
+    if(p->type==0 || p->type==8)
+    {
+        printf("ping message Payload...\n");
+ 
+        for(int i=0; i<len - sizeof(IcmpHeader); ++i)
+        {
+            printf("%c ", buffer[sizeof(IcmpHeader) + i]);
+        }
+    }
+    printf("\n");
+}
+ 
+ 
+int main(int argc, char** argv)
+{
+    int sock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
+    int one = 1;
+    setsockopt(sock, IPPROTO_IP, IP_HDRINCL, &one, sizeof(one));
+ 
+    sockaddr_in addr{};
+    addr.sin_family = AF_INET;
+    inet_pton(AF_INET, "127.0.0.1", (sockaddr*)&addr.sin_addr);
+ 
+    int payloadSize = 30;
+    int bufferSize = payloadSize + sizeof(IcmpHeader);
+    char* buffer = (char*)malloc(sizeof(char) * bufferSize);
+ 
+    buildIcmpRequest(buffer, payloadSize, 3000, 3);
+
+    // build ip header
+    char* ipbuffer = (char*)malloc(sizeof(char) * (bufferSize + sizeof(IPv4Header)));
+    std::copy(buffer, buffer + bufferSize, ipbuffer + sizeof(IPv4Header));
+    IPv4Header* p = (IPv4Header*)ipbuffer;
+    p->VerIhl = (4 << 4) | (20/4);
+    // DSCP / ECN
+    p->Type = 0;
+
+    // 전체 길이
+    p->TotalLength = htons(sizeof(IPv4Header) + bufferSize);
+
+    // Identification
+    static uint16_t id = 0;
+    p->Id = htons(++id);
+
+    // Flags + Fragment Offset
+    // Don't Fragment = 0
+    // More Fragment = 0
+    // Offset = 0
+    p->FlagFrag = htons(0);
+
+    // TTL
+    p->TTL = 64;
+
+    // Protocol
+    p->Proto = IPPROTO_ICMP;
+
+    inet_pton(AF_INET,
+          "127.0.0.1",
+          &p->SourceAddress);
+
+    // Destination IP
+    inet_pton(AF_INET,
+            "127.0.0.1",
+            &p->DestinationAddress);
+
+    p->Checksum = 0;
+    p->Checksum = calcIcmpChechsum((unsigned char*)p, sizeof(IPv4Header));
+
+
+    int r = sendto(sock, ipbuffer, bufferSize + sizeof(IPv4Header), 0, (sockaddr*)&addr, sizeof(addr));
+ 
+    printf("ICMP Packet (%d bytes)\n", bufferSize);
+ 
+    printIcmpHeader(buffer, bufferSize);
+ 
+    char* recvBuffer = (char*)malloc(1500);
+    int recvBufSize = 1500;
+    sockaddr_in adr {};
+    socklen_t len {};
+    // all of icmp packet snipping
+    while(1)
+    {
+        r = recvfrom(sock, recvBuffer, recvBufSize, 0, (sockaddr*)&adr, &len);
+        if(r == -1)
+        {
+            printf("error\n");
+            return 0;
+        }
+        if(r < sizeof(IPv4Header))
+        {
+            continue;
+        }
+ 
+        // print ip header
+        auto p = (IPv4Header*)recvBuffer;
+        char src[16], dst[16];
+        inet_ntop(AF_INET, &p->SourceAddress, src, 16);
+        inet_ntop(AF_INET, &p->DestinationAddress, dst, 16);
+        int ipver = p->VerIhl >> 4;
+        int ipHeaderLen = (p->VerIhl & 0b00011111) * 4;
+        int totalLen = ntohs(p->TotalLength);
+        int ttl = p->TTL;
+        int proto = p->Proto;
+ 
+        printf("IP  v=%d IHL=%d totalLen=%d TTL=%d proto=%d\n",
+               ipver, ipHeaderLen, totalLen, ttl, proto);
+        printf("Source IP: %s\n", src);
+        printf("Destination IP: %s\n", dst);
+        printf("\n");
+    }
+ 
+    return 0;
+}
+```
+
+# UDP 
+```txt
+0      7 8     15 16    23 24    31
++--------+--------+--------+--------+
+|     Source      |   Destination   |
+|      Port       |      Port       |
++--------+--------+--------+--------+
+|                 |                 |
+|     Length      |    Checksum     |
++--------+--------+--------+--------+
+|
+|          data octets ...
++---------------- ...
+```                 
+- [UDP RFC 768](https://datatracker.ietf.org/doc/html/rfc768)
+
+## 코드 
+```c++
+#include <iostream>
+#include <algorithm>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <string.h>
+
+typedef struct _ipv4Header
+{
+    unsigned char VerIhl;       // high 4 bit for ip version, low 4 bit for internet header length
+    unsigned char Type;
+    unsigned short TotalLength; // packet total length
+
+    unsigned short Id;          // Identification
+    unsigned short FlagFrag;    // high 3 bit for flag, low 13 bit for fragment offset
+
+    unsigned char TTL;          // time to live
+    unsigned char Proto;        // Protocol
+    unsigned short Checksum;    // check sum
+
+    unsigned int SourceAddress; // Source IP
+
+    unsigned int DestinationAddress; // Destination IP
+} IPv4Header;
+
+typedef struct _udpHeader
+{
+    unsigned short SrcPort;
+    unsigned short DstPort;
+    unsigned short DataLen;     // UDP header + payload
+    unsigned short Checksum;
+} UDPHeader;
+
+typedef struct _udpPseudoHeader
+{
+    unsigned int SourceAddress;
+    unsigned int DestinationAddress;
+
+    unsigned char Zero;
+    unsigned char Protocol;
+    unsigned short UdpLength;
+} UDPPseudoHeader;
+
+unsigned short calcChecksum(const unsigned char* buffer, int len)
+{
+    unsigned int sum = 0;
+
+    while(len >= 2)
+    {
+        const unsigned short word = (buffer[0] << 8) | buffer[1];
+
+        sum += word;
+        len -= 2;
+        buffer += 2;
+    }
+
+    // if len is odd
+    if(len == 1)
+    {
+        sum += buffer[0] << 8;
+    }
+
+    while((sum >> 16) != 0)
+    {
+        sum = (sum & 0xFFFFu) + (sum >> 16);
+    }
+
+    return ~sum;
+}
+
+unsigned short calcUdpChecksum(
+    const char* udpBuffer,
+    int udpLength,
+    unsigned int sourceAddress,
+    unsigned int destinationAddress)
+{
+    UDPPseudoHeader pseudoHeader {};
+
+    pseudoHeader.SourceAddress = sourceAddress;
+    pseudoHeader.DestinationAddress = destinationAddress;
+    pseudoHeader.Zero = 0;
+    pseudoHeader.Protocol = IPPROTO_UDP;
+    pseudoHeader.UdpLength = htons(udpLength);
+
+    int checksumBufferSize =
+        sizeof(UDPPseudoHeader) + udpLength;
+
+    // 체크섬 계산 길이가 홀수일 경우를 대비해 1바이트 추가
+    int paddingSize = checksumBufferSize % 2;
+
+    char* checksumBuffer =
+        (char*)calloc(1, checksumBufferSize + paddingSize);
+
+    memcpy(
+        checksumBuffer,
+        &pseudoHeader,
+        sizeof(UDPPseudoHeader));
+
+    memcpy(
+        checksumBuffer + sizeof(UDPPseudoHeader),
+        udpBuffer,
+        udpLength);
+
+    unsigned short checksum =
+        calcChecksum(
+            (unsigned char*)checksumBuffer,
+            checksumBufferSize);
+
+    free(checksumBuffer);
+
+    /*
+        IPv4 UDP에서 checksum 필드가 0이면
+        "체크섬을 사용하지 않음"이라는 의미이다.
+
+        계산 결과가 0이면 0xFFFF로 기록한다.
+    */
+    if(checksum == 0)
+    {
+        checksum = 0xFFFF;
+    }
+
+    return checksum;
+}
+
+void buildUdpDatagram(
+    char* buffer,
+    int payloadSize,
+    unsigned short srcPort,
+    unsigned short dstPort,
+    unsigned int sourceAddress,
+    unsigned int destinationAddress)
+{
+    // UDP header
+    auto p = (UDPHeader*)buffer;
+
+    int udpLength =
+        sizeof(UDPHeader) + payloadSize;
+
+    p->SrcPort = htons(srcPort);
+    p->DstPort = htons(dstPort);
+    p->DataLen = htons(udpLength);
+    p->Checksum = 0;
+
+    // payload
+    for(int i = 0; i < payloadSize; ++i)
+    {
+        buffer[sizeof(UDPHeader) + i] =
+            (char)('A' + i % 26);
+    }
+
+    // UDP pseudo header + UDP header + payload
+    p->Checksum = htons(
+        calcUdpChecksum(
+            buffer,
+            udpLength,
+            sourceAddress,
+            destinationAddress));
+}
+
+void printUdpHeader(const char* buffer, int len)
+{
+    if(len < sizeof(UDPHeader) || buffer == nullptr)
+    {
+        return;
+    }
+
+    auto p = (UDPHeader*)buffer;
+
+    printf("UDP Header Info\n");
+    printf("source port: \t%d\n", ntohs(p->SrcPort));
+    printf("destination port: \t%d\n", ntohs(p->DstPort));
+    printf("udp length: \t%d\n", ntohs(p->DataLen));
+    printf("checksum: \t0x%X\n", ntohs(p->Checksum));
+
+    int udpLength = ntohs(p->DataLen);
+
+    if(udpLength > len)
+    {
+        udpLength = len;
+    }
+
+    printf("UDP Payload...\n");
+
+    for(int i = 0; i < udpLength - sizeof(UDPHeader); ++i)
+    {
+        printf("%c ", buffer[sizeof(UDPHeader) + i]);
+    }
+
+    printf("\n");
+}
+
+int main(int argc, char** argv)
+{
+    int sock = socket(AF_INET, SOCK_RAW, IPPROTO_UDP);
+
+    if(sock == -1)
+    {
+        perror("socket");
+        return 1;
+    }
+
+    int one = 1;
+
+    if(setsockopt(
+        sock,
+        IPPROTO_IP,
+        IP_HDRINCL,
+        &one,
+        sizeof(one)) == -1)
+    {
+        perror("setsockopt");
+        close(sock);
+        return 1;
+    }
+
+    sockaddr_in addr {};
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(4000);
+
+    inet_pton(
+        AF_INET,
+        "127.0.0.1",
+        &addr.sin_addr);
+
+    unsigned int sourceAddress;
+    unsigned int destinationAddress;
+
+    inet_pton(
+        AF_INET,
+        "127.0.0.1",
+        &sourceAddress);
+
+    inet_pton(
+        AF_INET,
+        "127.0.0.1",
+        &destinationAddress);
+
+    int payloadSize = 30;
+
+    int bufferSize =
+        payloadSize + sizeof(UDPHeader);
+
+    char* buffer =
+        (char*)malloc(sizeof(char) * bufferSize);
+
+    buildUdpDatagram(
+        buffer,
+        payloadSize,
+        3000,
+        4000,
+        sourceAddress,
+        destinationAddress);
+
+    // build IP header
+    char* ipbuffer =
+        (char*)malloc(
+            sizeof(char) *
+            (bufferSize + sizeof(IPv4Header)));
+
+    std::copy(
+        buffer,
+        buffer + bufferSize,
+        ipbuffer + sizeof(IPv4Header));
+
+    IPv4Header* p =
+        (IPv4Header*)ipbuffer;
+
+    p->VerIhl = (4 << 4) | (20 / 4);
+
+    // DSCP / ECN
+    p->Type = 0;
+
+    // IP header + UDP header + payload
+    p->TotalLength =
+        htons(sizeof(IPv4Header) + bufferSize);
+
+    // Identification
+    static unsigned short id = 0;
+    p->Id = htons(++id);
+
+    // Flags + Fragment Offset
+    // Don't Fragment = 0
+    // More Fragment = 0
+    // Offset = 0
+    p->FlagFrag = htons(0);
+
+    // TTL
+    p->TTL = 64;
+
+    // Protocol
+    p->Proto = IPPROTO_UDP;
+
+    p->SourceAddress = sourceAddress;
+    p->DestinationAddress = destinationAddress;
+
+    // IPv4 header checksum
+    p->Checksum = 0;
+    p->Checksum = htons(
+        calcChecksum(
+            (unsigned char*)p,
+            sizeof(IPv4Header)));
+
+    int ipPacketSize =
+        bufferSize + sizeof(IPv4Header);
+
+    int r = sendto(
+        sock,
+        ipbuffer,
+        ipPacketSize,
+        0,
+        (sockaddr*)&addr,
+        sizeof(addr));
+
+    if(r == -1)
+    {
+        perror("sendto");
+
+        free(buffer);
+        free(ipbuffer);
+        close(sock);
+
+        return 1;
+    }
+
+    printf("UDP Packet (%d bytes)\n", bufferSize);
+
+    printUdpHeader(buffer, bufferSize);
+
+    char* recvBuffer =
+        (char*)malloc(1500);
+
+    int recvBufSize = 1500;
+
+    // all of UDP packet sniffing
+    while(1)
+    {
+        sockaddr_in adr {};
+        socklen_t len = sizeof(adr);
+
+        r = recvfrom(
+            sock,
+            recvBuffer,
+            recvBufSize,
+            0,
+            (sockaddr*)&adr,
+            &len);
+
+        if(r == -1)
+        {
+            perror("recvfrom");
+            break;
+        }
+
+        if(r < sizeof(IPv4Header))
+        {
+            continue;
+        }
+
+        // print IP header
+        auto p = (IPv4Header*)recvBuffer;
+
+        char src[16], dst[16];
+
+        inet_ntop(
+            AF_INET,
+            &p->SourceAddress,
+            src,
+            16);
+
+        inet_ntop(
+            AF_INET,
+            &p->DestinationAddress,
+            dst,
+            16);
+
+        int ipver =
+            p->VerIhl >> 4;
+
+        int ipHeaderLen =
+            (p->VerIhl & 0x0F) * 4;
+
+        int totalLen =
+            ntohs(p->TotalLength);
+
+        int ttl = p->TTL;
+        int proto = p->Proto;
+
+        if(ipver != 4)
+        {
+            continue;
+        }
+
+        if(proto != IPPROTO_UDP)
+        {
+            continue;
+        }
+
+        if(ipHeaderLen < sizeof(IPv4Header))
+        {
+            continue;
+        }
+
+        if(r < ipHeaderLen + sizeof(UDPHeader))
+        {
+            continue;
+        }
+
+        printf(
+            "IP  v=%d IHL=%d totalLen=%d TTL=%d proto=%d\n",
+            ipver,
+            ipHeaderLen,
+            totalLen,
+            ttl,
+            proto);
+
+        printf("Source IP: %s\n", src);
+        printf("Destination IP: %s\n", dst);
+
+        // IPv4 header 뒤에 UDP header가 위치
+        char* udpBuffer =
+            recvBuffer + ipHeaderLen;
+
+        auto udpHeader =
+            (UDPHeader*)udpBuffer;
+
+        int udpLength =
+            ntohs(udpHeader->DataLen);
+
+        if(udpLength < sizeof(UDPHeader))
+        {
+            printf("invalid UDP length\n\n");
+            continue;
+        }
+
+        if(ipHeaderLen + udpLength > r)
+        {
+            printf("truncated UDP packet\n\n");
+            continue;
+        }
+
+        printUdpHeader(
+            udpBuffer,
+            udpLength);
+
+        printf("\n");
+    }
+
+    free(buffer);
+    free(ipbuffer);
+    free(recvBuffer);
+
+    close(sock);
+
+    return 0;
+}
+```
+
+# TCP
+```txt
+0                   1                   2                   3
+0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|          Source Port          |       Destination Port        |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                        Sequence Number                        |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                    Acknowledgment Number                      |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|  Data |           |U|A|P|R|S|F|                               |
+| Offset| Reserved  |R|C|S|S|Y|I|            Window             |
+|       |           |G|K|H|T|N|N|                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|           Checksum            |         Urgent Pointer        |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                    Options                    |    Padding    |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                             data                              |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+```
+- [TCP RFC 793](https://datatracker.ietf.org/doc/html/rfc793)
+
+## TCP
+```c++
+#include <stdio.h>
+#include <algorithm>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <string.h>
+
+typedef struct _ipv4Header
+{
+    unsigned char VerIhl;       // high 4 bit for ip version, low 4 bit for internet header length
+    unsigned char Type;
+    unsigned short TotalLength; // packet total length
+
+    unsigned short Id;          // Identification
+    unsigned short FlagFrag;    // high 3 bit for flag, low 13 bit for fragment offset
+
+    unsigned char TTL;          // time to live
+    unsigned char Proto;        // Protocol
+    unsigned short Checksum;    // check sum
+
+    unsigned int SourceAddress; // Source IP
+
+    unsigned int DestinationAddress; // Destination IP
+} IPv4Header;
+
+typedef struct _tcpHeader
+{
+    unsigned short SrcPort;
+    unsigned short DstPort;
+
+    unsigned int SequenceNumber;
+    unsigned int AcknowledgmentNumber;
+
+    /*
+        high 4 bit: TCP header length
+        low 4 bit: reserved
+    */
+    unsigned char DataOffset;
+
+    /*
+        CWR ECE URG ACK PSH RST SYN FIN
+    */
+    unsigned char Flags;
+
+    unsigned short WindowSize;
+    unsigned short Checksum;
+    unsigned short UrgentPointer;
+} TCPHeader;
+
+typedef struct _tcpPseudoHeader
+{
+    unsigned int SourceAddress;
+    unsigned int DestinationAddress;
+
+    unsigned char Zero;
+    unsigned char Protocol;
+    unsigned short TcpLength;
+} TCPPseudoHeader;
+
+enum TcpFlags: unsigned char
+{
+    TCP_FIN = 0x01,
+    TCP_SYN = 0x02,
+    TCP_RST = 0x04,
+    TCP_PSH = 0x08,
+    TCP_ACK = 0x10,
+    TCP_URG = 0x20,
+    TCP_ECE = 0x40,
+    TCP_CWR = 0x80
+};
+
+unsigned short calcChecksum(
+    const unsigned char* buffer,
+    int len)
+{
+    unsigned int sum = 0;
+
+    while(len >= 2)
+    {
+        const unsigned short word =
+            (buffer[0] << 8) | buffer[1];
+
+        sum += word;
+
+        len -= 2;
+        buffer += 2;
+    }
+
+    // if len is odd
+    if(len == 1)
+    {
+        sum += buffer[0] << 8;
+    }
+
+    while((sum >> 16) != 0)
+    {
+        sum =
+            (sum & 0xFFFFu) +
+            (sum >> 16);
+    }
+
+    return (unsigned short)(~sum);
+}
+
+unsigned short calcTcpChecksum(
+    const char* tcpBuffer,
+    int tcpLength,
+    unsigned int sourceAddress,
+    unsigned int destinationAddress)
+{
+    TCPPseudoHeader pseudoHeader {};
+
+    pseudoHeader.SourceAddress =
+        sourceAddress;
+
+    pseudoHeader.DestinationAddress =
+        destinationAddress;
+
+    pseudoHeader.Zero = 0;
+    pseudoHeader.Protocol = IPPROTO_TCP;
+    pseudoHeader.TcpLength = htons(tcpLength);
+
+    int checksumBufferSize =
+        sizeof(TCPPseudoHeader) +
+        tcpLength;
+
+    // 체크섬 길이가 홀수일 경우 마지막에 0 padding
+    int paddingSize =
+        checksumBufferSize % 2;
+
+    char* checksumBuffer =
+        (char*)calloc(
+            1,
+            checksumBufferSize + paddingSize);
+
+    if(checksumBuffer == nullptr)
+    {
+        return 0;
+    }
+
+    memcpy(
+        checksumBuffer,
+        &pseudoHeader,
+        sizeof(TCPPseudoHeader));
+
+    memcpy(
+        checksumBuffer + sizeof(TCPPseudoHeader),
+        tcpBuffer,
+        tcpLength);
+
+    unsigned short checksum =
+        calcChecksum(
+            (unsigned char*)checksumBuffer,
+            checksumBufferSize);
+
+    free(checksumBuffer);
+
+    return checksum;
+}
+
+void buildTcpSynSegment(
+    char* buffer,
+    unsigned short srcPort,
+    unsigned short dstPort,
+    unsigned int sequenceNumber,
+    unsigned int sourceAddress,
+    unsigned int destinationAddress)
+{
+    auto p =
+        (TCPHeader*)buffer;
+
+    memset(
+        buffer,
+        0,
+        sizeof(TCPHeader));
+
+    p->SrcPort =
+        htons(srcPort);
+
+    p->DstPort =
+        htons(dstPort);
+
+    p->SequenceNumber =
+        htonl(sequenceNumber);
+
+    /*
+        최초 SYN에는 ACK 번호가 없다.
+    */
+    p->AcknowledgmentNumber =
+        htonl(0);
+
+    /*
+        TCP header size = 20 bytes
+
+        DataOffset의 high 4 bit에
+        32-bit word 단위 헤더 길이를 기록한다.
+
+        20 / 4 = 5
+        5 << 4 = 0x50
+    */
+    p->DataOffset =
+        (sizeof(TCPHeader) / 4) << 4;
+
+    p->Flags =
+        TCP_SYN;
+
+    /*
+        수신 윈도우 크기.
+        SYN 데모이므로 임의로 64240을 사용한다.
+    */
+    p->WindowSize =
+        htons(64240);
+
+    p->UrgentPointer =
+        htons(0);
+
+    p->Checksum = 0;
+
+    p->Checksum =
+        htons(
+            calcTcpChecksum(
+                buffer,
+                sizeof(TCPHeader),
+                sourceAddress,
+                destinationAddress));
+}
+
+void printTcpFlags(
+    unsigned char flags)
+{
+    if(flags & TCP_CWR)
+    {
+        printf("CWR ");
+    }
+
+    if(flags & TCP_ECE)
+    {
+        printf("ECE ");
+    }
+
+    if(flags & TCP_URG)
+    {
+        printf("URG ");
+    }
+
+    if(flags & TCP_ACK)
+    {
+        printf("ACK ");
+    }
+
+    if(flags & TCP_PSH)
+    {
+        printf("PSH ");
+    }
+
+    if(flags & TCP_RST)
+    {
+        printf("RST ");
+    }
+
+    if(flags & TCP_SYN)
+    {
+        printf("SYN ");
+    }
+
+    if(flags & TCP_FIN)
+    {
+        printf("FIN ");
+    }
+}
+
+void printTcpHeader(
+    const char* buffer,
+    int len)
+{
+    if(buffer == nullptr ||
+       len < (int)sizeof(TCPHeader))
+    {
+        return;
+    }
+
+    auto p =
+        (const TCPHeader*)buffer;
+
+    int tcpHeaderLength =
+        (p->DataOffset >> 4) * 4;
+
+    printf("TCP Header Info\n");
+
+    printf(
+        "source port: \t%d\n",
+        ntohs(p->SrcPort));
+
+    printf(
+        "destination port: \t%d\n",
+        ntohs(p->DstPort));
+
+    printf(
+        "sequence number: \t%u\n",
+        ntohl(p->SequenceNumber));
+
+    printf(
+        "acknowledgment number: \t%u\n",
+        ntohl(p->AcknowledgmentNumber));
+
+    printf(
+        "tcp header length: \t%d\n",
+        tcpHeaderLength);
+
+    printf("flags: \t\t");
+
+    printTcpFlags(
+        p->Flags);
+
+    printf("\n");
+
+    printf(
+        "window size: \t%d\n",
+        ntohs(p->WindowSize));
+
+    printf(
+        "checksum: \t0x%04X\n",
+        ntohs(p->Checksum));
+
+    printf(
+        "urgent pointer: \t%d\n",
+        ntohs(p->UrgentPointer));
+
+    int payloadSize =
+        len - tcpHeaderLength;
+
+    if(payloadSize > 0)
+    {
+        printf(
+            "TCP Payload (%d bytes)\n",
+            payloadSize);
+
+        for(int i = 0;
+            i < payloadSize;
+            ++i)
+        {
+            printf(
+                "%02X ",
+                (unsigned char)
+                    buffer[tcpHeaderLength + i]);
+        }
+
+        printf("\n");
+    }
+}
+
+int main(int argc, char** argv)
+{
+    int sock =
+        socket(
+            AF_INET,
+            SOCK_RAW,
+            IPPROTO_TCP);
+
+    if(sock == -1)
+    {
+        perror("socket");
+        return 1;
+    }
+
+    int one = 1;
+
+    if(setsockopt(
+        sock,
+        IPPROTO_IP,
+        IP_HDRINCL,
+        &one,
+        sizeof(one)) == -1)
+    {
+        perror("setsockopt");
+
+        close(sock);
+
+        return 1;
+    }
+
+    sockaddr_in addr {};
+
+    addr.sin_family =
+        AF_INET;
+
+    /*
+        Raw Socket의 sendto()에서는 실제 TCP 목적지 포트가
+        TCP 헤더에 들어간다.
+
+        sin_port는 Linux raw IP 송신에서 일반적으로 무시되지만,
+        목적지를 명확히 표시하기 위해 동일한 포트를 기록한다.
+    */
+    addr.sin_port =
+        htons(4000);
+
+    if(inet_pton(
+        AF_INET,
+        "127.0.0.1",
+        &addr.sin_addr) != 1)
+    {
+        perror("inet_pton");
+
+        close(sock);
+
+        return 1;
+    }
+
+    unsigned int sourceAddress;
+    unsigned int destinationAddress;
+
+    if(inet_pton(
+        AF_INET,
+        "127.0.0.1",
+        &sourceAddress) != 1)
+    {
+        perror("inet_pton");
+
+        close(sock);
+
+        return 1;
+    }
+
+    if(inet_pton(
+        AF_INET,
+        "127.0.0.1",
+        &destinationAddress) != 1)
+    {
+        perror("inet_pton");
+
+        close(sock);
+
+        return 1;
+    }
+
+    unsigned short sourcePort =
+        3000;
+
+    unsigned short destinationPort =
+        4000;
+
+    /*
+        학습용 초기 시퀀스 번호.
+        실제 TCP 스택은 예측하기 어려운 ISN을 생성한다.
+    */
+    unsigned int initialSequenceNumber =
+        1000;
+
+    int tcpSegmentSize =
+        sizeof(TCPHeader);
+
+    char* tcpBuffer =
+        (char*)malloc(tcpSegmentSize);
+
+    if(tcpBuffer == nullptr)
+    {
+        perror("malloc");
+
+        close(sock);
+
+        return 1;
+    }
+
+    buildTcpSynSegment(
+        tcpBuffer,
+        sourcePort,
+        destinationPort,
+        initialSequenceNumber,
+        sourceAddress,
+        destinationAddress);
+
+    int ipPacketSize =
+        sizeof(IPv4Header) +
+        tcpSegmentSize;
+
+    char* ipBuffer =
+        (char*)calloc(
+            1,
+            ipPacketSize);
+
+    if(ipBuffer == nullptr)
+    {
+        perror("calloc");
+
+        free(tcpBuffer);
+        close(sock);
+
+        return 1;
+    }
+
+    /*
+        IPv4 헤더 다음에 TCP 세그먼트를 복사한다.
+    */
+    std::copy(
+        tcpBuffer,
+        tcpBuffer + tcpSegmentSize,
+        ipBuffer + sizeof(IPv4Header));
+
+    IPv4Header* ipHeader =
+        (IPv4Header*)ipBuffer;
+
+    ipHeader->VerIhl =
+        (4 << 4) |
+        (sizeof(IPv4Header) / 4);
+
+    // DSCP / ECN
+    ipHeader->Type = 0;
+
+    // IPv4 header + TCP header
+    ipHeader->TotalLength =
+        htons(ipPacketSize);
+
+    static unsigned short id = 0;
+
+    ipHeader->Id =
+        htons(++id);
+
+    // Flags + Fragment Offset
+    // DF = 0, MF = 0, offset = 0
+    ipHeader->FlagFrag =
+        htons(0);
+
+    ipHeader->TTL = 64;
+
+    ipHeader->Proto =
+        IPPROTO_TCP;
+
+    ipHeader->SourceAddress =
+        sourceAddress;
+
+    ipHeader->DestinationAddress =
+        destinationAddress;
+
+    ipHeader->Checksum = 0;
+
+    ipHeader->Checksum =
+        htons(
+            calcChecksum(
+                (unsigned char*)ipHeader,
+                sizeof(IPv4Header)));
+
+    int r =
+        sendto(
+            sock,
+            ipBuffer,
+            ipPacketSize,
+            0,
+            (sockaddr*)&addr,
+            sizeof(addr));
+
+    if(r == -1)
+    {
+        perror("sendto");
+
+        free(tcpBuffer);
+        free(ipBuffer);
+
+        close(sock);
+
+        return 1;
+    }
+
+    printf(
+        "TCP SYN Packet sent (%d bytes)\n",
+        ipPacketSize);
+
+    printf(
+        "127.0.0.1:%d -> 127.0.0.1:%d\n",
+        sourcePort,
+        destinationPort);
+
+    printTcpHeader(
+        tcpBuffer,
+        tcpSegmentSize);
+
+    printf("\n");
+
+    char* recvBuffer =
+        (char*)malloc(65535);
+
+    if(recvBuffer == nullptr)
+    {
+        perror("malloc");
+
+        free(tcpBuffer);
+        free(ipBuffer);
+
+        close(sock);
+
+        return 1;
+    }
+
+    int recvBufferSize =
+        65535;
+
+    /*
+        SYN에 대응하는 SYN-ACK 또는 RST를 관찰한다.
+
+        4000번 포트에 TCP 서버가 열려 있으면:
+            SYN → SYN-ACK
+
+        서버가 없으면:
+            SYN → RST+ACK
+
+        단, loopback raw TCP 환경에서는 송신한 SYN 자체도
+        recvfrom()으로 관찰될 수 있다.
+    */
+    while(1)
+    {
+        sockaddr_in recvAddress {};
+
+        socklen_t recvAddressLength =
+            sizeof(recvAddress);
+
+        r = recvfrom(
+            sock,
+            recvBuffer,
+            recvBufferSize,
+            0,
+            (sockaddr*)&recvAddress,
+            &recvAddressLength);
+
+        if(r == -1)
+        {
+            perror("recvfrom");
+            break;
+        }
+
+        if(r < (int)sizeof(IPv4Header))
+        {
+            continue;
+        }
+
+        auto receivedIpHeader =
+            (IPv4Header*)recvBuffer;
+
+        int ipVersion =
+            receivedIpHeader->VerIhl >> 4;
+
+        int ipHeaderLength =
+            (receivedIpHeader->VerIhl & 0x0F) * 4;
+
+        if(ipVersion != 4)
+        {
+            continue;
+        }
+
+        if(receivedIpHeader->Proto !=
+           IPPROTO_TCP)
+        {
+            continue;
+        }
+
+        if(ipHeaderLength <
+           (int)sizeof(IPv4Header))
+        {
+            continue;
+        }
+
+        if(r <
+           ipHeaderLength +
+           (int)sizeof(TCPHeader))
+        {
+            continue;
+        }
+
+        char* receivedTcpBuffer =
+            recvBuffer + ipHeaderLength;
+
+        auto receivedTcpHeader =
+            (TCPHeader*)receivedTcpBuffer;
+
+        unsigned short receivedSourcePort =
+            ntohs(receivedTcpHeader->SrcPort);
+
+        unsigned short receivedDestinationPort =
+            ntohs(receivedTcpHeader->DstPort);
+
+        /*
+            현재 실습 연결과 관련된 TCP 세그먼트만 출력한다.
+
+            송신 SYN:
+                3000 -> 4000
+
+            응답 SYN-ACK 또는 RST:
+                4000 -> 3000
+        */
+        bool isOutgoing =
+            receivedSourcePort == sourcePort &&
+            receivedDestinationPort ==
+                destinationPort;
+
+        bool isIncoming =
+            receivedSourcePort ==
+                destinationPort &&
+            receivedDestinationPort ==
+                sourcePort;
+
+        if(!isOutgoing &&
+           !isIncoming)
+        {
+            continue;
+        }
+
+        char sourceIp[INET_ADDRSTRLEN];
+        char destinationIp[INET_ADDRSTRLEN];
+
+        inet_ntop(
+            AF_INET,
+            &receivedIpHeader->SourceAddress,
+            sourceIp,
+            sizeof(sourceIp));
+
+        inet_ntop(
+            AF_INET,
+            &receivedIpHeader->DestinationAddress,
+            destinationIp,
+            sizeof(destinationIp));
+
+        int totalLength =
+            ntohs(
+                receivedIpHeader->TotalLength);
+
+        int availableTcpLength =
+            r - ipHeaderLength;
+
+        int tcpHeaderLength =
+            (receivedTcpHeader->DataOffset >> 4) * 4;
+
+        if(tcpHeaderLength <
+           (int)sizeof(TCPHeader))
+        {
+            printf(
+                "invalid TCP header length\n\n");
+
+            continue;
+        }
+
+        if(tcpHeaderLength >
+           availableTcpLength)
+        {
+            printf(
+                "truncated TCP packet\n\n");
+
+            continue;
+        }
+
+        printf(
+            "IP v=%d IHL=%d totalLen=%d TTL=%d proto=%d\n",
+            ipVersion,
+            ipHeaderLength,
+            totalLength,
+            receivedIpHeader->TTL,
+            receivedIpHeader->Proto);
+
+        printf(
+            "Source IP: %s\n",
+            sourceIp);
+
+        printf(
+            "Destination IP: %s\n",
+            destinationIp);
+
+        printTcpHeader(
+            receivedTcpBuffer,
+            availableTcpLength);
+
+        printf("\n");
+
+        /*
+            서버가 열려 있다면 SYN-ACK를 받은 뒤 종료한다.
+            서버가 없다면 RST 응답을 받은 뒤 종료한다.
+        */
+        if(isIncoming &&
+           ((receivedTcpHeader->Flags &
+             (TCP_SYN | TCP_ACK)) ==
+             (TCP_SYN | TCP_ACK)))
+        {
+            printf(
+                "SYN-ACK received\n");
+
+            printf(
+                "expected acknowledgment number: %u\n",
+                initialSequenceNumber + 1);
+
+            break;
+        }
+
+        if(isIncoming &&
+           (receivedTcpHeader->Flags &
+            TCP_RST))
+        {
+            printf(
+                "RST received: destination port may be closed\n");
+
+            break;
+        }
+    }
+
+    free(tcpBuffer);
+    free(ipBuffer);
+    free(recvBuffer);
+
+    close(sock);
+
+    return 0;
+}
+```
+
+# Ethernet Frame
+
+# 참조 
+- [IPv4 RFC 791](https://datatracker.ietf.org/doc/html/rfc791)
+- [ICMP RFC 792](https://datatracker.ietf.org/doc/html/rfc792)
+- [UDP RFC 768](https://datatracker.ietf.org/doc/html/rfc768)
+- [TCP RFC 793](https://datatracker.ietf.org/doc/html/rfc793)
+- [Ethernet IEEE 802.3-2022](https://standards.ieee.org/ieee/802.3/10422/)

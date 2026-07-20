@@ -1,7 +1,7 @@
 // /components/post/CodeBlock.tsx
 "use client";
 
-import { DetailedHTMLProps, HTMLAttributes, useRef, useState } from "react";
+import { DetailedHTMLProps, HTMLAttributes, useId, useRef, useState } from "react";
 
 const IconCopy = () => (
     <svg
@@ -34,6 +34,23 @@ const IconCheck = () => (
     </svg>
 );
 
+const IconChevron = ({ collapsed }: { collapsed: boolean }) => (
+    <svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className={`transition-transform ${collapsed ? "-rotate-90" : "rotate-0"}`}
+        aria-hidden="true"
+    >
+        <path d="m6 9 6 6 6-6" />
+    </svg>
+);
+
 interface CodeBlockProps extends DetailedHTMLProps<HTMLAttributes<HTMLPreElement>, HTMLPreElement> {
     isSlide?: boolean;
     weight?: number;
@@ -47,7 +64,9 @@ const CodeBlock = ({
     ...props
 }: CodeBlockProps) => {
     const [isCopied, setIsCopied] = useState(false);
+    const [isCollapsed, setIsCollapsed] = useState(false);
     const preRef = useRef<HTMLPreElement>(null);
+    const codeId = useId();
 
     const handleCopy = async () => {
         const code = preRef.current?.textContent;
@@ -84,7 +103,7 @@ const CodeBlock = ({
             ">
                 <div className="flex items-center gap-3">
                     {language && (
-                        <div className="text-[1.4rem] font-mono text-blue-400 tracking-widest font-black border-r border-white/10 pr-3 print:text-blue-600">
+                        <div className="text-sm font-mono text-blue-400 tracking-widest font-black border-r border-white/10 pr-3 print:text-blue-600">
                             {language}
                         </div>
                     )}
@@ -100,29 +119,41 @@ const CodeBlock = ({
                     )}
                 </div>
 
-                <button
-                    onClick={handleCopy}
-                    aria-label="Copy code"
-                    className="
-                        flex items-center gap-1.5
-                        text-gray-400 hover:text-white
-                        transition-colors text-[10px] font-bold
-                        print:hidden
-                    "
-                >
-                    <span className="flex items-center scale-90">{isCopied ? <IconCheck /> : <IconCopy />}</span>
-                    {isCopied ? "COPIED!" : "COPY"}
-                </button>
+                <div className="flex items-center gap-3">
+                    {!isSlide && (
+                        <button
+                            type="button"
+                            onClick={() => setIsCollapsed((current) => !current)}
+                            aria-expanded={!isCollapsed}
+                            aria-controls={codeId}
+                            className="flex items-center gap-1.5 rounded px-1 py-1 text-[11px] font-bold text-gray-400 transition-colors hover:bg-white/5 hover:text-white print:hidden"
+                        >
+                            <IconChevron collapsed={isCollapsed} />
+                            {isCollapsed ? "EXPAND" : "COLLAPSE"}
+                        </button>
+                    )}
+
+                    <button
+                        type="button"
+                        onClick={handleCopy}
+                        aria-label="Copy code"
+                        className="flex items-center gap-1.5 rounded px-1 py-1 text-[11px] font-bold text-gray-400 transition-colors hover:bg-white/5 hover:text-white print:hidden"
+                    >
+                        <span className="flex items-center scale-90">{isCopied ? <IconCheck /> : <IconCopy />}</span>
+                        {isCopied ? "COPIED!" : "COPY"}
+                    </button>
+                </div>
             </div>
 
             <pre
+                id={codeId}
                 ref={preRef}
                 {...props}
                 style={{
                     ...props.style,
                     ...(dynamicMaxHeight ? { maxHeight: dynamicMaxHeight } : {})
                 }}
-                className={`${className} !text-[2rem] leading-snug !m-0 !rounded-t-none ${isSlide ? 'overflow-auto [&_code]:!text-[1.8rem] print:!max-h-none print:!overflow-visible' : '[&_code]:!text-[.9rem]'} print:!max-h-none print:!overflow-visible print:whitespace-pre-wrap print:break-words scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent p-4`}
+                className={`${className} !text-[2rem] leading-snug !m-0 !rounded-t-none ${isSlide ? 'overflow-auto [&_code]:!text-[1.8rem] print:!max-h-none print:!overflow-visible' : `[&_code]:!text-[.9rem] ${isCollapsed ? '!hidden print:!block' : ''}`} print:!max-h-none print:!overflow-visible print:whitespace-pre-wrap print:break-words scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent p-4`}
             >
                 {children}
             </pre>

@@ -21,7 +21,7 @@ export default function Navi({ posts }: NaviProps) {
     setOpenMenu(prev => ({ ...prev, [key]: false }));
 
   return (
-    <nav className="site-nav relative w-full h-16 bg-transparent grid grid-cols-[1fr_1000px_1fr]">
+    <nav className="site-nav relative grid h-16 w-full grid-cols-[1fr_1000px_1fr] border-b border-gray-200 bg-gray-50 transition-colors dark:border-gray-800 dark:bg-[#292929]">
       <div />
 
       {/* 가운데 네비 */}

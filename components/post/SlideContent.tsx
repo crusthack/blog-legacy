@@ -609,7 +609,7 @@ export default function SlideContent({ slides, category, slug, title, background
           onPointerLeave={stopDrawing}
         />
 
-        <div className={`relative z-[55] flex justify-between items-center p-4 bg-gray-50 border-b border-gray-200 h-14 shrink-0 transition-all duration-300 ${isFullscreen
+        <div className={`slide-chrome relative z-[55] flex justify-between items-center p-4 border-b h-14 shrink-0 transition-all duration-300 ${isFullscreen
           ? `absolute top-0 left-0 right-0 z-[55] shadow-sm ${isChromeVisible ? 'translate-y-0 opacity-100 pointer-events-auto' : '-translate-y-full opacity-0 pointer-events-none'}`
           : ''
           }`}>
@@ -752,7 +752,7 @@ export default function SlideContent({ slides, category, slug, title, background
           </div>
         </div>
 
-        <div className={`p-4 bg-gray-50 border-t border-gray-200 grid grid-cols-3 items-center shrink-0 min-h-[70px] transition-all duration-300 ${isFullscreen
+        <div className={`slide-chrome grid min-h-[70px] shrink-0 grid-cols-3 items-center border-t p-4 transition-all duration-300 ${isFullscreen
           ? `absolute bottom-0 left-0 right-0 z-[55] shadow-sm ${isChromeVisible ? 'translate-y-0 opacity-100 pointer-events-auto' : 'translate-y-full opacity-0 pointer-events-none'}`
           : ''
           }`}>
