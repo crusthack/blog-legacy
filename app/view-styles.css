@@ -458,6 +458,17 @@
   color: #111827 !important;
 }
 
+.slide-view[data-slide-theme="dark"] .slide-draw-toggle[data-active="true"] {
+  background-color: #451a1a !important;
+  border-color: #ef4444 !important;
+  color: #fca5a5 !important;
+  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.2);
+}
+
+.slide-view[data-slide-theme="dark"] .slide-draw-toggle[data-active="true"]:hover {
+  background-color: #5f1f1f !important;
+}
+
 .slide-view[data-slide-theme="light"] .slide-theme-toggle {
   background-color: #111827 !important;
   border-color: #111827 !important;

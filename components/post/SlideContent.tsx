@@ -12,8 +12,8 @@ import SlideDrawingToolbar, {
   type DrawingTool,
 } from '@/components/post/SlideDrawingToolbar';
 import SlideTextMemo, {
-  getMemoWidthCh,
   type SlideMemoPosition,
+  type SlideMemoSize,
 } from '@/components/post/SlideTextMemo';
 import { isLocalDev } from '@/lib/config';
 import { createClientSlideMdxComponents } from '@/components/post/slideMdxComponents.client';
@@ -62,6 +62,8 @@ interface SlideMemo {
   id: number;
   text: string;
   position: SlideMemoPosition;
+  size: SlideMemoSize;
+  collapsed: boolean;
 }
 
 export default function SlideContent({ slides: sourceSlides, category, slug, title, backgroundStyle, toc, returnHref, onLeave }: SlideContentProps) {
@@ -528,7 +530,13 @@ export default function SlideContent({ slides: sourceSlides, category, slug, tit
         ...current,
         [currentSlide.slideKey]: [
           ...existingMemos,
-          { id, text: '', position: { x: 50 + offset, y: 50 + offset } },
+          {
+            id,
+            text: '',
+            position: { x: 50 + offset, y: 50 + offset },
+            size: { width: 480, height: 180 },
+            collapsed: false,
+          },
         ],
       };
     });
@@ -546,6 +554,22 @@ export default function SlideContent({ slides: sourceSlides, category, slug, tit
       ...current,
       [currentSlide.slideKey]: (current[currentSlide.slideKey] ?? []).map((memo) =>
         memo.id === memoId ? { ...memo, position } : memo
+      ),
+    }));
+  };
+  const updateCurrentMemoSize = (memoId: number, size: SlideMemoSize) => {
+    setSlideMemos((current) => ({
+      ...current,
+      [currentSlide.slideKey]: (current[currentSlide.slideKey] ?? []).map((memo) =>
+        memo.id === memoId ? { ...memo, size } : memo
+      ),
+    }));
+  };
+  const toggleCurrentMemoCollapsed = (memoId: number) => {
+    setSlideMemos((current) => ({
+      ...current,
+      [currentSlide.slideKey]: (current[currentSlide.slideKey] ?? []).map((memo) =>
+        memo.id === memoId ? { ...memo, collapsed: !memo.collapsed } : memo
       ),
     }));
   };
@@ -769,11 +793,25 @@ export default function SlideContent({ slides: sourceSlides, category, slug, tit
           : ''
           }`}>
           {/* 왼쪽: TOC 버튼 및 현재 시각 */}
-          <div className="z-10 flex items-center gap-4 w-60">
+          <div className="z-10 flex w-72 items-center gap-2">
             <button onClick={() => setIsTocOpen(prev => !prev)} className="flex items-center justify-center w-10 h-10 bg-white hover:bg-gray-100 border border-gray-300 rounded-md transition-colors cursor-pointer text-gray-700" title="목차 (t)">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
             </button>
-            <div className="flex w-full text-xl items-center font-bold transition cursor-default">
+            <button
+              onClick={() => void toggleSlideEditing()}
+              disabled={isCompilingSlide}
+              className={`flex h-10 items-center gap-1 rounded-md border px-2 text-xs font-bold transition-colors disabled:cursor-wait disabled:opacity-60 ${
+                editingSlideKey === currentSlide.slideKey
+                  ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+                  : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-100'
+              }`}
+              title={editingSlideKey === currentSlide.slideKey ? '수정 내용을 슬라이드로 렌더링' : '현재 슬라이드 Markdown 수정'}
+            >
+              {isCompilingSlide && editingSlideKey === currentSlide.slideKey
+                ? 'Rendering...'
+                : editingSlideKey === currentSlide.slideKey ? 'Render' : 'Edit'}
+            </button>
+            <div className="flex flex-1 items-center text-xl font-bold transition cursor-default">
               <div className="text-sm font-mono font-medium text-gray-500">
                 {currentTime}
               </div>
@@ -874,21 +912,11 @@ export default function SlideContent({ slides: sourceSlides, category, slug, tit
             </button>
 
             <button
-              onClick={() => void toggleSlideEditing()}
-              disabled={isCompilingSlide}
-              className={`flex h-10 items-center gap-1 rounded-md border px-2 text-xs font-bold transition-colors disabled:cursor-wait disabled:opacity-60 ${
-                editingSlideKey === currentSlide.slideKey
-                  ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
-                  : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-100'
-              }`}
-              title={editingSlideKey === currentSlide.slideKey ? '수정 내용을 슬라이드로 렌더링' : '현재 슬라이드 Markdown 수정'}
+              onClick={() => setIsDrawingMode(prev => !prev)}
+              className={`slide-draw-toggle flex h-10 w-10 cursor-pointer items-center justify-center rounded-md border border-gray-300 text-gray-700 transition-colors ${isDrawingMode ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100' : 'bg-white hover:bg-gray-100'}`}
+              data-active={isDrawingMode ? 'true' : 'false'}
+              title={isDrawingMode ? '그리기 끄기 (d)' : '그리기 켜기 (d)'}
             >
-              {isCompilingSlide && editingSlideKey === currentSlide.slideKey
-                ? 'Rendering...'
-                : editingSlideKey === currentSlide.slideKey ? 'Render' : 'Edit'}
-            </button>
-
-            <button onClick={() => setIsDrawingMode(prev => !prev)} className={`flex items-center justify-center w-10 h-10 border border-gray-300 rounded-md transition-colors cursor-pointer text-gray-700 ${isDrawingMode ? 'bg-red-50 hover:bg-red-100 text-red-600 border-red-200' : 'bg-white hover:bg-gray-100'}`} title={isDrawingMode ? '그리기 끄기 (d)' : '그리기 켜기 (d)'}>
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 20h9" />
                 <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
@@ -966,6 +994,10 @@ export default function SlideContent({ slides: sourceSlides, category, slug, tit
               onDelete={() => deleteCurrentMemo(memo.id)}
               position={memo.position}
               onPositionChange={(position) => updateCurrentMemoPosition(memo.id, position)}
+              size={memo.size}
+              onSizeChange={(size) => updateCurrentMemoSize(memo.id, size)}
+              collapsed={memo.collapsed}
+              onToggleCollapsed={() => toggleCurrentMemoCollapsed(memo.id)}
             />
           ))}
         </div>
@@ -1033,7 +1065,9 @@ export default function SlideContent({ slides: sourceSlides, category, slug, tit
                 style={{
                   left: `${memo.position.x}%`,
                   top: `${memo.position.y}%`,
-                  width: `min(${getMemoWidthCh(memo.text)}ch, 70%)`,
+                  width: `${memo.size.width}px`,
+                  minHeight: `${memo.size.height}px`,
+                  maxWidth: '70%',
                 }}
               >
                 {memo.text}
