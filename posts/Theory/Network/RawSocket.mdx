@@ -12,7 +12,15 @@ background:
 ---
 
 # RawSocket 개요
+- 직접적인 네트워크 프로토콜 직접 작성 가능한 소켓 
+- 이더넷 프레임에서부터 IP 헤더, tcp/udp 헤더 등\
+프로토콜 옵션에 따라 다양한 프로토콜 직접 작성 가능 
+- 직접적인 패킷 작성을 통해 네트워크 프로토콜에 대한 이해 강화 및 네트워크 스택 컨트롤 가능
+- 기본적인 커널측의 네트워크 처리 동작(ping 메시지 응답, unreachable 메시지 등)은 그대로이므로 추가적인 처리 필요 
+- Raw Socket외의 XDP, WFP, AF_PACKET, TUN/TAP, netfilter 등 추가적인 프로토콜 실습 환경 존재 
+- Windows에서는 네트워크 방화벽 정책에 의해 활용 제한적, Ubuntu 환경에서 실습 수행 
 
+## Raw Socket 기본 동작 
 1. Raw Socket 생성 
 2. `setsockopt` 옵션 설정(타임아웃)
 3. ICMP 작성 
@@ -20,23 +28,49 @@ background:
 5. recvfrom으로 데이터 수신 
 
 ## 학습 순서
-1. icmp ping 메시지 
-2. ipv4 프로토콜 구현 
+1. icmp ping 메시지 직접 구현 
+2. ipv4 헤더 파싱. 수신처리 및 생성 
 3. udp 프로토콜 구현 
 4. tcp 프로토콜 구현 
-5. af_packet을 통한 이더넷 프로토콜 구현 
+5. af_packet을 통한 이더넷 프레임 파싱 및 작성 
 
-## 추가로 할만한 것들 
+## RawSocket 사용시 문제 
+- 네트워크 패킷 수신시, 커널이 자동으로 관련 처리를 수행 
+1. icmp echo request message 수신시, 자동으로 reply 송신. 혹은 방화벽에서 ping 차단 
+2. udp 메시지 수신시, 포트번호 bind 안 돼 있으면 unreachable 반환
+3. tcp 연결요청 수신시, 포트번호 bind 안 돼 있으면 rst 세그먼트 반환
+- 패킷 캡처 및 수신 자체는 되지만, 커널 네트워크 스택이 자동으로 패킷을 추가적으로 처리함 
+- 여타 문제로, 메시지 송신 자체는 쉽게 할 수 있지만 수신 처리 관련으로 복잡해질 여지가 있음 
+
+## 확장
 - ipv6, icmpv6
 - arp 
 - dhcp
 - dns 
 
-## Linux Socket Header
+# Raw Socket 
+
+## Linux 기본 소켓 헤더 
 - `sys/socket.h`: 일반 소켓 헤더
 - `netinet/in.h`: INET 관련 헤더 
 - `arpa/inet.h`: IP 주소 변환 
 - `unistd.h`: 파일기술자 관련(close)
+- `<linux/if_ether.h>`: 이더넷 헤더 
+
+## Raw Socket 옵션들 
+```C++
+socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
+socket(AF_INET, SOCK_RAW, IPPROTO_UDP);
+socket(AF_INET, SOCK_RAW, IPPROTO_TCP);
+int one = 1;
+setsockopt(socket, IPPROTO_IP, IP_HDRINCL, &one, sizeof(one));
+// RAW SOCK 기본 및 옵션. 특정 ip protocol로 동작하는 패킷만 송수신 처리. 
+// 밑의 ip header include 옵션은, 송신시 ip header까지 작성 후 송신할건지 처리. 안 할시 자동으로 ip 헤더 생성 
+socket(AF_INET, SOCK_RAW, IPPROTO_IP); // 모든 IP 패킷 수신 
+
+socket(AF_PACKET, SOCK_RAW, htons(ETH_P_IP));   // IP 프로토콜 사용하는 이더넷 프레임 수신 
+socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));  // 전체 이더넷 프레임 수신 
+```
 
 # ICMP
 ## ICMP 개요
@@ -1934,3 +1968,29 @@ int main(int argc, char** argv)
 - [UDP RFC 768](https://datatracker.ietf.org/doc/html/rfc768)
 - [TCP RFC 793](https://datatracker.ietf.org/doc/html/rfc793)
 - [Ethernet IEEE 802.3-2022](https://standards.ieee.org/ieee/802.3/10422/)
+
+
+udp message 송신시, 상대방 포트가 닫혀있을때. unreachable icmp message가 발생했을 때 이를 확인하는 처리 
+최종적으로, rawsocket 프로젝트를 하나의 네트워크 스택으로써 고도화함으로 커널 네트워크 스택을 흉내낼 수 있음 좋을 듯?
+하나의 ethernet 프레임부터 시작되는 패킷 캡처 밑 여타 만들어진 소켓에 대한 패킷 라우팅 처리 
+
+- udp message에 대한 unreachable 경우 
+```hex
+0000   00 15 5d 97 3a e7 00 15 5d 24 7e 07 08 00 45 00
+0010   00 21 99 ad 00 00 40 11 15 8a ac 11 02 44 0d ee
+0020   0f 52 99 ad 13 88 00 0d 43 37 68 65 6c 6c 6f
+```
+- 송신한 udp message 
+
+```hex
+0000   00 15 5d 24 7e 07 00 15 5d 97 3a e7 08 00 45 c0
+0010   00 3d 05 29 00 00 6f 01 7a 42 0d ee 0f 52 ac 11
+0020   02 44 03 03 a5 a1 00 00 00 00 
+       45 00 00 21 99 ad
+0030   00 00 30 11 25 8a ac 11 02 44 0d ee 0f 52 99 ad
+0040   13 88 00 0d 66 46 68 65 6c 6c 6f
+```
+- 수신한 icmp unreachable message 
+
+- 현재 IPPROTO 옵션 넣어줌으로 특정 프로토콜 메시지만 수신중 
+- 나중에 가능하면 전체 IP 패킷 다 받고서 원하는 종류의 패킷만 필터링 하는 동작 필요 

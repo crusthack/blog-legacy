@@ -100,10 +100,47 @@ function getFirstHeading(content: string) {
   return content.match(/^#\s+(.+)$/m)?.[1]?.trim();
 }
 
+function normalizeMarkdownEmailAutolinks(source: string) {
+  const emailAutolink = /<([A-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?(?:\.[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?)+)>/gi;
+  let activeFence: string | undefined;
+
+  return source
+    .split(/(\r?\n)/)
+    .map((line) => {
+      if (/^\r?\n$/.test(line)) return line;
+
+      const fence = line.match(/^\s*(`{3,}|~{3,})/);
+      if (fence) {
+        const marker = fence[1][0];
+        if (!activeFence) {
+          activeFence = marker;
+        } else if (activeFence === marker) {
+          activeFence = undefined;
+        }
+        return line;
+      }
+
+      if (activeFence) return line;
+
+      // Split on inline-code spans so examples such as `<name@example.com>` stay verbatim.
+      return line
+        .split(/(`+[^`]*?`+)/g)
+        .map((part, index) =>
+          index % 2 === 1
+            ? part
+            : part.replace(emailAutolink, (_, email: string) => `[${email}](mailto:${email})`)
+        )
+        .join('');
+    })
+    .join('');
+}
+
 async function compileMdxSource(source: string) {
   const { serialize } = await import('next-mdx-remote/serialize');
 
-  return serialize(preprocessGridSource(source), {
+  const normalizedSource = normalizeMarkdownEmailAutolinks(source);
+
+  return serialize(preprocessGridSource(normalizedSource), {
     mdxOptions: mdxPlugins,
     parseFrontmatter: false,
     blockJS: false,

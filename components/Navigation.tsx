@@ -45,9 +45,6 @@ export default function Navi({ posts }: NaviProps) {
           <Link href="https://crusthack.github.io/catbattle/" target="_blank" className="flex items-center text-l font-bold hover:opacity-70 transition whitespace-nowrap">
             냥코DB
           </Link>
-          <Link href="https://crusthack.github.io/UnityProject/" target="_blank" className="flex items-center text-l font-bold hover:opacity-70 transition whitespace-nowrap">
-            유니티 프로젝트
-          </Link>
         </div>
 
         {/* 우측 */}

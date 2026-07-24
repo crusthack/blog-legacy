@@ -73,6 +73,18 @@ body {
     print-color-adjust: exact !important;
   }
 
+  .print-slide .slide-text-memo-print {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    z-index: 30 !important;
+    max-width: 70% !important;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
   .print-slide .slide-content {
     max-height: 90vh !important;
     overflow: hidden !important;

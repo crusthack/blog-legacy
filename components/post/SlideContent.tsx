@@ -1,27 +1,45 @@
 'use client'
 
-import { useState, useEffect, useRef, ReactNode, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
+import { useState, useEffect, useMemo, useRef, ReactNode, type CSSProperties } from 'react';
+import { flushSync } from 'react-dom';
+import { MDXRemote, type MDXRemoteSerializeResult } from 'next-mdx-remote';
 import { useRouter } from 'next/navigation';
+import SlideDrawingCanvas, { type SlideDrawingCanvasHandle } from '@/components/post/SlideDrawingCanvas';
+import SlideDrawingToolbar, {
+  DRAWING_PRESET_COLORS,
+  MAX_DRAWING_SIZE,
+  MIN_DRAWING_SIZE,
+  type DrawingTool,
+} from '@/components/post/SlideDrawingToolbar';
+import SlideTextMemo, {
+  getMemoWidthCh,
+  type SlideMemoPosition,
+} from '@/components/post/SlideTextMemo';
 import { isLocalDev } from '@/lib/config';
+import { createClientSlideMdxComponents } from '@/components/post/slideMdxComponents.client';
+import { mdxPlugins } from '@/lib/post/mdxPlugins';
 import { getPostHref } from '@/lib/post/postPaths';
 import type { ContentElement } from '@/lib/post/slides';
+import { preprocessGridSource } from '@/lib/remark/remarkGridBlock';
 
 type SlideTheme = 'system' | 'light' | 'dark';
 
+interface SlideItem {
+  content: string;
+  h1: string;
+  h2: string;
+  h3: string;
+  level: number;
+  nextTitle: string;
+  totalWeight: number;
+  complexCount: number;
+  remainingWeight: number;
+  elements: ContentElement[];
+  renderedContent: ReactNode;
+}
+
 interface SlideContentProps {
-  slides: {
-    content: string;
-    h1: string;
-    h2: string;
-    h3: string;
-    level: number;
-    nextTitle: string;
-    totalWeight: number;
-    complexCount: number;
-    remainingWeight: number;
-    elements: ContentElement[];
-    renderedContent: ReactNode;
-  }[];
+  slides: SlideItem[];
   category: string;
   slug: string;
   title: string;
@@ -35,8 +53,29 @@ interface SlideContentProps {
   onLeave?: () => void;
 }
 
-export default function SlideContent({ slides, category, slug, title, backgroundStyle, toc, returnHref, onLeave }: SlideContentProps) {
+interface TemporaryDrawingSlide {
+  id: number;
+  afterKey: string;
+}
+
+interface SlideMemo {
+  id: number;
+  text: string;
+  position: SlideMemoPosition;
+}
+
+export default function SlideContent({ slides: sourceSlides, category, slug, title, backgroundStyle, toc, returnHref, onLeave }: SlideContentProps) {
   const [currentIdx, setCurrentIdx] = useState(0);
+  const [temporaryDrawingSlides, setTemporaryDrawingSlides] = useState<TemporaryDrawingSlide[]>([]);
+  const [printDrawings, setPrintDrawings] = useState<Record<string, string>>({});
+  const [slideMemos, setSlideMemos] = useState<Record<string, SlideMemo[]>>({});
+  const memoIdRef = useRef(0);
+  const [editingSlideKey, setEditingSlideKey] = useState<string | null>(null);
+  const [editedSources, setEditedSources] = useState<Record<string, string>>({});
+  const [compiledSlides, setCompiledSlides] = useState<Record<string, MDXRemoteSerializeResult>>({});
+  const [isCompilingSlide, setIsCompilingSlide] = useState(false);
+  const [slideCompileError, setSlideCompileError] = useState('');
+  const temporarySlideIdRef = useRef(0);
   const [isSlideIndexReady, setIsSlideIndexReady] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isFullscreenChromeVisible, setIsFullscreenChromeVisible] = useState(false);
@@ -45,14 +84,13 @@ export default function SlideContent({ slides, category, slug, title, background
   const [currentTime, setCurrentTime] = useState<string>('');
   const [slideScale, setSlideScale] = useState(1);
   const [isDrawingMode, setIsDrawingMode] = useState(false);
+  const [drawingTool, setDrawingTool] = useState<DrawingTool>('pen');
   const [penColor, setPenColor] = useState('#ef4444');
   const [penSize, setPenSize] = useState(4);
   const fullscreenChromeTimerRef = useRef<number | null>(null);
   const slideViewportRef = useRef<HTMLDivElement>(null);
   const slideContentRef = useRef<HTMLDivElement>(null);
-  const drawingCanvasRef = useRef<HTMLCanvasElement>(null);
-  const isDrawingRef = useRef(false);
-  const lastPointRef = useRef<{ x: number; y: number } | null>(null);
+  const drawingCanvasRef = useRef<SlideDrawingCanvasHandle>(null);
   const router = useRouter();
   const slideStorageKey = `slide-progress:${category}/${slug}`;
   const [isHelpOpen, setIsHelpOpen] = useState(false);
@@ -62,6 +100,47 @@ export default function SlideContent({ slides, category, slug, title, background
   const effectiveSlideTheme = slideTheme === 'system' ? undefined : slideTheme;
   const hasCustomBackground = Boolean(backgroundStyle);
   const themeLabel = slideTheme === 'system' ? 'Auto' : slideTheme === 'light' ? 'Light' : 'Dark';
+  const slides = useMemo(() => {
+    type DisplaySlide = SlideItem & { slideKey: string; isDrawingSlide: boolean };
+    const temporaryByParent = new Map<string, TemporaryDrawingSlide[]>();
+
+    for (const temporarySlide of temporaryDrawingSlides) {
+      const children = temporaryByParent.get(temporarySlide.afterKey) ?? [];
+      children.unshift(temporarySlide);
+      temporaryByParent.set(temporarySlide.afterKey, children);
+    }
+
+    const result: DisplaySlide[] = [];
+    const appendTemporaryChildren = (parentKey: string) => {
+      for (const temporarySlide of temporaryByParent.get(parentKey) ?? []) {
+        const slideKey = `drawing-${temporarySlide.id}`;
+        result.push({
+          slideKey,
+          isDrawingSlide: true,
+          content: '',
+          h1: 'Drawing',
+          h2: '',
+          h3: '',
+          level: 0,
+          nextTitle: '',
+          totalWeight: 0,
+          complexCount: 0,
+          remainingWeight: 0,
+          elements: [],
+          renderedContent: null,
+        });
+        appendTemporaryChildren(slideKey);
+      }
+    };
+
+    sourceSlides.forEach((slide, index) => {
+      const slideKey = `source-${index}`;
+      result.push({ ...slide, slideKey, isDrawingSlide: false });
+      appendTemporaryChildren(slideKey);
+    });
+
+    return result;
+  }, [sourceSlides, temporaryDrawingSlides]);
 
   const cycleSlideTheme = () => {
     setSlideTheme((current) => (
@@ -137,7 +216,7 @@ export default function SlideContent({ slides, category, slug, title, background
     }
 
     setIsSlideIndexReady(true);
-  }, [slideStorageKey, slides.length]);
+  }, [slideStorageKey, sourceSlides.length]);
 
   useEffect(() => {
     if (!isSlideIndexReady) return;
@@ -256,81 +335,24 @@ export default function SlideContent({ slides, category, slug, title, background
     }, 1800);
   };
 
-  const resizeDrawingCanvas = () => {
-    const canvas = drawingCanvasRef.current;
-    if (!canvas) return;
-
-    const rect = canvas.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = Math.max(1, Math.floor(rect.width * dpr));
-    canvas.height = Math.max(1, Math.floor(rect.height * dpr));
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-  };
-
   const clearDrawing = () => {
-    const canvas = drawingCanvasRef.current;
-    const ctx = canvas?.getContext('2d');
-    if (!canvas || !ctx) return;
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawingCanvasRef.current?.clear();
   };
 
-  const getCanvasPoint = (e: ReactPointerEvent<HTMLCanvasElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    return {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    };
+  const prepareDrawingsForPrint = () => {
+    const drawings = drawingCanvasRef.current?.getDrawings() ?? {};
+    flushSync(() => setPrintDrawings(drawings));
   };
 
-  const startDrawing = (e: ReactPointerEvent<HTMLCanvasElement>) => {
-    if (!isDrawingMode) return;
-
-    e.currentTarget.setPointerCapture(e.pointerId);
-    isDrawingRef.current = true;
-    lastPointRef.current = getCanvasPoint(e);
-  };
-
-  const draw = (e: ReactPointerEvent<HTMLCanvasElement>) => {
-    if (!isDrawingMode || !isDrawingRef.current || !lastPointRef.current) return;
-
-    const canvas = drawingCanvasRef.current;
-    const ctx = canvas?.getContext('2d');
-    if (!ctx) return;
-
-    const nextPoint = getCanvasPoint(e);
-    ctx.strokeStyle = penColor;
-    ctx.lineWidth = penSize;
-    ctx.beginPath();
-    ctx.moveTo(lastPointRef.current.x, lastPointRef.current.y);
-    ctx.lineTo(nextPoint.x, nextPoint.y);
-    ctx.stroke();
-
-    lastPointRef.current = nextPoint;
-  };
-
-  const stopDrawing = () => {
-    isDrawingRef.current = false;
-    lastPointRef.current = null;
+  const printSlides = () => {
+    prepareDrawingsForPrint();
+    window.print();
   };
 
   useEffect(() => {
-    resizeDrawingCanvas();
-
-    window.addEventListener('resize', resizeDrawingCanvas);
-    return () => window.removeEventListener('resize', resizeDrawingCanvas);
-  }, []);
-
-  useEffect(() => {
-    clearDrawing();
-    stopDrawing();
-  }, [currentIdx]);
+    window.addEventListener('beforeprint', prepareDrawingsForPrint);
+    return () => window.removeEventListener('beforeprint', prepareDrawingsForPrint);
+  });
 
   useEffect(() => {
     const isTypingTarget = (target: EventTarget | null) => {
@@ -351,7 +373,22 @@ export default function SlideContent({ slides, category, slug, title, background
         return;
       }
 
-      if (isDrawingMode && (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'ArrowLeft')) {
+      if (isDrawingMode && (e.key === 'ArrowRight' || e.key === 'ArrowLeft')) {
+        e.preventDefault();
+        const currentColorIndex = DRAWING_PRESET_COLORS.indexOf(
+          penColor as typeof DRAWING_PRESET_COLORS[number]
+        );
+        const direction = e.key === 'ArrowRight' ? 1 : -1;
+        const nextColorIndex = currentColorIndex === -1
+          ? (direction === 1 ? 0 : DRAWING_PRESET_COLORS.length - 1)
+          : (currentColorIndex + direction + DRAWING_PRESET_COLORS.length) % DRAWING_PRESET_COLORS.length;
+
+        setPenColor(DRAWING_PRESET_COLORS[nextColorIndex]);
+        setDrawingTool('pen');
+        return;
+      }
+
+      if (isDrawingMode && e.key === ' ') {
         return;
       }
 
@@ -380,9 +417,20 @@ export default function SlideContent({ slides, category, slug, title, background
       } else if (e.key === 't') {
         setIsTocOpen(prev => !prev);
       } else if (e.key === 'p') {
-        window.print();
+        printSlides();
       } else if (e.key === 'd') {
         setIsDrawingMode(prev => !prev);
+      } else if (isDrawingMode && ['1', '2', '3', '4'].includes(e.key)) {
+        setPenColor(DRAWING_PRESET_COLORS[Number(e.key) - 1]);
+        setDrawingTool('pen');
+      } else if (e.key === 'ArrowUp' && isDrawingMode) {
+        e.preventDefault();
+        setPenSize(prev => Math.min(MAX_DRAWING_SIZE, prev + 2));
+      } else if (e.key === 'ArrowDown' && isDrawingMode) {
+        e.preventDefault();
+        setPenSize(prev => Math.max(MIN_DRAWING_SIZE, prev - 2));
+      } else if (e.key === 'e' && isDrawingMode) {
+        setDrawingTool(prev => prev === 'eraser' ? 'pen' : 'eraser');
       } else if (e.key === 'c' && isDrawingMode) {
         clearDrawing();
       } else if (e.key === 'Escape') {
@@ -398,7 +446,7 @@ export default function SlideContent({ slides, category, slug, title, background
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [slides.length, category, slug, router, isTocOpen, currentIdx, slides, isDrawingMode]);
+  }, [slides.length, category, slug, router, isTocOpen, currentIdx, slides, isDrawingMode, penColor]);
 
   useEffect(() => {
     const viewport = slideViewportRef.current;
@@ -437,9 +485,118 @@ export default function SlideContent({ slides, category, slug, title, background
       resizeObserver.disconnect();
       window.removeEventListener('resize', updateSlideScale);
     };
-  }, [currentIdx, isFullscreen, isFullscreenChromeVisible, isTocOpen]);
+  }, [currentIdx, isFullscreen, isFullscreenChromeVisible, isTocOpen, editingSlideKey, compiledSlides]);
 
   const currentSlide = slides[currentIdx];
+  const createTemporaryDrawingSlide = () => {
+    const id = ++temporarySlideIdRef.current;
+    setTemporaryDrawingSlides((current) => [
+      ...current,
+      { id, afterKey: currentSlide.slideKey },
+    ]);
+    setCurrentIdx((current) => current + 1);
+    setIsDrawingMode(true);
+  };
+  const deleteCurrentTemporarySlide = () => {
+    if (!currentSlide.isDrawingSlide) return;
+    if (!window.confirm('현재 임시 필기 슬라이드를 삭제할까요?')) return;
+
+    const deletedSlideKeys = new Set([currentSlide.slideKey]);
+    setTemporaryDrawingSlides((current) => {
+      let foundChild = true;
+      while (foundChild) {
+        foundChild = false;
+        for (const temporarySlide of current) {
+          const slideKey = `drawing-${temporarySlide.id}`;
+          if (deletedSlideKeys.has(temporarySlide.afterKey) && !deletedSlideKeys.has(slideKey)) {
+            deletedSlideKeys.add(slideKey);
+            foundChild = true;
+          }
+        }
+      }
+
+      return current.filter((temporarySlide) => !deletedSlideKeys.has(`drawing-${temporarySlide.id}`));
+    });
+    setCurrentIdx((current) => Math.max(0, current - 1));
+  };
+  const addCurrentMemo = () => {
+    const id = ++memoIdRef.current;
+    setSlideMemos((current) => {
+      const existingMemos = current[currentSlide.slideKey] ?? [];
+      const offset = (existingMemos.length % 5) * 3;
+      return {
+        ...current,
+        [currentSlide.slideKey]: [
+          ...existingMemos,
+          { id, text: '', position: { x: 50 + offset, y: 50 + offset } },
+        ],
+      };
+    });
+  };
+  const updateCurrentMemo = (memoId: number, value: string) => {
+    setSlideMemos((current) => ({
+      ...current,
+      [currentSlide.slideKey]: (current[currentSlide.slideKey] ?? []).map((memo) =>
+        memo.id === memoId ? { ...memo, text: value } : memo
+      ),
+    }));
+  };
+  const updateCurrentMemoPosition = (memoId: number, position: SlideMemoPosition) => {
+    setSlideMemos((current) => ({
+      ...current,
+      [currentSlide.slideKey]: (current[currentSlide.slideKey] ?? []).map((memo) =>
+        memo.id === memoId ? { ...memo, position } : memo
+      ),
+    }));
+  };
+  const deleteCurrentMemo = (memoId: number) => {
+    if (!window.confirm('현재 슬라이드의 텍스트 메모를 삭제할까요?')) return;
+    setSlideMemos((current) => ({
+      ...current,
+      [currentSlide.slideKey]: (current[currentSlide.slideKey] ?? []).filter(
+        (memo) => memo.id !== memoId
+      ),
+    }));
+  };
+  const toggleSlideEditing = async () => {
+    const slideKey = currentSlide.slideKey;
+    if (editingSlideKey !== slideKey) {
+      setEditedSources((current) => (
+        slideKey in current ? current : { ...current, [slideKey]: currentSlide.content }
+      ));
+      setSlideCompileError('');
+      setEditingSlideKey(slideKey);
+      return;
+    }
+
+    setIsCompilingSlide(true);
+    setSlideCompileError('');
+    try {
+      const { serialize } = await import('next-mdx-remote/serialize');
+      const compiled = await serialize(
+        preprocessGridSource(editedSources[slideKey] ?? currentSlide.content),
+        {
+          mdxOptions: mdxPlugins,
+          parseFrontmatter: false,
+          blockJS: false,
+          blockDangerousJS: true,
+        }
+      );
+      setCompiledSlides((current) => ({ ...current, [slideKey]: compiled }));
+      setEditingSlideKey(null);
+    } catch (error) {
+      setSlideCompileError(error instanceof Error ? error.message : 'MDX compile failed.');
+    } finally {
+      setIsCompilingSlide(false);
+    }
+  };
+  const getSlideMdxComponents = (slide: SlideItem) => createClientSlideMdxComponents({
+    category,
+    slug,
+    allocatedWeight: slide.complexCount > 0
+      ? Math.max(1, slide.remainingWeight / slide.complexCount)
+      : 0,
+  });
   const currentFocusHeader = currentSlide.h3 || currentSlide.h2 || currentSlide.h1 || title;
   const isChromeVisible = !isFullscreen || isFullscreenChromeVisible || isTocOpen || isDrawingMode;
 
@@ -597,18 +754,16 @@ export default function SlideContent({ slides, category, slug, title, background
           </>
         )}
 
-        {/* 상단바 */}
-        <canvas
+        <SlideDrawingCanvas
           ref={drawingCanvasRef}
-          className={`absolute inset-0 z-[54] h-full w-full touch-none print:hidden ${isDrawingMode ? 'pointer-events-auto cursor-crosshair' : 'pointer-events-none'
-            }`}
-          onPointerDown={startDrawing}
-          onPointerMove={draw}
-          onPointerUp={stopDrawing}
-          onPointerCancel={stopDrawing}
-          onPointerLeave={stopDrawing}
+          enabled={isDrawingMode}
+          tool={drawingTool}
+          color={penColor}
+          size={penSize}
+          slideId={currentSlide.slideKey}
         />
 
+        {/* 상단바 */}
         <div className={`slide-chrome relative z-[55] flex justify-between items-center p-4 border-b h-14 shrink-0 transition-all duration-300 ${isFullscreen
           ? `absolute top-0 left-0 right-0 z-[55] shadow-sm ${isChromeVisible ? 'translate-y-0 opacity-100 pointer-events-auto' : '-translate-y-full opacity-0 pointer-events-none'}`
           : ''
@@ -677,6 +832,11 @@ export default function SlideContent({ slides, category, slug, title, background
               </div>
             )}
             <div className="text-sm font-medium text-gray-500 mr-2">{currentIdx + 1} / {slides.length}</div>
+            {currentSlide.isDrawingSlide && (
+              <div className="rounded border border-amber-300 bg-amber-50 px-2 py-1 text-[10px] font-bold tracking-wider text-amber-700">
+                TEMP NOTE
+              </div>
+            )}
 
             <button
               onClick={cycleSlideTheme}
@@ -687,30 +847,46 @@ export default function SlideContent({ slides, category, slug, title, background
             </button>
 
             {isDrawingMode && (
-              <div className="flex items-center gap-1 mr-1">
-                {['#ef4444', '#f59e0b', '#22c55e', '#3b82f6', '#111827'].map(color => (
-                  <button
-                    key={color}
-                    onClick={() => setPenColor(color)}
-                    className={`w-6 h-6 rounded-full border-2 transition-transform ${penColor === color ? 'border-gray-900 scale-110' : 'border-white shadow-sm'}`}
-                    style={{ backgroundColor: color }}
-                    title="펜 색상"
-                  />
-                ))}
-                <input
-                  type="range"
-                  min="2"
-                  max="14"
-                  value={penSize}
-                  onChange={(e) => setPenSize(Number(e.target.value))}
-                  className="w-20"
-                  title="펜 굵기"
-                />
-                <button onClick={clearDrawing} className="px-2 h-10 bg-white hover:bg-gray-100 border border-gray-300 rounded-md transition-colors cursor-pointer text-xs font-bold text-gray-700" title="그림 지우기 (c)">
-                  Clear
-                </button>
-              </div>
+              <SlideDrawingToolbar
+                tool={drawingTool}
+                color={penColor}
+                size={penSize}
+                onToolChange={setDrawingTool}
+                onColorChange={setPenColor}
+                onSizeChange={setPenSize}
+                onClear={clearDrawing}
+                onCreateSlide={createTemporaryDrawingSlide}
+                onDeleteSlide={currentSlide.isDrawingSlide ? deleteCurrentTemporarySlide : undefined}
+              />
             )}
+
+            <button
+              onClick={addCurrentMemo}
+              className="flex h-10 items-center gap-1 rounded-md border border-gray-300 bg-white px-2 text-xs font-bold text-gray-700 transition-colors hover:bg-gray-100"
+              title="텍스트 메모 추가"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 4h16v16H4z" />
+                <path d="M8 9h8" />
+                <path d="M8 13h6" />
+              </svg>
+              Memo
+            </button>
+
+            <button
+              onClick={() => void toggleSlideEditing()}
+              disabled={isCompilingSlide}
+              className={`flex h-10 items-center gap-1 rounded-md border px-2 text-xs font-bold transition-colors disabled:cursor-wait disabled:opacity-60 ${
+                editingSlideKey === currentSlide.slideKey
+                  ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+                  : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-100'
+              }`}
+              title={editingSlideKey === currentSlide.slideKey ? '수정 내용을 슬라이드로 렌더링' : '현재 슬라이드 Markdown 수정'}
+            >
+              {isCompilingSlide && editingSlideKey === currentSlide.slideKey
+                ? 'Rendering...'
+                : editingSlideKey === currentSlide.slideKey ? 'Render' : 'Edit'}
+            </button>
 
             <button onClick={() => setIsDrawingMode(prev => !prev)} className={`flex items-center justify-center w-10 h-10 border border-gray-300 rounded-md transition-colors cursor-pointer text-gray-700 ${isDrawingMode ? 'bg-red-50 hover:bg-red-100 text-red-600 border-red-200' : 'bg-white hover:bg-gray-100'}`} title={isDrawingMode ? '그리기 끄기 (d)' : '그리기 켜기 (d)'}>
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -719,7 +895,7 @@ export default function SlideContent({ slides, category, slug, title, background
               </svg>
             </button>
 
-            <button onClick={() => window.print()} className="flex items-center justify-center w-10 h-10 bg-white hover:bg-gray-100 border border-gray-300 rounded-md transition-colors cursor-pointer text-gray-700" title="PDF 저장 / 프린트 (p)">
+            <button onClick={printSlides} className="flex items-center justify-center w-10 h-10 bg-white hover:bg-gray-100 border border-gray-300 rounded-md transition-colors cursor-pointer text-gray-700" title="PDF 저장 / 프린트 (p)">
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9V2h12v7" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><rect width="12" height="8" x="6" y="14" /></svg>
             </button>
 
@@ -738,18 +914,60 @@ export default function SlideContent({ slides, category, slug, title, background
         </div>
 
         <div ref={slideViewportRef} className="relative flex-1 min-h-0 overflow-hidden">
-          <div
-            ref={slideContentRef}
-            className="slide-content content-markdown absolute left-1/2 top-1/2 w-[90vw] markdown-body !bg-transparent p-0"
-            style={{
-              transform: `translate(-50%, -50%) scale(${slideScale})`,
-              transformOrigin: 'center center',
-            }}
-          >
-            <div className="text-lg md:text-xl lg:text-2xl leading-relaxed w-full">
-              {currentSlide.renderedContent}
+          {currentSlide.isDrawingSlide && (
+            <div className="drawing-slide-background absolute inset-0" />
+          )}
+          {editingSlideKey === currentSlide.slideKey ? (
+            <div className="absolute inset-6 z-[57] flex flex-col overflow-hidden rounded-xl border border-gray-300 bg-gray-950 shadow-2xl">
+              <div className="flex items-center justify-between border-b border-gray-700 px-4 py-2 text-xs font-bold text-gray-300">
+                <span>MARKDOWN SOURCE · SLIDE {currentIdx + 1}</span>
+                <span>상단 Render 버튼을 누르면 적용됩니다.</span>
+              </div>
+              <textarea
+                value={editedSources[currentSlide.slideKey] ?? currentSlide.content}
+                onChange={(event) => setEditedSources((current) => ({
+                  ...current,
+                  [currentSlide.slideKey]: event.target.value,
+                }))}
+                className="min-h-0 flex-1 resize-none bg-gray-950 p-5 font-mono text-base leading-relaxed text-gray-100 outline-none"
+                spellCheck={false}
+                aria-label="현재 슬라이드 Markdown 원본"
+              />
+              {slideCompileError && (
+                <div className="max-h-28 overflow-auto border-t border-red-800 bg-red-950 px-4 py-2 font-mono text-xs text-red-200">
+                  {slideCompileError}
+                </div>
+              )}
             </div>
-          </div>
+          ) : (
+            <div
+              ref={slideContentRef}
+              className="slide-content content-markdown absolute left-1/2 top-1/2 w-[90vw] markdown-body !bg-transparent p-0"
+              style={{
+                transform: `translate(-50%, -50%) scale(${slideScale})`,
+                transformOrigin: 'center center',
+              }}
+            >
+              <div className="text-lg md:text-xl lg:text-2xl leading-relaxed w-full">
+                {compiledSlides[currentSlide.slideKey] ? (
+                  <MDXRemote
+                    {...compiledSlides[currentSlide.slideKey]}
+                    components={getSlideMdxComponents(currentSlide)}
+                  />
+                ) : currentSlide.renderedContent}
+              </div>
+            </div>
+          )}
+          {(slideMemos[currentSlide.slideKey] ?? []).map((memo) => (
+            <SlideTextMemo
+              key={memo.id}
+              value={memo.text}
+              onChange={(value) => updateCurrentMemo(memo.id, value)}
+              onDelete={() => deleteCurrentMemo(memo.id)}
+              position={memo.position}
+              onPositionChange={(position) => updateCurrentMemoPosition(memo.id, position)}
+            />
+          ))}
         </div>
 
         <div className={`slide-chrome grid min-h-[70px] shrink-0 grid-cols-3 items-center border-t p-4 transition-all duration-300 ${isFullscreen
@@ -793,9 +1011,34 @@ export default function SlideContent({ slides, category, slug, title, background
           >
             <div className="slide-content content-markdown markdown-body !bg-transparent w-full">
               <div className="text-lg md:text-xl lg:text-2xl leading-relaxed w-full">
-                {slide.renderedContent}
+                {compiledSlides[slide.slideKey] ? (
+                  <MDXRemote
+                    {...compiledSlides[slide.slideKey]}
+                    components={getSlideMdxComponents(slide)}
+                  />
+                ) : slide.renderedContent}
               </div>
             </div>
+            {printDrawings[slide.slideKey] && (
+              <div
+                className="pointer-events-none absolute inset-0 z-20 bg-[length:100%_100%] bg-no-repeat"
+                style={{ backgroundImage: `url(${printDrawings[slide.slideKey]})` }}
+                aria-hidden="true"
+              />
+            )}
+            {(slideMemos[slide.slideKey] ?? []).filter((memo) => memo.text.trim()).map((memo) => (
+              <div
+                key={memo.id}
+                className="slide-text-memo-print pointer-events-none absolute z-30 -translate-x-1/2 -translate-y-1/2 whitespace-pre-wrap rounded-xl border border-gray-300 bg-white p-5 text-xl leading-relaxed text-gray-900 shadow-lg"
+                style={{
+                  left: `${memo.position.x}%`,
+                  top: `${memo.position.y}%`,
+                  width: `min(${getMemoWidthCh(memo.text)}ch, 70%)`,
+                }}
+              >
+                {memo.text}
+              </div>
+            ))}
           </div>
         ))}
       </div>

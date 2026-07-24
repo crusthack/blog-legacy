@@ -332,6 +332,12 @@ target_compile_options(main PRIVATE
 - `CMAKE_CXX_EXTENSIONS OFF` - `gnu++23` 대신 표준 `c++23` 모드 사용
 - `target_compile_options` - 현재 실행 파일에 경고 옵션 적용
 
+```terminal
+cmake -S . -B build -G Ninja \
+    -DCMAKE_CXX_COMPILER=clang++-18
+```
+- cmake 처음 빌드 
+
 ## 헤더 파일과 소스 파일 추가
 
 Ninja를 사용하는 현재 구성에서는 Makefile이나 `build.ninja`를 직접 수정하지 않는다. 프로젝트에 파일을 추가할 때는 `CMakeLists.txt`에서 실행 파일 타깃에 새 소스 파일을 등록한다.
